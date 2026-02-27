@@ -2,6 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import React, { useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 import MapView from "react-native-maps";
+import PinListView from "../pin_list_view";
 
 const INITIAL_REGION = {
   latitude: 33.7838,
@@ -59,8 +60,8 @@ export default function Home() {
         />
       )}
       {viewMode === "list" && (
-        <View style={styles.placeholder}>
-          <Ionicons name="list" size={48} color="#ccc" />
+        <View>
+          <PinListView />
         </View>
       )}
       {viewMode === "grid" && (
