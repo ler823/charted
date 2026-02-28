@@ -25,7 +25,9 @@
       "output": "static",
       "favicon": "./assets/images/favicon.png"
     },
-    "plugins": [],
+    "plugins": [
+      "expo-sqlite"
+    ],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
