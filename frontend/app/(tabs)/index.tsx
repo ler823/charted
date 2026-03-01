@@ -1,10 +1,10 @@
 import { Ionicons } from "@expo/vector-icons";
-import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import React, { useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, View } from "react-native";
 import MapView from "react-native-maps";
 import { Colors } from "../../constants/theme";
 
+import DroppingPinOverlay from "@/components/dropping-pin-overlay";
 import { useDroppingPin } from "@/context/DroppingPinContext";
 
 // CSULB as initial region (for now)
@@ -28,11 +28,6 @@ const VIEW_OPTIONS: { mode: ViewMode; icon: keyof typeof Ionicons.glyphMap }[] =
 export default function Home() {
   const { isDroppingPin, setIsDroppingPin } = useDroppingPin();
   const [viewMode, setViewMode] = useState<ViewMode>("map");
-
-  const handleDropPin = () => {
-    // pin dropping logic here
-    setIsDroppingPin(false);
-  };
 
   return (
     <View style={styles.container}>
@@ -80,24 +75,7 @@ export default function Home() {
       )}
 
       {/* Dropping pin overlay */}
-      {isDroppingPin && (
-        <View style={styles.droppingPinOverlay} pointerEvents="box-none">
-          <View style={styles.crosshairContainer}>
-            <MaterialCommunityIcons name="crosshairs" size={36} color="black" />
-          </View>
-          <View style={styles.droppingPinButtons}>
-            <Pressable
-              style={styles.cancelBtn}
-              onPress={() => setIsDroppingPin(false)}
-            >
-              <Text style={styles.btnText}>Cancel</Text>
-            </Pressable>
-            <Pressable style={styles.dropBtn} onPress={handleDropPin}>
-              <Text style={styles.btnText}>Drop Pin</Text>
-            </Pressable>
-          </View>
-        </View>
-      )}
+      {isDroppingPin && <DroppingPinOverlay />}
     </View>
   );
 }
