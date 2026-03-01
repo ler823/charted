@@ -3,19 +3,17 @@ import { TabList, Tabs, TabSlot, TabTrigger } from "expo-router/ui";
 import { Pressable, StyleSheet } from "react-native";
 import { Colors } from "../../constants/theme";
 
+import { useDroppingPin } from "@/context/DroppingPinContext";
+
 export default function Layout() {
+  const { isDroppingPin } = useDroppingPin();
   return (
     <Tabs>
       <TabSlot />
-      <TabList style={styles.tablist}>
+      <TabList style={[styles.tablist, isDroppingPin && { display: "none" }]}>
         <TabTrigger name="home" href="/" style={styles.tabTrigger} asChild>
           <Pressable>
-            <Ionicons
-              name="home"
-              size={24}
-              className="icon"
-              color={Colors.light.accentLight}
-            />
+            <Ionicons name="home" size={24} color="#fff" />
           </Pressable>
         </TabTrigger>
         <TabTrigger
@@ -25,12 +23,7 @@ export default function Layout() {
           asChild
         >
           <Pressable>
-            <Ionicons
-              name="people"
-              size={24}
-              className="icon"
-              color={Colors.light.accentLight}
-            />
+            <Ionicons name="people" size={24} color="#fff" />
           </Pressable>
         </TabTrigger>
         <TabTrigger
@@ -40,11 +33,7 @@ export default function Layout() {
           asChild
         >
           <Pressable>
-            <Ionicons
-              name="person"
-              size={24}
-              color={Colors.light.accentLight}
-            />
+            <Ionicons name="person" size={24} color="#fff" />
           </Pressable>
         </TabTrigger>
       </TabList>
