@@ -1,17 +1,8 @@
-import { Raleway_400Regular, Raleway_700Bold, useFonts } from "@expo-google-fonts/raleway";
 import React from "react";
 import { Image, StyleSheet, Text, View } from "react-native";
+import { Fonts } from "../constants/fonts";
 
 export default function ListCard() {
-    const [fontsLoaded] = useFonts({
-        Raleway_400Regular,
-        Raleway_700Bold,
-    });
-
-    if (!fontsLoaded) {
-        return null;
-        }
-    
     return (
           <View style={styles.card}>
               <Image source={require('../assets/images/test_ss_creamery.png')} style={styles.img} />
@@ -44,26 +35,22 @@ const styles = StyleSheet.create({
         width: '95%',
         flexDirection: 'row',
         alignItems: 'center',
-
-        // iOS
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.3,
         shadowRadius: 2,
-
-        // Android
         elevation: 4,
     },
 
     cardTitle: {
-        fontFamily: 'Raleway_700Bold',
+        fontFamily: Fonts.bold,
         fontSize: 16,
         paddingLeft: 7,
         paddingBottom: 1,
     },
 
     cardLoc: {
-        fontFamily: 'Raleway_400Regular',
+        fontFamily: Fonts.regular,
         fontSize: 12,
         paddingLeft: 7,
     }
