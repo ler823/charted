@@ -11,6 +11,7 @@ export default function DroppingPinOverlay() {
     // pin dropping logic here
     setIsDroppingPin(false);
   };
+
   return (
     <View style={styles.droppingPinOverlay} pointerEvents="box-none">
       <View style={styles.crosshairContainer}>

@@ -39,6 +39,16 @@ export default function Home() {
           onLongPress={() => {
             setIsDroppingPin(true);
           }}
+          onRegionChangeComplete={
+            isDroppingPin
+              ? (region) => {
+                  console.log("Center coords:", {
+                    latitude: region.latitude,
+                    longitude: region.longitude,
+                  });
+                }
+              : undefined
+          }
         />
       )}
       {viewMode === "list" && (
