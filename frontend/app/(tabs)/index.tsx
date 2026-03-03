@@ -1,10 +1,9 @@
-import { Ionicons, FontAwesome } from "@expo/vector-icons";
+import { Ionicons } from "@expo/vector-icons";
 import React, { useState } from "react";
-import { Pressable, StyleSheet, View, Text } from "react-native";
+import { Pressable, StyleSheet, View, Text} from "react-native";
 import MapView from "react-native-maps";
 import PinListView from "../pin_list_view";
 import { Fonts } from "../../constants/fonts";
-import { SearchBar } from "react-native-screens";
 import { getSingularId } from "expo-router/build/useScreens";
 import { Colors } from "../../constants/theme";
 
@@ -36,43 +35,45 @@ export default function Home() {
   return (
     <View style={styles.container}>
       {/* Pill */}
-      <View style={styles.pill}>
-        {VIEW_OPTIONS.map(({ mode, icon }) => (
-          <Pressable
-            key={mode}
-            onPress={() => setViewMode(mode)}
-            style={[
-              styles.pillOption,
-              viewMode === mode && (
-                mode === "map" 
-                  ? styles.pillOptionActiveMap
-                  : viewMode === "list"
-                  ? styles.pillOptionActiveList
-                  : styles.pillOptionActiveGrid
-              )
-            ]}
-          >
-            <Ionicons
-              name={icon}
-              size={20}
-              color={viewMode === mode ? "#d9d9d9" : "#d9d9d9"}
-            />
-          </Pressable>
-        ))}
-        <View>
-          <Pressable style={styles.filter}>
-            <Text style={
-              {fontFamily: Fonts.bold,
-                color: "#d9d9d9",
-                fontSize: 16,
-              }
-              }>
-              Filter
-            </Text>
-            <Ionicons name="chevron-down" size={20} color="#d9d9d9" />
-          </Pressable>
+      {!isDroppingPin && (
+        <View style={styles.pill}>
+          {VIEW_OPTIONS.map(({ mode, icon }) => (
+            <Pressable
+              key={mode}
+              onPress={() => setViewMode(mode)}
+              style={[
+                styles.pillOption,
+                viewMode === mode && (
+                  mode === "map" 
+                    ? styles.pillOptionActiveMap
+                    : viewMode === "list"
+                    ? styles.pillOptionActiveList
+                    : styles.pillOptionActiveGrid
+                )
+              ]}
+            >
+              <Ionicons
+                name={icon}
+                size={20}
+                color={viewMode === mode ? "#d9d9d9" : "#d9d9d9"}
+              />
+            </Pressable>
+          ))}
+          <View>
+            <Pressable style={styles.filter}>
+              <Text style={
+                {fontFamily: Fonts.bold,
+                  color: "#d9d9d9",
+                  fontSize: 16,
+                }
+                }>
+                Filter
+              </Text>
+              <Ionicons name="chevron-down" size={20} color="#d9d9d9" />
+            </Pressable>
+          </View>
         </View>
-      </View>
+      )}
 
       {viewMode === "map" && (
         <MapView
@@ -94,40 +95,13 @@ export default function Home() {
         />
       )}
       {viewMode === "list" && (
-        <View style={styles.placeholder}>
-          <Ionicons name="list" size={48} color="#ccc" />
+        <View style={styles.cardsContainer}>
+          <PinListView />
         </View>
       )}
       {viewMode === "grid" && (
         <View style={styles.placeholder}>
           <Ionicons name="grid" size={48} color="#ccc" />
-        </View>
-      )}
-      {/* View pill — hidden when dropping pin */}
-      {!isDroppingPin && (
-        <View style={styles.pill}>
-          {VIEW_OPTIONS.map(({ mode, icon }) => (
-            <Pressable
-              key={mode}
-              onPress={() => setViewMode(mode)}
-              style={[
-                styles.pillOption,
-                viewMode === mode && (
-                  mode === "map" 
-                    ? styles.pillOptionActiveMap
-                    : viewMode === "list"
-                    ? styles.pillOptionActiveList
-                    : styles.pillOptionActiveGrid
-                )
-              ]}
-            >
-              <Ionicons
-                name={icon}
-                size={18}
-                color={viewMode === mode ? "#fff" : Colors.light.background}
-              />
-            </Pressable>
-          ))}
         </View>
       )}
 
@@ -139,11 +113,11 @@ export default function Home() {
 
 const styles = StyleSheet.create({
   container: {
-    marginLeft: 8,
     flexDirection: "row",
-    flex: 1/6,
+    flex: 1,
   },
   cardsContainer: {
+    top: 110,
     flex: 1,
   },
   searchbar: {
@@ -162,7 +136,8 @@ const styles = StyleSheet.create({
   },
   pill: {
     position: "absolute",
-    top: 20,
+    top: 60,
+    marginLeft: 15,
     flexDirection: "row",
     backgroundColor: "#243e36",
     borderRadius: 999,
