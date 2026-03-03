@@ -1,11 +1,11 @@
 import React from "react";
 import { Image, StyleSheet, Text, View } from "react-native";
-import { Fonts } from "../constants/fonts";
+import { Fonts } from "../../constants/fonts";
 
 export default function ListCard() {
     return (
           <View style={styles.card}>
-              <Image source={require('../assets/images/test_ss_creamery.png')} style={styles.img} />
+              <Image source={require('../../assets/images/test_ss_creamery.png')} style={styles.img} />
               <View>
                 <Text style={styles.cardTitle}>
                     Seaside Creamery
@@ -45,13 +45,13 @@ const styles = StyleSheet.create({
     cardTitle: {
         fontFamily: Fonts.bold,
         fontSize: 16,
-        paddingLeft: 7,
+        paddingLeft: 15,
         paddingBottom: 1,
     },
 
     cardLoc: {
         fontFamily: Fonts.regular,
         fontSize: 12,
-        paddingLeft: 7,
+        paddingLeft: 15,
     }
 });

@@ -1,6 +1,6 @@
 import React from "react";
 import { StyleSheet, View } from "react-native";
-import ListCard from "./list_card";
+import ListCard from "./(tabs)/list_card";
 
 export default function PinListView() {
     return (

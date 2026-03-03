@@ -1,10 +1,11 @@
-import { Ionicons } from "@expo/vector-icons";
+import { Ionicons, FontAwesome } from "@expo/vector-icons";
 import React, { useState } from "react";
 import { Pressable, StyleSheet, View, Text } from "react-native";
 import MapView from "react-native-maps";
 import PinListView from "../pin_list_view";
 import { Fonts } from "../../constants/fonts";
 import { SearchBar } from "react-native-screens";
+import { getSingularId } from "expo-router/build/useScreens";
 
 const INITIAL_REGION = {
   latitude: 33.7838,
@@ -29,30 +30,44 @@ export default function Home() {
   return (
     <>
       <View style={styles.container}>
-        {/* Pill */}
-        <View style={styles.pill}>
-          {VIEW_OPTIONS.map(({ mode, icon }) => (
-            <Pressable
-              key={mode}
-              onPress={() => setViewMode(mode)}
-              style={[
-                styles.pillOption,
-                viewMode === mode && (
-                  mode === "map" 
-                    ? styles.pillOptionActiveMap
-                    : viewMode === "list"
-                    ? styles.pillOptionActiveList
-                    : styles.pillOptionActiveGrid
-                )
-              ]}
-            >
-              <Ionicons
-                name={icon}
-                size={20}
-                color={viewMode === mode ? "#d9d9d9" : "#d9d9d9"}
-              />
-            </Pressable>
-          ))}
+          {/* Pill */}
+          <View style={styles.pill}>
+            {VIEW_OPTIONS.map(({ mode, icon }) => (
+              <Pressable
+                key={mode}
+                onPress={() => setViewMode(mode)}
+                style={[
+                  styles.pillOption,
+                  viewMode === mode && (
+                    mode === "map" 
+                      ? styles.pillOptionActiveMap
+                      : viewMode === "list"
+                      ? styles.pillOptionActiveList
+                      : styles.pillOptionActiveGrid
+                  )
+                ]}
+              >
+                <Ionicons
+                  name={icon}
+                  size={20}
+                  color={viewMode === mode ? "#d9d9d9" : "#d9d9d9"}
+                />
+              </Pressable>
+            ))}
+            <View>
+              <Pressable style={styles.filter}>
+                <Text style={
+                  {fontFamily: Fonts.bold,
+                    color: "#d9d9d9",
+                    fontSize: 16,
+                  }
+                  }>
+                  Filter
+                </Text>
+                <Ionicons name="chevron-down" size={20} color="#d9d9d9" />
+              </Pressable>
+            </View>
+          </View>
         </View>
 
         {isPicking && (
@@ -60,20 +75,6 @@ export default function Home() {
             <Ionicons name="location-sharp" size={40} color="red" />
           </View>
         )}
-        <View>
-          <Pressable style={styles.filter}>
-            <Text style={
-              {fontFamily: Fonts.bold,
-                color: "#d9d9d9",
-                fontSize: 16,
-              }
-              }>
-              Filter
-            </Text>
-            <Ionicons name="chevron-down" size={20} color="#d9d9d9" />
-          </Pressable>
-        </View>
-      </View>
       <View>
         {viewMode === "map" && (
           <MapView
@@ -99,11 +100,26 @@ export default function Home() {
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1/6,
     marginLeft: 8,
+    flexDirection: "row",
+    flex: 1/6,
   },
   cardsContainer: {
     flex: 1,
+  },
+  searchbar: {
+    backgroundColor: "#7ca982",
+    justifyContent: "center",
+    flexDirection: "row",
+    width: 300,
+    height: 40,
+    borderRadius: 999,
+    zIndex: 20,
+    shadowColor: "#000",
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 5,
   },
   pill: {
     position: "absolute",
@@ -137,8 +153,6 @@ const styles = StyleSheet.create({
   },
   filter: {
     position: "absolute",
-    top: 20,
-    left: 167,
     backgroundColor: "#243e36",
     color: "#d9d9d9",
     flexDirection: "row",
@@ -148,6 +162,7 @@ const styles = StyleSheet.create({
     gap: 6,
     width: 105,
     height: 40,
+    marginLeft: 8,
     shadowColor: "#000",
     shadowOpacity: 0.15,
     shadowRadius: 8,
