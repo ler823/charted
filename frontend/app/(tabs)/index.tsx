@@ -1,7 +1,11 @@
-import { Ionicons } from "@expo/vector-icons";
+import { Ionicons, FontAwesome } from "@expo/vector-icons";
 import React, { useState } from "react";
-import { Pressable, StyleSheet, View } from "react-native";
+import { Pressable, StyleSheet, View, Text } from "react-native";
 import MapView from "react-native-maps";
+import PinListView from "../pin_list_view";
+import { Fonts } from "../../constants/fonts";
+import { SearchBar } from "react-native-screens";
+import { getSingularId } from "expo-router/build/useScreens";
 import { Colors } from "../../constants/theme";
 
 import DroppingPinOverlay from "@/components/dropping-pin-overlay";
@@ -31,7 +35,45 @@ export default function Home() {
 
   return (
     <View style={styles.container}>
-      {/* Map / List / Grid */}
+      {/* Pill */}
+      <View style={styles.pill}>
+        {VIEW_OPTIONS.map(({ mode, icon }) => (
+          <Pressable
+            key={mode}
+            onPress={() => setViewMode(mode)}
+            style={[
+              styles.pillOption,
+              viewMode === mode && (
+                mode === "map" 
+                  ? styles.pillOptionActiveMap
+                  : viewMode === "list"
+                  ? styles.pillOptionActiveList
+                  : styles.pillOptionActiveGrid
+              )
+            ]}
+          >
+            <Ionicons
+              name={icon}
+              size={20}
+              color={viewMode === mode ? "#d9d9d9" : "#d9d9d9"}
+            />
+          </Pressable>
+        ))}
+        <View>
+          <Pressable style={styles.filter}>
+            <Text style={
+              {fontFamily: Fonts.bold,
+                color: "#d9d9d9",
+                fontSize: 16,
+              }
+              }>
+              Filter
+            </Text>
+            <Ionicons name="chevron-down" size={20} color="#d9d9d9" />
+          </Pressable>
+        </View>
+      </View>
+
       {viewMode === "map" && (
         <MapView
           initialRegion={INITIAL_REGION}
@@ -61,7 +103,6 @@ export default function Home() {
           <Ionicons name="grid" size={48} color="#ccc" />
         </View>
       )}
-
       {/* View pill — hidden when dropping pin */}
       {!isDroppingPin && (
         <View style={styles.pill}>
@@ -71,7 +112,13 @@ export default function Home() {
               onPress={() => setViewMode(mode)}
               style={[
                 styles.pillOption,
-                viewMode === mode && styles.pillOptionActive,
+                viewMode === mode && (
+                  mode === "map" 
+                    ? styles.pillOptionActiveMap
+                    : viewMode === "list"
+                    ? styles.pillOptionActiveList
+                    : styles.pillOptionActiveGrid
+                )
               ]}
             >
               <Ionicons
@@ -91,16 +138,34 @@ export default function Home() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
+  container: {
+    marginLeft: 8,
+    flexDirection: "row",
+    flex: 1/6,
+  },
+  cardsContainer: {
+    flex: 1,
+  },
+  searchbar: {
+    backgroundColor: "#7ca982",
+    justifyContent: "center",
+    flexDirection: "row",
+    width: 300,
+    height: 40,
+    borderRadius: 999,
+    zIndex: 20,
+    shadowColor: "#000",
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 5,
+  },
   pill: {
     position: "absolute",
-    top: 40,
-    alignSelf: "center",
+    top: 20,
     flexDirection: "row",
-    backgroundColor: "#fff",
+    backgroundColor: "#243e36",
     borderRadius: 999,
-    padding: 4,
-    gap: 4,
     zIndex: 20,
     shadowColor: "#000",
     shadowOpacity: 0.15,
@@ -110,11 +175,38 @@ const styles = StyleSheet.create({
   },
   pillOption: {
     paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 999,
+    paddingVertical: 10,
   },
-  pillOptionActive: {
+  pillOptionActiveMap: {
+    backgroundColor: "#7ca982",
+    borderTopLeftRadius: 999,
+    borderBottomLeftRadius: 999,
+  },
+  pillOptionActiveList: {
+    backgroundColor: "#7ca982",
+  },
+  pillOptionActiveGrid: {
+    backgroundColor: "#7ca982",
+    borderTopRightRadius: 999,
+    borderBottomRightRadius: 999,
+  },
+  filter: {
+    position: "absolute",
     backgroundColor: "#243e36",
+    color: "#d9d9d9",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 999,
+    gap: 6,
+    width: 105,
+    height: 40,
+    marginLeft: 8,
+    shadowColor: "#000",
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 5,
   },
   map: {
     width: "100%",
