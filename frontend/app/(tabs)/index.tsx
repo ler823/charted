@@ -1,11 +1,10 @@
 import { Ionicons } from "@expo/vector-icons";
 import React, { useState } from "react";
-import { Pressable, StyleSheet, View, Text} from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import MapView from "react-native-maps";
-import PinListView from "../pin_list_view";
 import { Fonts } from "../../constants/fonts";
-import { getSingularId } from "expo-router/build/useScreens";
 import { Colors } from "../../constants/theme";
+import PinListView from "../pin_list_view";
 
 import DroppingPinOverlay from "@/components/dropping-pin-overlay";
 import { useDroppingPin } from "@/context/DroppingPinContext";
