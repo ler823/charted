@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import React, { useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 import MapView from "react-native-maps";
@@ -31,6 +32,11 @@ export default function Home() {
 
   return (
     <View style={styles.container}>
+      <View>
+        <Pressable style={styles.plusButton}>
+          <MaterialCommunityIcons name="plus" size={45} color="#ffffff" />
+        </Pressable>
+      </View>
       {/* Map / List / Grid */}
       {viewMode === "map" && (
         <MapView
@@ -86,12 +92,15 @@ export default function Home() {
 
       {/* Dropping pin overlay */}
       {isDroppingPin && <DroppingPinOverlay />}
+      
+      
+      
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
+  container: { flex: 1, height: "100%", width: "100%" },
   pill: {
     position: "absolute",
     top: 40,
@@ -158,4 +167,16 @@ const styles = StyleSheet.create({
     backgroundColor: "#243e36",
     borderRadius: 999,
   },
+  plusButton: {
+    position: "absolute",
+    top: 775,
+    right: 25,
+    zIndex: 20,
+    width: 50,
+    height: 50,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#243e36",
+    borderRadius: 100
+  }
 });
