@@ -2,8 +2,14 @@ import { Ionicons } from "@expo/vector-icons";
 import React, { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import MapView, { Marker } from "react-native-maps";
+import { Colors } from "../../constants/theme";
 import PinMarker from "../../components/pin-marker";
 
+import DroppingPinOverlay from "@/components/dropping-pin-overlay";
+import { useDroppingPin } from "@/context/DroppingPinContext";
+
+// CSULB as initial region (for now)
+// Later it should be user's location if location services enabled
 const INITIAL_REGION = {
   latitude: 33.7838,
   longitude: -118.1141,
@@ -57,43 +63,30 @@ const VIEW_OPTIONS: { mode: ViewMode; icon: keyof typeof Ionicons.glyphMap }[] =
   ];
 
 export default function Home() {
-  const [isPicking, setIsPicking] = useState(false);
+  const { isDroppingPin, setIsDroppingPin } = useDroppingPin();
   const [viewMode, setViewMode] = useState<ViewMode>("map");
   const [selectedPin, setSelectedPin] = useState<Pin | null>(null);
 
   return (
     <View style={styles.container}>
-      {/* Pill */}
-      <View style={styles.pill}>
-        {VIEW_OPTIONS.map(({ mode, icon }) => (
-          <Pressable
-            key={mode}
-            onPress={() => setViewMode(mode)}
-            style={[
-              styles.pillOption,
-              viewMode === mode && styles.pillOptionActive,
-            ]}
-          >
-            <Ionicons
-              name={icon}
-              size={18}
-              color={viewMode === mode ? "#fff" : "#555"}
-            />
-          </Pressable>
-        ))}
-      </View>
-
-      {isPicking && (
-        <View style={styles.crosshairContainer} pointerEvents="none">
-          <Ionicons name="location-sharp" size={40} color="red" />
-        </View>
-      )}
-
+      {/* Map / List / Grid */}
       {viewMode === "map" && (
         <MapView
           initialRegion={INITIAL_REGION}
           style={styles.map}
-          onLongPress={() => setIsPicking(true)}
+          onLongPress={() => {
+            setIsDroppingPin(true);
+          }}
+          onRegionChangeComplete={
+            isDroppingPin
+              ? (region) => {
+                  console.log("Center coords:", {
+                    latitude: region.latitude,
+                    longitude: region.longitude,
+                  });
+                }
+              : undefined
+          }
         >
           {/* 
             controls pin marker, takes from pin-marker component
@@ -108,7 +101,7 @@ export default function Home() {
               <PinMarker />
             </Marker>
           ))}
-        </MapView>
+        </MapView> 
       )}
       {viewMode === "list" && (
         <View style={styles.placeholder}>
@@ -142,6 +135,30 @@ export default function Home() {
           </Pressable>
         </Pressable>
       )}
+      {/* View pill — hidden when dropping pin */}
+      {!isDroppingPin && (
+        <View style={styles.pill}>
+          {VIEW_OPTIONS.map(({ mode, icon }) => (
+            <Pressable
+              key={mode}
+              onPress={() => setViewMode(mode)}
+              style={[
+                styles.pillOption,
+                viewMode === mode && styles.pillOptionActive,
+              ]}
+            >
+              <Ionicons
+                name={icon}
+                size={18}
+                color={viewMode === mode ? "#fff" : Colors.light.background}
+              />
+            </Pressable>
+          ))}
+        </View>
+      )}
+
+      {/* Dropping pin overlay */}
+      {isDroppingPin && <DroppingPinOverlay />}
     </View>
   );
 }
@@ -178,6 +195,18 @@ const styles = StyleSheet.create({
     width: "100%",
     height: "100%",
   },
+  placeholder: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  droppingPinOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 20,
+  },
   crosshairContainer: {
     position: "absolute",
     top: "50%",
@@ -185,10 +214,25 @@ const styles = StyleSheet.create({
     transform: [{ translateX: -20 }, { translateY: -40 }],
     zIndex: 10,
   },
-  placeholder: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
+   droppingPinButtons: {
+    position: "absolute",
+    bottom: 40,
+    flexDirection: "row",
+    gap: 16,
+  },
+  cancelBtn: {
+    padding: 16,
+    backgroundColor: Colors.light.error,
+    borderRadius: 999,
+  },
+  btnText: {
+    color: "#fff",
+    fontWeight: "bold",
+  },
+  dropBtn: {
+    padding: 16,
+    backgroundColor: "#243e36",
+    borderRadius: 999,
   },
   backdrop: {
     position: "absolute",
