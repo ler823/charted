@@ -2,9 +2,10 @@ import { Ionicons } from "@expo/vector-icons";
 import React, { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import MapView from "react-native-maps";
-import { Fonts } from "../../constants/fonts";
-import { Colors } from "../../constants/theme";
-import PinListView from "../pin_list_view";
+import { Fonts } from "../../../constants/fonts";
+import { Colors } from "../../../constants/theme";
+import PinListView from "./pin_list_view";
+import FontAwesome from '@expo/vector-icons/FontAwesome';
 
 import DroppingPinOverlay from "@/components/dropping-pin-overlay";
 import { useDroppingPin } from "@/context/DroppingPinContext";
@@ -33,43 +34,59 @@ export default function Home() {
 
   return (
     <View style={styles.container}>
-      {/* Pill */}
       {!isDroppingPin && (
-        <View style={styles.pill}>
-          {VIEW_OPTIONS.map(({ mode, icon }) => (
-            <Pressable
-              key={mode}
-              onPress={() => setViewMode(mode)}
-              style={[
-                styles.pillOption,
-                viewMode === mode && (
-                  mode === "map" 
-                    ? styles.pillOptionActiveMap
-                    : viewMode === "list"
-                    ? styles.pillOptionActiveList
-                    : styles.pillOptionActiveGrid
-                )
-              ]}
-            >
-              <Ionicons
-                name={icon}
-                size={20}
-                color={viewMode === mode ? "#d9d9d9" : "#d9d9d9"}
-              />
-            </Pressable>
-          ))}
-          <View>
-            <Pressable style={styles.filter}>
-              <Text style={
-                {fontFamily: Fonts.bold,
-                  color: "#d9d9d9",
-                  fontSize: 16,
-                }
-                }>
-                Filter
+        <View style={styles.header}>
+
+          {/* Search Bar and Settings*/}
+          <View style={styles.row}>
+            <Pressable style={styles.searchbar}>
+              <Text style={{fontFamily: Fonts.bold, color: "#fefbea", fontSize: 16}}>
+                Find a place
               </Text>
-              <Ionicons name="chevron-down" size={20} color="#d9d9d9" />
+              <FontAwesome name="search" size={20} color="#fefbea" />
             </Pressable>
+            <View>
+              <Pressable style={styles.settings}>
+                <Ionicons name="settings" size={32} color="#243e36" />
+              </Pressable>
+            </View>
+          </View>
+
+          {/* Pill and Filter*/}
+          <View style={styles.row}>
+            <View style={styles.pill}>
+              {VIEW_OPTIONS.map(({ mode, icon }) => (
+                <Pressable
+                  key={mode}
+                  onPress={() => setViewMode(mode)}
+                  style={[
+                    styles.pillOption,
+                    viewMode === mode && (
+                      mode === "map" 
+                        ? styles.pillOptionActiveMap
+                        : viewMode === "list"
+                        ? styles.pillOptionActiveList
+                        : styles.pillOptionActiveGrid
+                    )
+                  ]}
+                >
+                  <Ionicons
+                    name={icon}
+                    size={20}
+                    color={viewMode === mode ? "#d9d9d9" : "#d9d9d9"}
+                  />
+                </Pressable>
+              ))}
+            </View>
+
+            <View>
+              <Pressable style={styles.filter}>
+                <Text style={{fontFamily: Fonts.bold, color: "#d9d9d9", fontSize: 16,}}>
+                  Filter
+                </Text>
+                <Ionicons name="chevron-down" size={20} color="#d9d9d9" />
+              </Pressable>
+            </View>
           </View>
         </View>
       )}
@@ -77,7 +94,7 @@ export default function Home() {
       {viewMode === "map" && (
         <MapView
           initialRegion={INITIAL_REGION}
-          style={styles.map}
+          style={StyleSheet.absoluteFillObject}
           onLongPress={() => {
             setIsDroppingPin(true);
           }}
@@ -100,7 +117,6 @@ export default function Home() {
       )}
       {viewMode === "grid" && (
         <View style={styles.placeholder}>
-          <Ionicons name="grid" size={48} color="#ccc" />
         </View>
       )}
 
@@ -115,59 +131,83 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     flex: 1,
   },
+  header: {
+    position: "absolute",
+    top: 45,
+    paddingHorizontal: 15,
+    zIndex: 20,
+  },
+  row: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 15,
+  },
   cardsContainer: {
-    top: 110,
     flex: 1,
   },
   searchbar: {
     backgroundColor: "#7ca982",
-    justifyContent: "center",
     flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 15,
     width: 300,
     height: 40,
     borderRadius: 999,
     zIndex: 20,
-    shadowColor: "#000",
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
+    elevation: 4,
+  },
+  settings: {
+    backgroundColor: "#7ca982",
+    borderRadius: 999,
+    alignItems: "center",
+    justifyContent: "center",
+    height: 40,
+    width: 40,
+    marginLeft: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
+    elevation: 4,
   },
   pill: {
-    position: "absolute",
-    top: 60,
-    marginLeft: 15,
-    flexDirection: "row",
     backgroundColor: "#243e36",
+    flexDirection: "row",
     borderRadius: 999,
+    gap: 4,
     zIndex: 20,
-    shadowColor: "#000",
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
+    elevation: 4,
   },
   pillOption: {
     paddingHorizontal: 16,
     paddingVertical: 10,
+    borderRadius: 999,
   },
   pillOptionActiveMap: {
     backgroundColor: "#7ca982",
-    borderTopLeftRadius: 999,
-    borderBottomLeftRadius: 999,
+    borderTopRightRadius: 0,
+    borderBottomRightRadius: 0,
   },
   pillOptionActiveList: {
     backgroundColor: "#7ca982",
+    borderRadius: 0,
   },
   pillOptionActiveGrid: {
     backgroundColor: "#7ca982",
-    borderTopRightRadius: 999,
-    borderBottomRightRadius: 999,
+    borderTopLeftRadius: 0,
+    borderBottomLeftRadius: 0,
   },
   filter: {
-    position: "absolute",
     backgroundColor: "#243e36",
-    color: "#d9d9d9",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
@@ -176,15 +216,11 @@ const styles = StyleSheet.create({
     width: 105,
     height: 40,
     marginLeft: 8,
-    shadowColor: "#000",
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 5,
-  },
-  map: {
-    width: "100%",
-    height: "100%",
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
+    elevation: 4,
   },
   placeholder: {
     flex: 1,
