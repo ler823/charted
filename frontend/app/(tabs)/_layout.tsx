@@ -15,8 +15,8 @@ const TabButton = ({ isFocused, icon, ...props }: TabButtonProps) => (
     <View style={[styles.iconWrapper, isFocused && styles.iconWrapperActive]}>
       <Ionicons
         name={icon}
-        size={24}
-        color={isFocused ? Colors.light.background : "#fff"}
+        size={26}
+        color={isFocused ? Colors.light.background : "#fefbea"}
       />
     </View>
   </Pressable>
@@ -46,17 +46,17 @@ const styles = StyleSheet.create({
   tablist: {
     flexDirection: "row",
     backgroundColor: Colors.light.background,
-    padding: 16,
+    padding: 20,
   },
   tabTrigger: {
     paddingHorizontal: 20,
     paddingBottom: 8,
   },
   iconWrapper: {
-    padding: 6,
+    padding: 8,
     borderRadius: 10,
   },
   iconWrapperActive: {
-    backgroundColor: "#fff",
+    backgroundColor: "#fefbea",
   },
 });
