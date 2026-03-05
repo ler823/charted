@@ -9,19 +9,20 @@ def lambda_handler(event, context):
     supabase_key = os.environ.get("SUPABASE_KEY")
     body = json.loads(event["body"])
     pin_data = body["pin_data"]
-    supabase_url = supabase_url + "/locations?on_conflict=address"
+    supabase_url = supabase_url + "/rpc/create_pin"
     headers = {
         "apikey": supabase_key,
-        "Content-Type": "application/json",
-        "Prefer": "resolution=merge-duplicates,return=representation"
-    }
-    params = {
-        "on_conflict": "name"
+        "Content-Type": "application/json"
     }
     data = {
-        
+        "p_latitude": pin_data["latitude"],
+        "p_longitude": pin_data["longitude"],
+        "p_user": pin_data["username"],
+        "p_pin_name": pin_data["pin_name"],
+        "p_user_rating": pin_data["user_rating"],
+        "p_user_notes": pin_data["user_notes"]
     }
-    response = requests.post(supabase_url, headers=headers, params=params, data=pin_data)
+    response = requests.post(supabase_url, headers=headers, json=data)
     return {
         "statusCode": response.status_code,
         "body": response.text,
