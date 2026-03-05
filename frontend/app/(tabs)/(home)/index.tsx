@@ -1,11 +1,13 @@
 import { Ionicons } from "@expo/vector-icons";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import MapView from "react-native-maps";
+import { supabase } from "@/lib/supabase";
+import MapView, { Marker } from "react-native-maps";
 import { Fonts } from "../../../constants/fonts";
 import { Colors } from "../../../constants/theme";
 import PinListView from "./pin_list_view";
 import FontAwesome from '@expo/vector-icons/FontAwesome';
+import PinMarker from "../../../components/pin-marker";
 
 import DroppingPinOverlay from "@/components/dropping-pin-overlay";
 import { useDroppingPin } from "@/context/DroppingPinContext";
@@ -21,6 +23,14 @@ const INITIAL_REGION = {
 
 type ViewMode = "map" | "list" | "grid";
 
+type Pin = {
+  id: string;
+  name: string;
+  address: string;
+  latitude: number;
+  longitude: number;
+};
+
 const VIEW_OPTIONS: { mode: ViewMode; icon: keyof typeof Ionicons.glyphMap }[] =
   [
     { mode: "map", icon: "map" },
@@ -31,6 +41,31 @@ const VIEW_OPTIONS: { mode: ViewMode; icon: keyof typeof Ionicons.glyphMap }[] =
 export default function Home() {
   const { isDroppingPin, setIsDroppingPin } = useDroppingPin();
   const [viewMode, setViewMode] = useState<ViewMode>("map");
+  const [selectedPin, setSelectedPin] = useState<Pin | null>(null);
+  const [pins, setPins] = useState<Pin[]>([]);
+
+  // This fetches data from the 'locations' table in Supabase. Also has error handling if unable to fetch
+  useEffect(() => {
+    async function fetchLocations() {
+      const { data, error } = await supabase
+        .from("locations")
+        .select("id, name, address, latitude, longitude");
+      if (error) {
+        console.error("Failed to fetch locations:", error.message);
+        return;
+      }
+      setPins(
+        (data ?? []).map((row) => ({
+          id: String(row.id),
+          name: row.name,
+          address: row.address,
+          latitude: row.latitude ?? 0,
+          longitude: row.longitude ?? 0,
+        }))
+      );
+    }
+    fetchLocations();
+  }, []);
 
   return (
     <View style={styles.container}>
@@ -94,7 +129,7 @@ export default function Home() {
       {viewMode === "map" && (
         <MapView
           initialRegion={INITIAL_REGION}
-          style={StyleSheet.absoluteFillObject}
+          style={styles.map}
           onLongPress={() => {
             setIsDroppingPin(true);
           }}
@@ -108,7 +143,21 @@ export default function Home() {
                 }
               : undefined
           }
-        />
+        >
+          {/* 
+            controls pin marker, takes from pin-marker component
+          */}
+          {pins.filter((pin) => pin.latitude !== 0 && pin.longitude !== 0).map((pin) => (
+            <Marker
+              key={pin.id}
+              coordinate={{ latitude: pin.latitude, longitude: pin.longitude }}
+              onPress={() => setSelectedPin(pin)}
+              tracksViewChanges={false}
+            >
+              <PinMarker />
+            </Marker>
+          ))}
+        </MapView>
       )}
       {viewMode === "list" && (
         <View style={styles.cardsContainer}>
@@ -118,6 +167,28 @@ export default function Home() {
       {viewMode === "grid" && (
         <View style={styles.placeholder}>
         </View>
+      )}
+      {/* 
+        PIN OVERLAY
+      */}
+      {selectedPin && (
+        <Pressable style={styles.backdrop} onPress={() => setSelectedPin(null)}>
+          <Pressable style={styles.overlayCard} onPress={() => {}}>
+
+            <View style={styles.picturePlaceholder}>
+              <Ionicons name="image-outline" size={48} color="#bbb" />
+            </View>
+
+            <View style={styles.infoContainer}>
+              <View style={styles.infoText}>
+                <Text style={styles.pinName}>{selectedPin.name}</Text>
+                <Text style={styles.pinAddress}>{selectedPin.address}</Text>
+              </View>
+              <Ionicons name="expand-outline" size={20} color="#555" />
+            </View>
+
+          </Pressable>
+        </Pressable>
       )}
 
       {/* Dropping pin overlay */}
@@ -259,5 +330,54 @@ const styles = StyleSheet.create({
     padding: 16,
     backgroundColor: "#243e36",
     borderRadius: 999,
+  },
+  backdrop: {
+    position: "absolute",
+    top: 0, left: 0, right: 0, bottom: 0,
+    backgroundColor: "transparent",   
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 30,
+  },
+  overlayCard: {
+    width: "85%",
+    aspectRatio: 1,
+    backgroundColor: "#fff",
+    borderRadius: 14,
+    overflow: "hidden",
+    shadowColor: "#000",
+    shadowOpacity: 0.25,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 10,
+  },
+  picturePlaceholder: {
+    width: "100%",
+    flex: 1,
+    backgroundColor: "#d8d8d8",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  infoContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 16,
+  },
+  infoText: {
+    flex: 1,
+    gap: 2,
+  },
+  pinName: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "162722",
+  },
+  pinAddress: {
+    fontSize: 10,
+    color: "#654236",
+  },
+  map: {
+    width: "100%",
+    height: "100%",
   },
 });
