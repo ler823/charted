@@ -1,11 +1,12 @@
 import { Ionicons } from "@expo/vector-icons";
+import FontAwesome from '@expo/vector-icons/FontAwesome';
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import React, { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import MapView from "react-native-maps";
 import { Fonts } from "../../../constants/fonts";
 import { Colors } from "../../../constants/theme";
 import PinListView from "./pin_list_view";
-import FontAwesome from '@expo/vector-icons/FontAwesome';
 
 import DroppingPinOverlay from "@/components/dropping-pin-overlay";
 import { useDroppingPin } from "@/context/DroppingPinContext";
@@ -34,6 +35,11 @@ export default function Home() {
 
   return (
     <View style={styles.container}>
+      {!isDroppingPin && (
+        <Pressable style={styles.plusButton}>
+          <MaterialCommunityIcons name="plus" size={45} color="#fefbea" />
+        </Pressable>
+      )}
       {!isDroppingPin && (
         <View style={styles.header}>
 
@@ -260,4 +266,21 @@ const styles = StyleSheet.create({
     backgroundColor: "#243e36",
     borderRadius: 999,
   },
+  plusButton: {
+    position: "absolute",
+    bottom: 25,
+    right: 25,
+    zIndex: 20,
+    width: 50,
+    height: 50,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#243e36",
+    borderRadius: 100,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
+    elevation: 4
+  }
 });
