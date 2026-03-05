@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
+import { supabase } from "@/lib/supabase";
 import MapView, { Marker } from "react-native-maps";
 import { Fonts } from "../../../constants/fonts";
 import { Colors } from "../../../constants/theme";
@@ -30,35 +31,6 @@ type Pin = {
   longitude: number;
 };
 
-/**
- * This is temporary/placeholder data. For the purpose of testing
- * Real data will be queried from database in the future
- */
-const PINS: Pin[] = [
-  {
-    id: "1",
-    name: "University Student Union",
-    address: "1212 N Bellflower Blvd, Long beach, CA",
-    latitude: 33.7838,
-    longitude: -118.1141,
-  },
-  {
-    id: "2",
-    name: "Seaside Creamery",
-    address: "1785 Palo Verde Ave, Long Beach, CA 90815",
-    latitude: 33.788277,
-    longitude: -118.108657,
-  },
-  {
-    id: "3",
-    name: "Shady Tree",
-    address: "CSULB - Upper Quad",
-    latitude: 33.778647,
-    longitude: -118.112355,
-  }
-];
-
-
 const VIEW_OPTIONS: { mode: ViewMode; icon: keyof typeof Ionicons.glyphMap }[] =
   [
     { mode: "map", icon: "map" },
@@ -70,6 +42,30 @@ export default function Home() {
   const { isDroppingPin, setIsDroppingPin } = useDroppingPin();
   const [viewMode, setViewMode] = useState<ViewMode>("map");
   const [selectedPin, setSelectedPin] = useState<Pin | null>(null);
+  const [pins, setPins] = useState<Pin[]>([]);
+
+  // This fetches data from the 'locations' table in Supabase. Also has error handling if unable to fetch
+  useEffect(() => {
+    async function fetchLocations() {
+      const { data, error } = await supabase
+        .from("locations")
+        .select("id, name, address, latitude, longitude");
+      if (error) {
+        console.error("Failed to fetch locations:", error.message);
+        return;
+      }
+      setPins(
+        (data ?? []).map((row) => ({
+          id: String(row.id),
+          name: row.name,
+          address: row.address,
+          latitude: row.latitude ?? 0,
+          longitude: row.longitude ?? 0,
+        }))
+      );
+    }
+    fetchLocations();
+  }, []);
 
   return (
     <View style={styles.container}>
@@ -151,7 +147,7 @@ export default function Home() {
           {/* 
             controls pin marker, takes from pin-marker component
           */}
-          {PINS.map((pin) => (
+          {pins.filter((pin) => pin.latitude !== 0 && pin.longitude !== 0).map((pin) => (
             <Marker
               key={pin.id}
               coordinate={{ latitude: pin.latitude, longitude: pin.longitude }}
