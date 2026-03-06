@@ -59,4 +59,4 @@ from the root of the project (the `charted` folder)
 
 This command runs `sam build` and `sam local start-api` back to back. If it hangs after the build command, you may have to restart your computer.
 
-**Important note:** you will need to add an `env.json` file to the root of the `frontend` folder. The contents will be sent in the Discord, and contains the URL and key for the supabase database.
+**Important note:** you will need to add an `env.json` file to the root of the `charted-backend` folder. The contents will be sent in the Discord, and contains the URL and key for the supabase database.
