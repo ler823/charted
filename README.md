@@ -23,11 +23,11 @@ This is an [Expo](https://expo.dev) project created with [`create-expo-app`](htt
    ```
 
 4. Alternatively, run
-```
-make frontend
-```
+   ```
+   make frontend
+   ```
 
-from the root of the project (the `charted` folder), which runs `npx expo start --tunnel`, with an extra variable in front needed for local development (it tells the app to use the local url instead of the AWS one in the cloud)
+   from the root of the project (the `charted` folder), which runs `npx expo start --tunnel`, with an extra variable in front needed for local development (it tells the app to use the local url instead of the AWS one in the cloud)
 
 In the output, you'll find options to open the app in a
 
@@ -59,4 +59,4 @@ from the root of the project (the `charted` folder)
 
 This command runs `sam build` and `sam local start-api` back to back. If it hangs after the build command, you may have to restart your computer.
 
-**Important note:** you will need to add an `env.json` file to the `frontend` folder. The contents will be sent in the Discord, and contains the URL and key for the supabase database.
+**Important note:** you will need to add an `env.json` file to the root of the `frontend` folder. The contents will be sent in the Discord, and contains the URL and key for the supabase database.
