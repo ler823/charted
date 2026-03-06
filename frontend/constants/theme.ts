@@ -10,7 +10,7 @@ const palette = {
   green700: "#243e36",
   green400: "#7ca982",
   green100: "#dee9e0",
-  error: "#b00020",
+  error: "#852221",
 };
 
 export const Colors = {

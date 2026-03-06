@@ -56,6 +56,11 @@ export default function Home() {
     fetchLocations();
   }, []);
 
+  const [pinCoords, setPinCoords] = useState<{
+    latitude: number;
+    longitude: number;
+  } | null>(null);
+
   return (
     <View style={styles.container}>
       {!isDroppingPin && (
@@ -84,7 +89,7 @@ export default function Home() {
           onRegionChangeComplete={
             isDroppingPin
               ? (region) => {
-                  console.log("Center coords:", {
+                  setPinCoords({
                     latitude: region.latitude,
                     longitude: region.longitude,
                   });
@@ -126,7 +131,7 @@ export default function Home() {
       )}
 
       {/* Dropping pin overlay */}
-      {isDroppingPin && <DroppingPinOverlay />}
+      {isDroppingPin && <DroppingPinOverlay coords={pinCoords} />}
     </View>
   );
 }
@@ -156,8 +161,6 @@ const styles = StyleSheet.create({
     height: 50,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#243e36",
-    borderRadius: 100,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
