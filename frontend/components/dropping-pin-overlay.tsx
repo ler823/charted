@@ -1,16 +1,31 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import React from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import { Colors } from "@/constants/theme";
 import { useDroppingPin } from "@/context/DroppingPinContext";
 
-export default function DroppingPinOverlay() {
+type Props = {
+  coords: {
+    latitude: number;
+    longitude: number;
+  } | null;
+};
+
+export default function DroppingPinOverlay({ coords }: Props) {
   const { isDroppingPin, setIsDroppingPin } = useDroppingPin();
-  const handleDropPin = () => {
+  const router = useRouter();
+
+  function handleDropPin() {
     // pin dropping logic here
     setIsDroppingPin(false);
-  };
+    router.push({
+      pathname: "/make-pin",
+      params: { lat: coords?.latitude, lng: coords?.longitude },
+    });
+  }
+
   return (
     <View style={styles.droppingPinOverlay} pointerEvents="box-none">
       <View style={styles.crosshairContainer}>

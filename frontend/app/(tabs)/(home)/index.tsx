@@ -1,16 +1,16 @@
+import DroppingPinOverlay from "@/components/dropping-pin-overlay";
+import { useDroppingPin } from "@/context/DroppingPinContext";
+import { supabase } from "@/lib/supabase";
+import { Pin } from "@/types";
 import { Ionicons } from "@expo/vector-icons";
+import FontAwesome from "@expo/vector-icons/FontAwesome";
 import React, { useEffect, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import { supabase } from "@/lib/supabase";
 import MapView, { Marker } from "react-native-maps";
+import PinMarker from "../../../components/pin-marker";
 import { Fonts } from "../../../constants/fonts";
 import { Colors } from "../../../constants/theme";
 import PinListView from "./pin_list_view";
-import FontAwesome from '@expo/vector-icons/FontAwesome';
-import PinMarker from "../../../components/pin-marker";
-
-import DroppingPinOverlay from "@/components/dropping-pin-overlay";
-import { useDroppingPin } from "@/context/DroppingPinContext";
 
 // CSULB as initial region (for now)
 // Later it should be user's location if location services enabled
@@ -22,14 +22,6 @@ const INITIAL_REGION = {
 };
 
 type ViewMode = "map" | "list" | "grid";
-
-type Pin = {
-  id: string;
-  name: string;
-  address: string;
-  latitude: number;
-  longitude: number;
-};
 
 const VIEW_OPTIONS: { mode: ViewMode; icon: keyof typeof Ionicons.glyphMap }[] =
   [
@@ -61,21 +53,31 @@ export default function Home() {
           address: row.address,
           latitude: row.latitude ?? 0,
           longitude: row.longitude ?? 0,
-        }))
+        })),
       );
     }
     fetchLocations();
   }, []);
 
+  const [pinCoords, setPinCoords] = useState<{
+    latitude: number;
+    longitude: number;
+  } | null>(null);
+
   return (
     <View style={styles.container}>
       {!isDroppingPin && (
         <View style={styles.header}>
-
           {/* Search Bar and Settings*/}
           <View style={styles.row}>
             <Pressable style={styles.searchbar}>
-              <Text style={{fontFamily: Fonts.bold, color: "#fefbea", fontSize: 16}}>
+              <Text
+                style={{
+                  fontFamily: Fonts.bold,
+                  color: "#fefbea",
+                  fontSize: 16,
+                }}
+              >
                 Find a place
               </Text>
               <FontAwesome name="search" size={20} color="#fefbea" />
@@ -96,13 +98,12 @@ export default function Home() {
                   onPress={() => setViewMode(mode)}
                   style={[
                     styles.pillOption,
-                    viewMode === mode && (
-                      mode === "map" 
+                    viewMode === mode &&
+                      (mode === "map"
                         ? styles.pillOptionActiveMap
                         : viewMode === "list"
-                        ? styles.pillOptionActiveList
-                        : styles.pillOptionActiveGrid
-                    )
+                          ? styles.pillOptionActiveList
+                          : styles.pillOptionActiveGrid),
                   ]}
                 >
                   <Ionicons
@@ -116,7 +117,13 @@ export default function Home() {
 
             <View>
               <Pressable style={styles.filter}>
-                <Text style={{fontFamily: Fonts.bold, color: "#d9d9d9", fontSize: 16,}}>
+                <Text
+                  style={{
+                    fontFamily: Fonts.bold,
+                    color: "#d9d9d9",
+                    fontSize: 16,
+                  }}
+                >
                   Filter
                 </Text>
                 <Ionicons name="chevron-down" size={20} color="#d9d9d9" />
@@ -136,7 +143,7 @@ export default function Home() {
           onRegionChangeComplete={
             isDroppingPin
               ? (region) => {
-                  console.log("Center coords:", {
+                  setPinCoords({
                     latitude: region.latitude,
                     longitude: region.longitude,
                   });
@@ -147,16 +154,21 @@ export default function Home() {
           {/* 
             controls pin marker, takes from pin-marker component
           */}
-          {pins.filter((pin) => pin.latitude !== 0 && pin.longitude !== 0).map((pin) => (
-            <Marker
-              key={pin.id}
-              coordinate={{ latitude: pin.latitude, longitude: pin.longitude }}
-              onPress={() => setSelectedPin(pin)}
-              tracksViewChanges={false}
-            >
-              <PinMarker />
-            </Marker>
-          ))}
+          {pins
+            .filter((pin) => pin.latitude !== 0 && pin.longitude !== 0)
+            .map((pin) => (
+              <Marker
+                key={pin.id}
+                coordinate={{
+                  latitude: pin.latitude,
+                  longitude: pin.longitude,
+                }}
+                onPress={() => setSelectedPin(pin)}
+                tracksViewChanges={false}
+              >
+                <PinMarker />
+              </Marker>
+            ))}
         </MapView>
       )}
       {viewMode === "list" && (
@@ -164,17 +176,13 @@ export default function Home() {
           <PinListView />
         </View>
       )}
-      {viewMode === "grid" && (
-        <View style={styles.placeholder}>
-        </View>
-      )}
+      {viewMode === "grid" && <View style={styles.placeholder}></View>}
       {/* 
         PIN OVERLAY
       */}
       {selectedPin && (
         <Pressable style={styles.backdrop} onPress={() => setSelectedPin(null)}>
           <Pressable style={styles.overlayCard} onPress={() => {}}>
-
             <View style={styles.picturePlaceholder}>
               <Ionicons name="image-outline" size={48} color="#bbb" />
             </View>
@@ -186,13 +194,12 @@ export default function Home() {
               </View>
               <Ionicons name="expand-outline" size={20} color="#555" />
             </View>
-
           </Pressable>
         </Pressable>
       )}
 
       {/* Dropping pin overlay */}
-      {isDroppingPin && <DroppingPinOverlay />}
+      {isDroppingPin && <DroppingPinOverlay coords={pinCoords} />}
     </View>
   );
 }
@@ -226,7 +233,7 @@ const styles = StyleSheet.create({
     height: 40,
     borderRadius: 999,
     zIndex: 20,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 2,
@@ -240,7 +247,7 @@ const styles = StyleSheet.create({
     height: 40,
     width: 40,
     marginLeft: 8,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 2,
@@ -252,7 +259,7 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     gap: 4,
     zIndex: 20,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 2,
@@ -287,7 +294,7 @@ const styles = StyleSheet.create({
     width: 105,
     height: 40,
     marginLeft: 8,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 2,
@@ -333,8 +340,11 @@ const styles = StyleSheet.create({
   },
   backdrop: {
     position: "absolute",
-    top: 0, left: 0, right: 0, bottom: 0,
-    backgroundColor: "transparent",   
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "transparent",
     alignItems: "center",
     justifyContent: "center",
     zIndex: 30,

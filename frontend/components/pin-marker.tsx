@@ -1,14 +1,20 @@
+import { Colors } from "@/constants/theme";
 import React from "react";
 import { StyleSheet, View } from "react-native";
+interface PinMarkerProps {
+  color?: string;
+}
 
 /**
  * Matched the pin that looks like the one on Figma design
  * Custom pin-marker with customizable style just like the Figma design
  */
-export default function PinMarker() {
+export default function PinMarker({
+  color = Colors.light.accent,
+}: PinMarkerProps) {
   return (
     <View style={styles.wrapper}>
-      <View style={styles.outer}>
+      <View style={[styles.outer, { backgroundColor: color }]}>
         <View style={styles.middle}>
           <View style={styles.inner} />
         </View>
@@ -30,7 +36,6 @@ const styles = StyleSheet.create({
     width: 46,
     height: 46,
     borderRadius: 24,
-    backgroundColor: "#7CA982",
     alignItems: "center",
     justifyContent: "center",
   },
