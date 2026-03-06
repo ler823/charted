@@ -71,7 +71,7 @@ export default function Home() {
   return (
     <View style={styles.container}>
       {!isDroppingPin && (
-        <Pressable style={styles.plusButton}>
+        <Pressable style={styles.plusButton} onPress={() => setIsDroppingPin(true)}>
           <MaterialCommunityIcons name="plus" size={45} color="#fefbea" />
         </Pressable>
       )}
