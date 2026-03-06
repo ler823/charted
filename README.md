@@ -35,3 +35,7 @@ In the output, you'll find options to open the app in a
   ```
 
   instead of npx expo start
+
+## Supabase Connection for Contributors
+- A .env file must be added to the frontend folder for Supabase
+- Refer to (https://supabase.com/docs/guides/getting-started/quickstarts/expo-react-native) for connection details
