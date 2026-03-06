@@ -45,3 +45,4 @@ app-example
 env.json
 .aws-sam
 .vscode/
+.env
