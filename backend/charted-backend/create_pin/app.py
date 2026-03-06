@@ -17,10 +17,10 @@ def lambda_handler(event, context):
     data = {
         "p_latitude": pin_data["latitude"],
         "p_longitude": pin_data["longitude"],
-        "p_user": pin_data["username"],
         "p_pin_name": pin_data["pin_name"],
+        "p_user_note": pin_data["user_notes"],
         "p_user_rating": pin_data["user_rating"],
-        "p_user_notes": pin_data["user_notes"]
+        "p_username": pin_data["username"]
     }
     response = requests.post(supabase_url, headers=headers, json=data)
     return {
