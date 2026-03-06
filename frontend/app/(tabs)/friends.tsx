@@ -1,11 +1,96 @@
+import { Ionicons } from "@expo/vector-icons";
 import { Stack } from "expo-router";
-import { StyleSheet, Text, View } from "react-native";
+import React, { useEffect, useState } from "react";
+import {FlatList,Pressable,StyleSheet,Text,View,} from "react-native";
+import { supabase } from "@/lib/supabase";
+import { Fonts } from "../../constants/fonts";
+import { Colors } from "../../constants/theme";
+
+type Friend = {
+  user_id: number;
+  username: string;
+  location: string | null;
+};
 
 export default function Friends() {
+  const [friends, setFriends] = useState<Friend[]>([]);
+
+  /* 
+  This chunk queries the database for 'users' table in Supabase
+  photo_id is left out for once we start dealing with photos, for now there is a white circle
+  */
+  useEffect(() => {
+    async function fetchUsers() {
+      const { data, error } = await supabase
+        .from("users")
+        .select("user_id, username, location");
+      setFriends(data ?? []);
+    }
+    fetchUsers();
+  }, []);
+
   return (
     <View style={styles.container}>
       <Stack.Screen options={{ title: "Friends" }} />
-      <Text style={styles.text}>Friends</Text>
+      {/* 
+      Deals with the Add Button at the top of the screen.
+      Looks a little small so might need to tweak the sizing a bit
+      Pressable components for future interaction implmenetation
+      */}
+      <View style={styles.header}>
+        <Pressable style={styles.addFriendBtn}>
+          <Ionicons name="add-circle-outline" size={20} color="#FEFBEA"/>
+          <Text style={styles.addFriendText}>Add Friend</Text>
+        </Pressable>
+        {/* CHECK: This bell looks a little off when loaded*/}
+        <Pressable style={styles.notifBtn}>
+          <Ionicons name="notifications-outline" size={26} color={Colors.light.background} />
+          <View style={styles.notifBadge} />
+        </Pressable>
+      </View>
+
+      {/*  
+      Deals with the serach row and sort button 
+      */}
+      <View style={styles.searchRow}>
+        <Pressable style={styles.searchBar}>
+          <Text style={styles.searchText}>Search</Text>
+          <Ionicons name="search" size={16} color={"#fefbea"} />
+        </Pressable>
+        <Pressable style={styles.sortBtn}>
+          <Text style={styles.sortText}>Sort</Text>
+          <Ionicons name="chevron-down" size={14} color={"#fefbea"} />
+        </Pressable>
+      </View>
+
+      {/* 
+      Deals with the friends cards and the list of the friends cards
+      */}
+      <FlatList
+        data={friends}
+        keyExtractor={(item) => String(item.user_id)}
+        contentContainerStyle={styles.list}
+        renderItem={({ item }) => (
+          <View style={styles.card}>
+            {/* 
+            Placeholder cirlce for now. 
+            PIcture will be added once figured out how to load pictures from cloud/db
+            */}
+            <View style={styles.avatar}>
+            </View>
+
+            <View style={styles.cardInfo}>
+              <Text style={styles.username}>{item.username}</Text>
+              <View style={styles.locationRow}>
+                <Ionicons name="location-sharp" size={13} color="#111" />
+                <Text style={[styles.location, { paddingLeft: 2 }]}>
+                  {item.location}
+                </Text>
+              </View>
+            </View>
+          </View>
+        )}
+      />
     </View>
   );
 }
@@ -13,13 +98,135 @@ export default function Friends() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
     backgroundColor: "#fff",
   },
-  text: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#333",
+  /* 
+  Styling for the add button and notification button
+  */
+  header: {
+    paddingTop: 55,
+    paddingBottom: 18,
+    paddingHorizontal: 20,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  addFriendBtn: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: Colors.light.background,
+    paddingVertical: 12,
+    borderRadius: 999,
+    gap: 8,
+  },
+  addFriendText: {
+    color: "#fefbea",
+    fontFamily: Fonts.bold,
+    fontSize: 16,
+  },
+  notifBtn: {
+    position: "relative",
+  },
+  notifBadge: {
+    position: "absolute",
+    top: 0,
+    right: 0,
+    width: 9,
+    height: 9,
+    borderRadius: 999,
+    backgroundColor: "#e53935",
+    borderWidth: 1.5,
+    borderColor: "#fff",
+  },
+  /* 
+  Styling for the search bar and the sort button
+   */
+  searchRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    gap: 10,
+  },
+  searchBar: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: Colors.light.accent,
+    borderRadius: 999,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    gap: 8,
+  },
+  searchText: {
+    flex: 1,
+    fontSize: 15,
+    color: "#fefbea",
+    fontFamily: Fonts.bold,
+  },
+  sortBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: Colors.light.accent,
+    borderRadius: 999,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    gap: 5,
+  },
+  sortText: {
+    fontSize: 14,
+    fontFamily: Fonts.bold,
+    color: "#fefbea",
+  },
+  /* 
+  Styling for the friend cards
+  Mostly taken from list_card.tsx
+  */
+  list: {
+    alignItems: "center",
+    paddingBottom: 20,
+  },
+  card: {
+    backgroundColor: "#DEE9E0",
+    padding: 12,
+    margin: 5,
+    borderRadius: 5,
+    height: 80,
+    width: "92%",
+    flexDirection: "row",
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
+    elevation: 4,
+  },
+  avatar: {
+    width: 65,
+    height: 65,
+    borderRadius: 999,
+    backgroundColor: "#fff",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  cardInfo: {
+    flex: 1,
+  },
+  username: {
+    fontFamily: Fonts.bold,
+    fontSize: 17,
+    paddingLeft: 15,
+    paddingBottom: 1,
+  },
+  locationRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingLeft: 15,
+  },
+  location: {
+    fontFamily: Fonts.regular,
+    fontSize: 12,
   },
 });
