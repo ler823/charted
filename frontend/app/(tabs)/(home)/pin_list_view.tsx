@@ -16,7 +16,7 @@ export default function PinListView() {
                 data={cards}
                 keyExtractor={(item) => item.$id}
                 renderItem={({item}) => (
-                    <Pressable style={styles.cards} onPress={() => router.push(`./pins/${item.$id}`)}>
+                    <Pressable style={styles.cards} onPress={() => router.push(`/pins/${item.$id}`)}>
                         <ListCard photo={item.photo} name={item.name} loc={item.location}/>
                     </Pressable>
                 )}
