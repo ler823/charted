@@ -1,15 +1,14 @@
 import { supabase } from "@/lib/supabase";
-import { Ionicons } from "@expo/vector-icons";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import React, { useEffect, useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, View } from "react-native";
 import MapView, { Marker } from "react-native-maps";
 import PinMarker from "../../../components/pin-marker";
-import { Colors } from "../../../constants/theme";
 import PinListView from "./pin_list_view";
 
 import DroppingPinOverlay from "@/components/dropping-pin-overlay";
 import Header from "@/components/header";
+import PinOverlay from "@/components/pin-overlay";
 import { useDroppingPin } from "@/context/DroppingPinContext";
 import { Pin, ViewMode, ViewOption } from "@/types/types";
 
@@ -123,21 +122,7 @@ export default function Home() {
         PIN OVERLAY
       */}
       {selectedPin && (
-        <Pressable style={styles.backdrop} onPress={() => setSelectedPin(null)}>
-          <Pressable style={styles.overlayCard} onPress={() => {}}>
-            <View style={styles.picturePlaceholder}>
-              <Ionicons name="image-outline" size={48} color="#bbb" />
-            </View>
-
-            <View style={styles.infoContainer}>
-              <View style={styles.infoText}>
-                <Text style={styles.pinName}>{selectedPin.name}</Text>
-                <Text style={styles.pinAddress}>{selectedPin.address}</Text>
-              </View>
-              <Ionicons name="expand-outline" size={20} color="#555" />
-            </View>
-          </Pressable>
-        </Pressable>
+        <PinOverlay selectedPin={selectedPin} setSelectedPin={setSelectedPin} />
       )}
 
       {/* Dropping pin overlay */}
@@ -161,39 +146,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  droppingPinOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    zIndex: 20,
-  },
-  crosshairContainer: {
-    position: "absolute",
-    top: "50%",
-    left: "50%",
-    transform: [{ translateX: -24 }, { translateY: -24 }],
-  },
-  droppingPinButtons: {
-    position: "absolute",
-    bottom: 40,
-    flexDirection: "row",
-    gap: 16,
-  },
-  cancelBtn: {
-    padding: 16,
-    backgroundColor: Colors.light.error,
-    borderRadius: 999,
-  },
-  btnText: {
-    color: "#fff",
-    fontWeight: "bold",
-  },
-  dropBtn: {
-    padding: 16,
-    backgroundColor: "#243e36",
-    borderRadius: 999,
-  },
+
   plusButton: {
     position: "absolute",
     bottom: 25,
@@ -211,54 +164,7 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
     elevation: 4,
   },
-  backdrop: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: "transparent",
-    alignItems: "center",
-    justifyContent: "center",
-    zIndex: 30,
-  },
-  overlayCard: {
-    width: "85%",
-    aspectRatio: 1,
-    backgroundColor: "#fff",
-    borderRadius: 14,
-    overflow: "hidden",
-    shadowColor: "#000",
-    shadowOpacity: 0.25,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 10,
-  },
-  picturePlaceholder: {
-    width: "100%",
-    flex: 1,
-    backgroundColor: "#d8d8d8",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  infoContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: 16,
-  },
-  infoText: {
-    flex: 1,
-    gap: 2,
-  },
-  pinName: {
-    fontSize: 12,
-    fontWeight: "700",
-    color: "162722",
-  },
-  pinAddress: {
-    fontSize: 10,
-    color: "#654236",
-  },
+
   map: {
     width: "100%",
     height: "100%",
