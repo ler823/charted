@@ -1,4 +1,4 @@
-import { Fonts } from "@/constants/fonts";
+import { Fonts } from "@/constants/theme";
 import { ViewMode, ViewOption } from "@/types/types";
 import { FontAwesome, Ionicons } from "@expo/vector-icons";
 import { Dispatch, SetStateAction } from "react";

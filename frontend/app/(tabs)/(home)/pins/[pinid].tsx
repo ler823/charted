@@ -1,28 +1,33 @@
-import { StyleSheet, Text, View, Pressable } from "react-native"
-import { router, useLocalSearchParams } from "expo-router"
-import { Ionicons } from "@expo/vector-icons"
-import { Fonts } from "../../../../constants/fonts"
+import { Fonts } from "@/constants/theme";
+import { Ionicons } from "@expo/vector-icons";
+import { router, useLocalSearchParams } from "expo-router";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 
-export default function PinPage () {
-    const { pinid } = useLocalSearchParams();
+export default function PinPage() {
+  const { pinid } = useLocalSearchParams();
 
-    return (
-        <>
-            <View style={{marginTop: 45, marginLeft: 10}}>
-                <Pressable style={styles.backButton} onPress={() => {router.back()}}>
-                        <Ionicons name="chevron-back" size={20} color="#d9d9d9" />
-                        <Text style={{fontFamily: Fonts.bold, color: "#d9d9d9", fontSize: 16,}}>
-                            Back
-                        </Text>
-                    </Pressable>
-            </View>
-            <View style={styles.container}>
-                <Text style={styles.text}>
-                    Card View! Pin {pinid}
-                </Text>
-            </View>
-        </>
-    );
+  return (
+    <>
+      <View style={{ marginTop: 45, marginLeft: 10 }}>
+        <Pressable
+          style={styles.backButton}
+          onPress={() => {
+            router.back();
+          }}
+        >
+          <Ionicons name="chevron-back" size={20} color="#d9d9d9" />
+          <Text
+            style={{ fontFamily: Fonts.bold, color: "#d9d9d9", fontSize: 16 }}
+          >
+            Back
+          </Text>
+        </Pressable>
+      </View>
+      <View style={styles.container}>
+        <Text style={styles.text}>Card View! Pin {pinid}</Text>
+      </View>
+    </>
+  );
 }
 
 const styles = StyleSheet.create({
@@ -46,11 +51,10 @@ const styles = StyleSheet.create({
     width: 105,
     height: 40,
     marginLeft: 8,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 2,
     elevation: 4,
-  }
+  },
 });
-

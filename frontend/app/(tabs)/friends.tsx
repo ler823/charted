@@ -1,10 +1,9 @@
+import { supabase } from "@/lib/supabase";
 import { Ionicons } from "@expo/vector-icons";
 import { Stack } from "expo-router";
 import React, { useEffect, useState } from "react";
-import {FlatList,Pressable,StyleSheet,Text,View,} from "react-native";
-import { supabase } from "@/lib/supabase";
-import { Fonts } from "../../constants/fonts";
-import { Colors } from "../../constants/theme";
+import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
+import { Colors, Fonts } from "../../constants/theme";
 
 type Friend = {
   user_id: number;
@@ -39,12 +38,16 @@ export default function Friends() {
       */}
       <View style={styles.header}>
         <Pressable style={styles.addFriendBtn}>
-          <Ionicons name="add-circle-outline" size={20} color="#FEFBEA"/>
+          <Ionicons name="add-circle-outline" size={20} color="#FEFBEA" />
           <Text style={styles.addFriendText}>Add Friend</Text>
         </Pressable>
         {/* CHECK: This bell looks a little off when loaded*/}
         <Pressable style={styles.notifBtn}>
-          <Ionicons name="notifications-outline" size={26} color={Colors.light.background} />
+          <Ionicons
+            name="notifications-outline"
+            size={26}
+            color={Colors.light.background}
+          />
           <View style={styles.notifBadge} />
         </Pressable>
       </View>
@@ -76,8 +79,7 @@ export default function Friends() {
             Placeholder cirlce for now. 
             PIcture will be added once figured out how to load pictures from cloud/db
             */}
-            <View style={styles.avatar}>
-            </View>
+            <View style={styles.avatar}></View>
 
             <View style={styles.cardInfo}>
               <Text style={styles.username}>{item.username}</Text>
