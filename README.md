@@ -22,6 +22,13 @@ This is an [Expo](https://expo.dev) project created with [`create-expo-app`](htt
    npx expo start
    ```
 
+4. Alternatively, run
+   ```
+   make frontend
+   ```
+
+   from the root of the project (the `charted` folder), which runs `npx expo start --tunnel`, with an extra variable in front needed for local development (it tells the app to use the local url instead of the AWS one in the cloud)
+
 In the output, you'll find options to open the app in a
 
 - [development build](https://docs.expo.dev/develop/development-builds/introduction/)
@@ -35,3 +42,21 @@ In the output, you'll find options to open the app in a
   ```
 
   instead of npx expo start
+
+## Supabase Connection for Contributors
+- A .env file must be added to the frontend folder for Supabase
+- Refer to (https://supabase.com/docs/guides/getting-started/quickstarts/expo-react-native) for connection details
+
+## To Run Backend
+
+To run the backend, use the Makefile to run:
+
+```
+make backend
+```
+
+from the root of the project (the `charted` folder)
+
+This command runs `sam build` and `sam local start-api` back to back. If it hangs after the build command, you may have to restart your computer.
+
+**Important note:** you will need to add an `env.json` file to the root of the `charted-backend` folder. The contents will be sent in the Discord, and contains the URL and key for the supabase database.
