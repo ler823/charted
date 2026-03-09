@@ -25,7 +25,7 @@ export default function Header({
           >
             Find a place
           </Text>
-          <FontAwesome name="search" size={20} color="#fefbea" />
+          <Ionicons name="search" size={16} color="#fefbea" />
         </Pressable>
         <View>
           <Pressable style={styles.settings}>

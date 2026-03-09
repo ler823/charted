@@ -6,7 +6,7 @@ export default function ListCard() {
   return (
     <View style={styles.card}>
       <Image
-        source={require("../../../assets/images/test_ss_creamery.png")}
+        source={require("@/assets/images/test_ss_creamery.png")}
         style={styles.img}
       />
       <View>
@@ -43,6 +43,7 @@ const styles = StyleSheet.create({
     height: 65,
     resizeMode: "cover",
     aspectRatio: 1,
+    borderRadius: 9
   },
 
   card: {

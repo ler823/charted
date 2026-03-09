@@ -1,9 +1,9 @@
 import { supabase } from "@/lib/supabase";
 import { Ionicons } from "@expo/vector-icons";
-import { Stack } from "expo-router";
+import { useRouter, Stack } from "expo-router";
 import React, { useEffect, useState } from "react";
 import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
-import { Colors, Fonts } from "../../constants/theme";
+import { Colors, Fonts } from "../../../constants/theme";
 
 type Friend = {
   user_id: number;
@@ -13,6 +13,7 @@ type Friend = {
 
 export default function Friends() {
   const [friends, setFriends] = useState<Friend[]>([]);
+  const router = useRouter()
 
   /* 
   This chunk queries the database for 'users' table in Supabase
@@ -45,12 +46,14 @@ export default function Friends() {
         <Pressable style={styles.notifBtn}>
           <Ionicons
             name="notifications-outline"
-            size={26}
+            size={33}
             color={Colors.light.background}
           />
           <View style={styles.notifBadge} />
         </Pressable>
       </View>
+
+      <View style={{ borderBottomColor: Colors.light.background, borderBottomWidth: 1, marginHorizontal: 16 }} />
 
       {/*  
       Deals with the serach row and sort button 
@@ -74,7 +77,12 @@ export default function Friends() {
         keyExtractor={(item) => String(item.user_id)}
         contentContainerStyle={styles.list}
         renderItem={({ item }) => (
-          <View style={styles.card}>
+          <Pressable style={styles.card} onPress={() => 
+            router.push({
+              pathname: "/friend_profiles/[friendpf]",
+              params: {
+                friendpf: `${item.username}`
+              }})}>
             {/* 
             Placeholder cirlce for now. 
             PIcture will be added once figured out how to load pictures from cloud/db
@@ -90,7 +98,7 @@ export default function Friends() {
                 </Text>
               </View>
             </View>
-          </View>
+          </Pressable>
         )}
       />
     </View>
@@ -108,7 +116,7 @@ const styles = StyleSheet.create({
   header: {
     paddingTop: 55,
     paddingBottom: 18,
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
@@ -119,14 +127,19 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: Colors.light.background,
-    paddingVertical: 12,
+    paddingVertical: 13,
     borderRadius: 999,
     gap: 8,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
+    elevation: 4,
   },
   addFriendText: {
     color: "#fefbea",
     fontFamily: Fonts.bold,
-    fontSize: 16,
+    fontSize: 20,
   },
   notifBtn: {
     position: "relative",
@@ -135,8 +148,8 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: 0,
     right: 0,
-    width: 9,
-    height: 9,
+    width: 11,
+    height: 11,
     borderRadius: 999,
     backgroundColor: "#e53935",
     borderWidth: 1.5,
@@ -161,6 +174,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 9,
     gap: 8,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
+    elevation: 4,
   },
   searchText: {
     flex: 1,
@@ -176,6 +194,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 9,
     gap: 5,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
+    elevation: 4,
   },
   sortText: {
     fontSize: 14,
