@@ -21,7 +21,12 @@ export default function PinListView() {
                     </Pressable>
                 )}
             />*/}
-            <Pressable style={styles.cards} onPress={() => router.push("/pins/123")}>
+            <Pressable style={styles.cards} onPress={() => 
+                router.push({
+                    pathname: "/pins/[pinid]",
+                    params: {
+                        pinid: 123
+                    }})}>
                 <ListCard />
             </Pressable>
         </View>
