@@ -49,7 +49,7 @@ In the output, you'll find options to open the app in a
 
 ## To Run Backend
 
-To run the backend, use the Makefile to run:
+To run the backend locally, use the Makefile to run:
 
 ```
 make backend
@@ -58,5 +58,17 @@ make backend
 from the root of the project (the `charted` folder)
 
 This command runs `sam build` and `sam local start-api` back to back. If it hangs after the build command, you may have to restart your computer.
+
+## To Deploy the Backend
+
+To deploy the backend to the AWS servers, use the makefile to run:
+
+```
+make deploy
+```
+
+from the root of the project (the `charted` folder)
+
+This command runs `sam build` and `sam deploy` back to back. If it hangs after the build command, you may have to restart your computer.
 
 **Important note:** you will need to add an `env.json` file to the root of the `charted-backend` folder. The contents will be sent in the Discord, and contains the URL and key for the supabase database.
