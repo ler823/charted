@@ -6,8 +6,5 @@ backend:
 deploy:
 	cd backend/charted-backend && sam build && sam deploy
 
-frontend-dev:
-	cd frontend && APP_ENV=development npx expo start --tunnel
-
 frontend:
 	cd frontend && npx expo start --tunnel
