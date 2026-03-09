@@ -23,7 +23,18 @@ def lambda_handler(event, context):
         "p_username": pin_data["username"]
     }
     response = requests.post(supabase_url, headers=headers, json=data)
+    if (response.status_code == 204):
+        result = {
+            "success": True
+        }
+        status = 200
+    else:
+        result = response.json()
+        status = response.status_code
     return {
-        "statusCode": response.status_code,
-        "body": response.text,
+        "statusCode": status,
+        "headers": {
+            "Content-Type": "application/json"
+        },
+        "body": result
     }

@@ -1,6 +1,7 @@
 import { Colors, Fonts } from "@/constants/theme";
 import { supabase } from "@/lib/supabase";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import Constants from "expo-constants";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
@@ -23,6 +24,7 @@ export default function MakePin() {
   const [name, setName] = useState("");
   const [address, setAddress] = useState("");
   const [photo, setPhoto] = useState<string | null>(null);
+  const [rating, setRating] = useState("");
   const [notes, setNotes] = useState("");
   const TAGS = ["coffee", "pastries", "lunch", "breakfast", "dinner", "busy"];
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
@@ -53,6 +55,26 @@ export default function MakePin() {
     router.replace("/");
   };
 
+  const API_URL =  Constants.expoConfig?.extra?.apiUrl;
+  
+  const createPin = async (pin_data: any) => {
+      let url = API_URL + "/createpin"
+      console.log("API_URL:", API_URL);
+      console.log("FULL URL:", url);
+      const response = await fetch(
+          url,
+          {
+              method: "POST",
+              headers: {
+                  "Content-Type": "application/json"
+              },
+              body: JSON.stringify(pin_data)
+          }
+      );
+      router.back()
+      return await response.json();
+  };
+
   const handlePickPhoto = () => {
     return;
   };
@@ -67,7 +89,7 @@ export default function MakePin() {
           <Pressable style={styles.cancelBtn} onPress={() => router.back()}>
             <Text style={styles.cancelText}>Cancel</Text>
           </Pressable>
-          <Pressable style={styles.saveBtn} onPress={handleSave}>
+          <Pressable style={styles.saveBtn} onPress={() => createPin({"pin_data": {"latitude": Math.round(parseFloat(lat) * 1e6) / 1e6, "longitude": Math.round(parseFloat(lng) * 1e6) / 1e6, "pin_name": name, "user_notes": notes, "user_rating": parseInt(rating), "username": "TimTimTim"}})}>
             <Text style={styles.saveText}>Save</Text>
           </Pressable>
         </View>

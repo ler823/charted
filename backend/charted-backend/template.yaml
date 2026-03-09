@@ -5,14 +5,21 @@ Description: >
 
   Sample SAM Template for charted-backend
 
+Parameters:
+  SupabaseUrl:
+    Type: String
+
+  SupabaseKey:
+    Type: String
+
 # More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
 Globals:
   Function:
     Timeout: 3
     Environment:
       Variables:
-        SUPABASE_URL: !Ref SUPABASE_URL
-        SUPABASE_KEY: !Ref SUPABASE_KEY
+        SUPABASE_URL: !Ref SupabaseUrl
+        SUPABASE_KEY: !Ref SupabaseKey
 
 Resources:
   GetUserTest:

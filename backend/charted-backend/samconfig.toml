@@ -4,6 +4,7 @@ version = 0.1
 
 [default.global.parameters]
 stack_name = "charted-backend"
+region = "us-east-2"
 
 [default.build.parameters]
 cached = true
@@ -16,6 +17,9 @@ lint = true
 capabilities = "CAPABILITY_IAM"
 confirm_changeset = true
 resolve_s3 = true
+s3_prefix = "charted-backend"
+image_repositories = []
+parameter_overrides = "SupabaseUrl=\"https://vtxaeqqmibyxjtodmutf.supabase.co/rest/v1\" SupabaseKey=\"sb_publishable_DiojI8iP11kcnZCqd2-iTQ_DGTldfY3\""
 
 [default.package.parameters]
 resolve_s3 = true

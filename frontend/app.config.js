@@ -5,8 +5,8 @@ export default ({ config }) => {
     ...config,
     extra: {
       apiUrl: isDev
-        ? "http://127.0.0.1:3000/getuser/employees"
-        : "aws link goes here later"
+        ? "http://192.168.0.199:3000"
+        : "https://1vyn8sez3k.execute-api.us-east-2.amazonaws.com/Prod"
     }
   };
 };
