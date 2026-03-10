@@ -4,7 +4,7 @@ import { supabase } from "@/lib/supabase";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import Constants from "expo-constants";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 
 import {
   Alert,
@@ -28,7 +28,7 @@ export default function MakePin() {
   const [photo, setPhoto] = useState<string | null>(null);
   const [rating, setRating] = useState(0);
   const [notes, setNotes] = useState("");
-  const TAGS = ["coffee", "pastries", "lunch", "breakfast", "dinner", "busy"];
+  const [tags, setTags] = useState<string[]>([]);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
 
   const toggleTag = (tag: string) => {
@@ -80,6 +80,35 @@ export default function MakePin() {
   const handlePickPhoto = () => {
     return;
   };
+
+  const getUserTags = async () => {
+    const { data, error } = await supabase
+    .from("tags")
+    .select(`
+      tag_id,
+      name,
+      users!tags_user_id_fkey (
+        username
+      )
+    `)
+    .eq("users.username", "TimTimTim");
+
+    if (error) {
+      Alert.alert("Error", error.message);
+      return;
+    }
+    return data.map((tag: { name: string }) => tag.name);
+  }
+
+  // This will run on launch
+  useEffect(() => {
+    const loadTags = async () => {
+      const userTags = await getUserTags();
+      if (userTags) setTags(userTags);
+    };
+
+    loadTags();
+  }, []);
 
   return (
     /* This Pressable wrapper allows us to cancel text input by closing keyboard when clicking outside */
@@ -153,7 +182,7 @@ export default function MakePin() {
         </View>
         <Text style={styles.notesHeading}>Tags</Text>
         <View style={styles.tagsContainer}>
-          {TAGS.map((tag) => (
+          {tags.map((tag) => (
             <Pressable
               key={tag}
               style={styles.tagRow}
