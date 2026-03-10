@@ -27,7 +27,13 @@
     },
     "plugins": [
       "expo-sqlite",
-      "expo-font"
+      "expo-font",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Allow Charted to use your location to find nearby places."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,
