@@ -63,7 +63,8 @@ export default function Home() {
 
   return (
     <View style={styles.container}>
-      {!isDroppingPin && (
+      {!isDroppingPin && 
+      viewMode === "map" && (
         <Pressable
           style={styles.plusButton}
           onPress={() => setIsDroppingPin(true)}
@@ -162,6 +163,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 100,
+    backgroundColor: "#243e36",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
