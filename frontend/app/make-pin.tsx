@@ -1,9 +1,11 @@
+import { PressableStars } from "@/components/pressable-stars";
 import { Colors, Fonts } from "@/constants/theme";
 import { supabase } from "@/lib/supabase";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import Constants from "expo-constants";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import React, { useState } from "react";
+
 import {
   Alert,
   Image,
@@ -24,7 +26,7 @@ export default function MakePin() {
   const [name, setName] = useState("");
   const [address, setAddress] = useState("");
   const [photo, setPhoto] = useState<string | null>(null);
-  const [rating, setRating] = useState("");
+  const [rating, setRating] = useState(0);
   const [notes, setNotes] = useState("");
   const TAGS = ["coffee", "pastries", "lunch", "breakfast", "dinner", "busy"];
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
@@ -89,7 +91,7 @@ export default function MakePin() {
           <Pressable style={styles.cancelBtn} onPress={() => router.back()}>
             <Text style={styles.cancelText}>Cancel</Text>
           </Pressable>
-          <Pressable style={styles.saveBtn} onPress={() => createPin({"pin_data": {"latitude": Math.round(parseFloat(lat) * 1e6) / 1e6, "longitude": Math.round(parseFloat(lng) * 1e6) / 1e6, "pin_name": name, "user_notes": notes, "user_rating": parseInt(rating), "username": "TimTimTim"}})}>
+          <Pressable style={styles.saveBtn} onPress={() => createPin({"pin_data": {"latitude": Math.round(parseFloat(lat) * 1e5) / 1e5, "longitude": Math.round(parseFloat(lng) * 1e5) / 1e5, "pin_name": name, "user_notes": notes, "user_rating": rating, "username": "TimTimTim"}})}>
             <Text style={styles.saveText}>Save</Text>
           </Pressable>
         </View>
@@ -130,6 +132,12 @@ export default function MakePin() {
               value={lng}
               editable={false}
             />
+          </View>
+        </View>
+        <View>
+          <Text style={styles.notesHeading}>Rating</Text>
+          <View style={styles.starRow}>
+            <PressableStars rating={rating} setRating={setRating}/>
           </View>
         </View>
         <View>
@@ -280,5 +288,10 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: "#333",
     textTransform: "capitalize",
+  },
+  starRow: {
+    flexDirection: "row",
+    gap: 5,
+    marginVertical: 10,
   },
 });
