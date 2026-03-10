@@ -1,6 +1,7 @@
 import { Fonts } from "@/constants/theme";
 import React from "react";
-import { Image, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
+import { Image } from "expo-image";
 
 export default function ListCard() {
   return (
@@ -8,6 +9,7 @@ export default function ListCard() {
       <Image
         source={require("@/assets/images/test_ss_creamery.png")}
         style={styles.img}
+        placeholder="blur"
       />
       <View>
         <Text style={styles.cardTitle}>Seaside Creamery</Text>

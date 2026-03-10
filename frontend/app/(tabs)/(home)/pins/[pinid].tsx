@@ -3,16 +3,18 @@ import { Ionicons } from "@expo/vector-icons";
 import { FontAwesome } from "@expo/vector-icons";
 import { Stars } from "@/components/stars";
 import { router, useLocalSearchParams } from "expo-router";
-import { Pressable, ScrollView, StyleSheet, Text, View, Image } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Image } from "expo-image";
+import { AutoSkeletonView } from "react-native-auto-skeleton";
 
 export default function PinPage() {
   const { pinid } = useLocalSearchParams();
 
   return (
-    <>
+    <AutoSkeletonView isLoading={loading}> {/* set up the rest of the database and make this a hook that changes to false when loaded */}
       <ScrollView>
         {/* Image */}
-        <Image source={require("@/assets/images/test_ss_creamery.png")} style={styles.img}/>
+        <Image source={require("@/assets/images/test_ss_creamery.png")} style={styles.img} placeholder="blur"/>
 
         {/* Title */}
         <View style={{marginHorizontal: 10}}>
@@ -78,9 +80,6 @@ export default function PinPage() {
             <Text style={styles.subtitle}>
               Tags
             </Text>
-            <Pressable>
-              <FontAwesome name="pencil" color="#243e36" size={20} />
-            </Pressable>
           </View>
           <View style={styles.cardFullRow}>
             <Text style={styles.boxText}>You have no tags yet</Text>
@@ -91,9 +90,6 @@ export default function PinPage() {
             <Text style={styles.subtitle}>
               Lists
             </Text>
-            <Pressable>
-                <FontAwesome name="pencil" color="#243e36" size={20} />
-            </Pressable>
           </View>
           <View style={styles.cardFullRow}>
             <Text style={styles.boxText}>You have no lists yet</Text>
@@ -109,21 +105,36 @@ export default function PinPage() {
         </View>
       </ScrollView>
 
-      { /* Back Button */ }
-      <View style={{ marginTop: 45, marginLeft: 10, position: "absolute" }}>
-        <Pressable
-          style={styles.backButton}
-          onPress={() => {
-            router.back();
-          }}
-        >
-          <Ionicons name="chevron-back" size={20} color="#d9d9d9" />
-          <Text
-            style={{ fontFamily: Fonts.bold, color: "#d9d9d9", fontSize: 16 }}
+      { /* Back and Edit Buttons */ }
+      <View style={styles.header}>
+        <View style={styles.buttonRow}>
+          <Pressable
+            style={styles.button}
+            onPress={() => {
+              router.back();
+            }}
           >
-            Back
-          </Text>
-        </Pressable>
+            <Ionicons name="chevron-back" size={20} color="#d9d9d9" />
+            <Text
+              style={{ fontFamily: Fonts.bold, color: "#d9d9d9", fontSize: 16 }}
+            >
+              Back
+            </Text>
+          </Pressable>
+          {/* Need to update the route and add a new page that copies the make-pin setup, but autofills with the specific pin's info */}
+          <Pressable
+            style={styles.button}
+            onPress={() => {
+              router.push("/make-pin");
+            }}
+          >
+            <Text
+              style={{ fontFamily: Fonts.bold, color: "#d9d9d9", fontSize: 16 }}
+            >
+              Edit Pin
+            </Text>
+          </Pressable>
+        </View>
       </View>
     </>
   );
@@ -150,7 +161,7 @@ const styles = StyleSheet.create({
     color: "#243e36",
     fontFamily: Fonts.regular,
   },
-  backButton: {
+  button: {
     backgroundColor: "#243e36",
     flexDirection: "row",
     alignItems: "center",
@@ -159,7 +170,6 @@ const styles = StyleSheet.create({
     gap: 6,
     width: 105,
     height: 40,
-    marginLeft: 8,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
@@ -189,6 +199,17 @@ const styles = StyleSheet.create({
   cardRow: {
     flexDirection: "row",
     gap: 10,
+  },
+  buttonRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginHorizontal: 10,
+  },
+  header: {
+    position: "absolute",
+    top: 50,
+    left: 0,
+    right: 0
   },
   cardFullRow: {
     backgroundColor: "#DEE9E0",
