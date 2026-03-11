@@ -10,16 +10,18 @@ import DroppingPinOverlay from "@/components/dropping-pin-overlay";
 import Header from "@/components/header";
 import PinOverlay from "@/components/pin-overlay";
 import { useDroppingPin } from "@/context/DroppingPinContext";
-import { Pin, ViewMode, ViewOption } from "@/types/types";
+import { useLocation } from "@/hooks/use-location";
+import { Coords, Pin, ViewMode, ViewOption } from "@/types/types";
 
-// CSULB as initial region (for now)
-// Later it should be user's location if location services enabled
-const CSULB_REGION = {
+// CSULB is default region if user does not share location
+const CSULB = {
   latitude: 33.7838,
   longitude: -118.1141,
   latitudeDelta: 0.05,
   longitudeDelta: 0.05,
 };
+
+const INITIAL_REGION = CSULB;
 
 const VIEW_OPTIONS: ViewOption[] = [
   { mode: "map", icon: "map" },
@@ -32,16 +34,9 @@ export default function Home() {
   const [viewMode, setViewMode] = useState<ViewMode>("map");
   const [selectedPin, setSelectedPin] = useState<Pin | null>(null);
   const [pins, setPins] = useState<Pin[]>([]);
-  const [pinCoords, setPinCoords] = useState<{
-    latitude: number;
-    longitude: number;
-  } | null>(null);
-
-  // Later: Will be user's location (if they enable location services)
-  // Otherwise should be CSULB?
-  const INITIAL_REGION = CSULB_REGION;
-
+  const [pinCoords, setPinCoords] = useState<Coords | null>(null);
   const mapRef = useRef<MapView>(null);
+  const { userCoords, permissionStatus, fetchUserLocation } = useLocation();
 
   // This fetches data from the 'locations' table in Supabase. Also has error handling if unable to fetch
   useEffect(() => {
@@ -68,8 +63,7 @@ export default function Home() {
 
   return (
     <View style={styles.container}>
-      {!isDroppingPin && 
-      viewMode === "map" && (
+      {!isDroppingPin && viewMode === "map" && (
         <Pressable
           style={styles.plusButton}
           onPress={() => setIsDroppingPin(true)}
@@ -105,6 +99,7 @@ export default function Home() {
               300,
             ); // 300ms animation duration
           }}
+          showsUserLocation={permissionStatus === "granted"}
         >
           {/* 
             controls pin marker, takes from pin-marker component

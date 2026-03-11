@@ -14,3 +14,8 @@ export type ViewOption = {
   mode: ViewMode;
   icon: keyof typeof Ionicons.glyphMap;
 };
+
+export type Coords = {
+  latitude: number;
+  longitude: number;
+};
