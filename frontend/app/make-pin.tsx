@@ -5,7 +5,6 @@ import { supabase } from "@/lib/supabase";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
-
 import {
   Alert,
   Image,
@@ -21,8 +20,6 @@ import { SafeAreaView } from "react-native-safe-area-context";
 export default function MakePin() {
   const router = useRouter();
   const { lat, lng } = useLocalSearchParams<{ lat: string; lng: string }>();
-  // const addPin = usePinsStore((state) => state.addPin);
-
   const [name, setName] = useState("");
   const [address, setAddress] = useState("");
   const [photo, setPhoto] = useState<string | null>(null);
