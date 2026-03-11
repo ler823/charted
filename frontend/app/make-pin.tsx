@@ -1,3 +1,4 @@
+import AddTagOrList from "@/components/add-tag";
 import { PressableStars } from "@/components/pressable-stars";
 import { Colors, Fonts } from "@/constants/theme";
 import { supabase } from "@/lib/supabase";
@@ -30,6 +31,8 @@ export default function MakePin() {
   const [notes, setNotes] = useState("");
   const [tags, setTags] = useState<string[]>([]);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [newTag, setNewTag] = useState("");
   let inserted_pin_id = 0;
 
   const toggleTag = (tag: string) => {
@@ -58,8 +61,8 @@ export default function MakePin() {
     router.replace("/");
   };
 
-  const API_URL =  Constants.expoConfig?.extra?.apiUrl;
-  
+  const API_URL = Constants.expoConfig?.extra?.apiUrl;
+
   // const createPin = async (pin_data: any) => {
   //     let url = API_URL + "/createpin"
   //     console.log("API_URL:", API_URL);
@@ -83,7 +86,7 @@ export default function MakePin() {
       .from("tags")
       .select("tag_id")
       .in("name", selectedTags);
-    
+
     if (tagIds === null || getTagIdsError) {
       return;
     }
@@ -92,10 +95,10 @@ export default function MakePin() {
       pin_id: inserted_pin_id,
       tag_id: tag.tag_id
     }))
-    
+
     const { error: addToPinTagsError } = await supabase
-    .from("pin_tags")
-    .insert(pinTagAssociation);
+      .from("pin_tags")
+      .insert(pinTagAssociation);
 
     if (addToPinTagsError) {
       return;
@@ -105,16 +108,20 @@ export default function MakePin() {
   }
 
   const createPin = async () => {
+    if (!name || !address) {
+      Alert.alert("Missing fields", "Please fill in name and address.");
+      return;
+    }
     const { data, error } = await supabase
-    .rpc('create_pin', {
-      p_address: address, 
-      p_latitude: Math.round(parseFloat(lat) * 1e5) / 1e5, 
-      p_longitude: Math.round(parseFloat(lng) * 1e5) / 1e5, 
-      p_pin_name: name, 
-      p_user_note: notes, 
-      p_user_rating: rating, 
-      p_username: "TimTimTim"
-    })
+      .rpc('create_pin', {
+        p_address: address,
+        p_latitude: Math.round(parseFloat(lat) * 1e5) / 1e5,
+        p_longitude: Math.round(parseFloat(lng) * 1e5) / 1e5,
+        p_pin_name: name,
+        p_user_note: notes,
+        p_user_rating: rating,
+        p_username: "TimTimTim"
+      })
     if (error) {
       Alert.alert("Error", error.message);
       return;
@@ -131,15 +138,15 @@ export default function MakePin() {
 
   const getUserTags = async () => {
     const { data, error } = await supabase
-    .from("tags")
-    .select(`
+      .from("tags")
+      .select(`
       tag_id,
       name,
       users!tags_user_id_fkey (
         username
       )
     `)
-    .eq("users.username", "TimTimTim");
+      .eq("users.username", "TimTimTim");
 
     if (error) {
       Alert.alert("Error", error.message);
@@ -214,7 +221,7 @@ export default function MakePin() {
         <View>
           <Text style={styles.notesHeading}>Rating</Text>
           <View style={styles.starRow}>
-            <PressableStars rating={rating} setRating={setRating}/>
+            <PressableStars rating={rating} setRating={setRating} />
           </View>
         </View>
         <View>
@@ -228,7 +235,13 @@ export default function MakePin() {
             textAlignVertical="top"
           />
         </View>
-        <Text style={styles.notesHeading}>Tags</Text>
+        <View style={styles.tagTitle}>
+          <Text style={styles.notesHeading}>Tags</Text>
+          <Pressable onPress={() => setModalVisible(true)}>
+            <MaterialCommunityIcons name="plus-circle-outline" size={24} color="black" style={styles.addTags} />
+          </Pressable>
+        </View>
+
         <View style={styles.tagsContainer}>
           {tags.map((tag) => (
             <Pressable
@@ -249,6 +262,7 @@ export default function MakePin() {
               <Text style={styles.tagLabel}>{tag}</Text>
             </Pressable>
           ))}
+          <AddTagOrList isVisible={modalVisible} onClose={() => setModalVisible(false)} />
         </View>
       </SafeAreaView>
     </Pressable>
@@ -371,4 +385,14 @@ const styles = StyleSheet.create({
     gap: 5,
     marginVertical: 10,
   },
+  tagTitle: {
+    flexDirection: "row",
+    justifyContent: "flex-start",
+    alignItems: "center"
+  },
+  addTags: {
+    marginTop: 24,
+    paddingBottom: 6,
+    paddingLeft: 10
+  }
 });
