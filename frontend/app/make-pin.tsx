@@ -30,6 +30,7 @@ export default function MakePin() {
   const [notes, setNotes] = useState("");
   const [tags, setTags] = useState<string[]>([]);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  let inserted_pin_id = 0;
 
   const toggleTag = (tag: string) => {
     setSelectedTags((prev) =>
@@ -59,22 +60,69 @@ export default function MakePin() {
 
   const API_URL =  Constants.expoConfig?.extra?.apiUrl;
   
-  const createPin = async (pin_data: any) => {
-      let url = API_URL + "/createpin"
-      console.log("API_URL:", API_URL);
-      console.log("FULL URL:", url);
-      const response = await fetch(
-          url,
-          {
-              method: "POST",
-              headers: {
-                  "Content-Type": "application/json"
-              },
-              body: JSON.stringify(pin_data)
-          }
-      );
-      router.back()
-      return await response.json();
+  // const createPin = async (pin_data: any) => {
+  //     let url = API_URL + "/createpin"
+  //     console.log("API_URL:", API_URL);
+  //     console.log("FULL URL:", url);
+  //     const response = await fetch(
+  //         url,
+  //         {
+  //             method: "POST",
+  //             headers: {
+  //                 "Content-Type": "application/json"
+  //             },
+  //             body: JSON.stringify(pin_data)
+  //         }
+  //     );
+  //     router.back()
+  //     return await response.json();
+  // };
+
+  const savePinTags = async () => {
+    const { data: tagIds, error: getTagIdsError } = await supabase
+      .from("tags")
+      .select("tag_id")
+      .in("name", selectedTags);
+    
+    if (tagIds === null || getTagIdsError) {
+      return;
+    }
+
+    const pinTagAssociation = tagIds?.map(tag => ({
+      pin_id: inserted_pin_id,
+      tag_id: tag.tag_id
+    }))
+    
+    const { error: addToPinTagsError } = await supabase
+    .from("pin_tags")
+    .insert(pinTagAssociation);
+
+    if (addToPinTagsError) {
+      return;
+    }
+
+    return;
+  }
+
+  const createPin = async () => {
+    const { data, error } = await supabase
+    .rpc('create_pin', {
+      p_address: address, 
+      p_latitude: Math.round(parseFloat(lat) * 1e5) / 1e5, 
+      p_longitude: Math.round(parseFloat(lng) * 1e5) / 1e5, 
+      p_pin_name: name, 
+      p_user_note: notes, 
+      p_user_rating: rating, 
+      p_username: "TimTimTim"
+    })
+    if (error) {
+      Alert.alert("Error", error.message);
+      return;
+    }
+    savePinTags();
+    router.back();
+    inserted_pin_id = data;
+    return;
   };
 
   const handlePickPhoto = () => {
@@ -120,7 +168,7 @@ export default function MakePin() {
           <Pressable style={styles.cancelBtn} onPress={() => router.back()}>
             <Text style={styles.cancelText}>Cancel</Text>
           </Pressable>
-          <Pressable style={styles.saveBtn} onPress={() => createPin({"pin_data": {"latitude": Math.round(parseFloat(lat) * 1e5) / 1e5, "longitude": Math.round(parseFloat(lng) * 1e5) / 1e5, "pin_name": name, "user_notes": notes, "user_rating": rating, "username": "TimTimTim"}})}>
+          <Pressable style={styles.saveBtn} onPress={() => createPin()}>
             <Text style={styles.saveText}>Save</Text>
           </Pressable>
         </View>
