@@ -23,7 +23,8 @@ export default function AddTagOrList({ isVisible, onClose, onSave, newTag, setNe
                             </View>
                             <View style={styles.inputContainer}>
                                 <TextInput 
-                                placeholder="New Tag Name" 
+                                placeholder="New Tag Name"
+                                placeholderTextColor="#aaaaaa" 
                                 value={newTag} 
                                 onChangeText={setNewTag}
                                 style={styles.input} />

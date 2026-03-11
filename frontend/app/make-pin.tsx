@@ -156,18 +156,18 @@ export default function MakePin() {
   }
 
   const loadTags = async () => {
-      const userTags = await getUserTags();
-      if (userTags) setTags(userTags);
-    };
+    const userTags = await getUserTags();
+    if (userTags) setTags(userTags);
+  };
 
-  const addTag = async() => {
+  const addTag = async () => {
     if (!newTag) {
       Alert.alert("Missing field", "Please enter a name for the new tag");
     }
     const { data: userId, error: userIdError } = await supabase
-    .from("users")
-    .select("user_id")
-    .eq("username", "TimTimTim")
+      .from("users")
+      .select("user_id")
+      .eq("username", "TimTimTim")
     if (userIdError) {
       Alert.alert("Error", userIdError.message);
       return;
@@ -178,8 +178,8 @@ export default function MakePin() {
     }
 
     const { error: addTagError } = await supabase
-    .from("tags")
-    .insert(tagToAdd)
+      .from("tags")
+      .insert(tagToAdd)
     if (addTagError) {
       Alert.alert("This tag has already been added", "You have added this tag before");
       return;
@@ -188,8 +188,19 @@ export default function MakePin() {
     setAddTagVisible(false)
   }
 
+  const cleanupUnusedTags = async () => {
+    const { error } = await supabase
+      .rpc("update_tags", { p_username: "TimTimTim" });
+
+    if (error) {
+      Alert.alert("Error", error.message);
+      return;
+    }
+  };
+
   // This will run on launch
   useEffect(() => {
+    cleanupUnusedTags();
     loadTags();
   }, []);
 
@@ -223,24 +234,28 @@ export default function MakePin() {
             <TextInput
               style={styles.input}
               placeholder="Name"
+              placeholderTextColor="#aaaaaa" 
               value={name}
               onChangeText={setName}
             />
             <TextInput
               style={styles.input}
               placeholder="Address"
+              placeholderTextColor="#aaaaaa" 
               value={address}
               onChangeText={setAddress}
             />
             <TextInput
               style={[styles.input, styles.inputDisabled]}
               placeholder="Latitude"
+              placeholderTextColor="#aaaaaa" 
               value={lat}
               editable={false}
             />
             <TextInput
               style={[styles.input, styles.inputDisabled]}
               placeholder="Longitude"
+              placeholderTextColor="#aaaaaa" 
               value={lng}
               editable={false}
             />
