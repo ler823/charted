@@ -1,33 +1,80 @@
+import { supabase } from "@/lib/supabase";
+import React, { useEffect, useState } from "react";
 import { Fonts } from "@/constants/theme";
 import { Ionicons } from "@expo/vector-icons";
 import { FontAwesome } from "@expo/vector-icons";
+import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
 import { Stars } from "@/components/stars";
 import { router, useLocalSearchParams } from "expo-router";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Image } from "expo-image";
 import { AutoSkeletonView } from "react-native-auto-skeleton";
 
+
+type Pin = {
+  pin_id: number | null;
+  location_id: number | null;
+  user_id: number | null;
+  user_rating: number | null;
+  user_note: string | null;
+  name: string | null;
+  address: string | null;
+  pin_tags: {
+    tags: {
+      tag_id: number | null;
+      name: string | null;
+    } | null;
+  }[] | null;
+  pin_lists: {
+    lists: {
+      list_id: number | null;
+      name: string | null;
+    } | null;
+  }[] | null;
+  pin_visits: {
+    visit_id: number | null;
+    visit_timestamp: string | null;
+  }[] | null;
+};
+
+
 export default function PinPage() {
   const { pinid } = useLocalSearchParams();
+  const [ pin, setPin ] = useState<Pin | null>(null);
+
+  useEffect(() => {
+      async function fetchPin() {
+        const { data, error } = await supabase
+          .from("pins")
+          .select( `*, pin_tags(tags( tag_id, name )), pin_lists(lists( list_id, name )), pin_visits( visit_id, visit_timestamp )` )
+          .eq('pin_id', Number(pinid))
+          .single();
+        setPin(data as Pin);
+      }
+      fetchPin();
+    }, [pinid]);
+
+  { /* temporary loading page, doesnt have styling yet */}
+  if (!pin) {
+    return <Text>Loading...</Text>
+  }
 
   return (
-    <AutoSkeletonView isLoading={loading}> {/* set up the rest of the database and make this a hook that changes to false when loaded */}
+    <>
       <ScrollView>
         {/* Image */}
         <Image source={require("@/assets/images/test_ss_creamery.png")} style={styles.img} placeholder="blur"/>
 
         {/* Title */}
         <View style={{marginHorizontal: 10}}>
-          <Text style={[styles.title, {marginTop: 10}]}>Seaside Creamery</Text>
+          <Text style={[styles.title, {marginTop: 10}]}>{pin.name ?? "No pin name"}</Text>
           <View>
-            <Text style={styles.address}>1785 Palo Verde Ave,</Text>
-            <Text style={styles.address}>Long Beach, CA 90815</Text>
+            <Text style={styles.address}>{pin.address ?? "No pin address"}</Text>
           </View>
 
           {/* Stars */}
-          {/* Need to add error handling here to make sure we get 1/2/3/4/5 as a num and nothing else */}
           <View style={styles.starRow}>
-            <Stars starnum={4}/>
+            <Stars starnum={pin.user_rating}/>
           </View>
 
           {/* Friend Visits */}
@@ -54,7 +101,7 @@ export default function PinPage() {
             My Notes
           </Text>
           <View style={styles.cardFullRow}>
-            <Text style={styles.boxText}>You have no notes yet</Text>
+            <Text style={styles.boxText}>{pin.user_note ?? "You have no notes yet"}</Text>
           </View>
 
           {/* Friend Notes */}
@@ -82,7 +129,14 @@ export default function PinPage() {
             </Text>
           </View>
           <View style={styles.cardFullRow}>
-            <Text style={styles.boxText}>You have no tags yet</Text>
+            <ScrollView contentContainerStyle={{flexDirection: "row", gap: 20, flexWrap: "wrap"}}>
+              {pin.pin_tags?.length === 0 && (
+                <Text style={styles.boxText}>You have no tags yet</Text>
+              )}
+              {pin.pin_tags?.map( (pin_tag) => (
+                <Text key={pin_tag.tags?.tag_id} style={styles.boxText}>{pin_tag.tags?.name ?? "Unnamed tag"}</Text>
+              ))}
+            </ScrollView>
           </View>
 
           {/* Lists */}
@@ -92,15 +146,41 @@ export default function PinPage() {
             </Text>
           </View>
           <View style={styles.cardFullRow}>
-            <Text style={styles.boxText}>You have no lists yet</Text>
+            <ScrollView contentContainerStyle={{flexDirection: "row", gap: 20, flexWrap: "wrap"}}>
+              {pin.pin_lists?.length === 0 && (
+                <Text style={styles.boxText}>You have no lists yet</Text>
+              )}
+              {pin.pin_lists?.map( (pin_list) => (
+                <Text key={pin_list.lists?.list_id} style={styles.boxText}>{pin_list.lists?.name ?? "Unnamed list"}</Text>
+              ))}
+            </ScrollView>
           </View>
 
           {/* History */}
           <Text style={styles.subtitle}>
             Visit History
           </Text>
-          <View style={styles.cardFullRow}>
-            <Text style={styles.boxText}>You have no logged visits yet</Text>
+          <View style={[styles.cardFullRow, {height: 200, flexDirection: "column", alignItems: "flex-start"}]}>
+            <Pressable
+              style={[styles.button, {height: 30, marginBottom: 20}]}
+              onPress={() => {
+                router.back();
+              }}
+            >
+              <Text
+                style={{ fontFamily: Fonts.bold, color: "#d9d9d9", fontSize: 12 }}
+              >
+                Log New Visit
+              </Text>
+            </Pressable>
+            <ScrollView>
+              {pin.pin_visits?.length === 0 && (
+                <Text style={styles.boxText}>You have no logged visits</Text>
+              )}
+              {pin.pin_visits?.map( (pin_visit) => (
+                <Text key={pin_visit?.visit_id} style={styles.boxText}>{pin_visit?.visit_timestamp ? new Date(pin_visit.visit_timestamp).toLocaleDateString() : "No timestamp"}</Text>
+              ))}
+            </ScrollView>
           </View>
         </View>
       </ScrollView>

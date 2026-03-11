@@ -25,7 +25,7 @@ export default function PinListView() {
                 router.push({
                     pathname: "/pins/[pinid]",
                     params: {
-                        pinid: 123
+                        pinid: 28
                     }})}>
                 <ListCard />
             </Pressable>
