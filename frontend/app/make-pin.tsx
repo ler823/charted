@@ -31,7 +31,7 @@ export default function MakePin() {
   const [notes, setNotes] = useState("");
   const [tags, setTags] = useState<string[]>([]);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const [modalVisible, setModalVisible] = useState(false);
+  const [modalVisible, setAddTagVisible] = useState(false);
   const [newTag, setNewTag] = useState("");
   let inserted_pin_id = 0;
 
@@ -155,13 +155,41 @@ export default function MakePin() {
     return data.map((tag: { name: string }) => tag.name);
   }
 
-  // This will run on launch
-  useEffect(() => {
-    const loadTags = async () => {
+  const loadTags = async () => {
       const userTags = await getUserTags();
       if (userTags) setTags(userTags);
     };
 
+  const addTag = async() => {
+    if (!newTag) {
+      Alert.alert("Missing field", "Please enter a name for the new tag");
+    }
+    const { data: userId, error: userIdError } = await supabase
+    .from("users")
+    .select("user_id")
+    .eq("username", "TimTimTim")
+    if (userIdError) {
+      Alert.alert("Error", userIdError.message);
+      return;
+    }
+    let tagToAdd = {
+      user_id: userId[0].user_id,
+      name: newTag
+    }
+
+    const { error: addTagError } = await supabase
+    .from("tags")
+    .insert(tagToAdd)
+    if (addTagError) {
+      Alert.alert("This tag has already been added", "You have added this tag before");
+      return;
+    }
+    loadTags();
+    setAddTagVisible(false)
+  }
+
+  // This will run on launch
+  useEffect(() => {
     loadTags();
   }, []);
 
@@ -237,7 +265,7 @@ export default function MakePin() {
         </View>
         <View style={styles.tagTitle}>
           <Text style={styles.notesHeading}>Tags</Text>
-          <Pressable onPress={() => setModalVisible(true)}>
+          <Pressable onPress={() => setAddTagVisible(true)}>
             <MaterialCommunityIcons name="plus-circle-outline" size={24} color="black" style={styles.addTags} />
           </Pressable>
         </View>
@@ -262,7 +290,7 @@ export default function MakePin() {
               <Text style={styles.tagLabel}>{tag}</Text>
             </Pressable>
           ))}
-          <AddTagOrList isVisible={modalVisible} onClose={() => setModalVisible(false)} />
+          <AddTagOrList isVisible={modalVisible} onClose={() => setAddTagVisible(false)} onSave={addTag} newTag={newTag} setNewTag={setNewTag} />
         </View>
       </SafeAreaView>
     </Pressable>

@@ -6,9 +6,12 @@ import { Keyboard, Modal, Pressable, StyleSheet, Text, TextInput, View } from 'r
 type Props = PropsWithChildren<{
     isVisible: boolean;
     onClose: () => void;
+    onSave: () => void;
+    newTag: string;
+    setNewTag: (value: string) => void;
 }>;
 
-export default function AddTagOrList({ isVisible, onClose }: Props) {
+export default function AddTagOrList({ isVisible, onClose, onSave, newTag, setNewTag }: Props) {
     return (
         <View>
             <Modal animationType="fade" transparent={true} visible={isVisible}>
@@ -19,13 +22,17 @@ export default function AddTagOrList({ isVisible, onClose }: Props) {
                                 <Text style={styles.title}>Add a new tag</Text>
                             </View>
                             <View style={styles.inputContainer}>
-                                <TextInput style={styles.input} />
+                                <TextInput 
+                                placeholder="New Tag Name" 
+                                value={newTag} 
+                                onChangeText={setNewTag}
+                                style={styles.input} />
                             </View>
                             <View style={styles.bottomButtons}>
                                 <Pressable onPress={onClose} style={styles.cancelBtn}>
                                     <Text style={styles.cancelText}>Cancel</Text>
                                 </Pressable>
-                                <Pressable onPress={onClose} style={styles.saveBtn}>
+                                <Pressable onPress={onSave} style={styles.saveBtn}>
                                     <Text style={styles.saveText}>Save</Text>
                                 </Pressable>
                             </View>
