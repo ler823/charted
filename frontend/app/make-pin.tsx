@@ -3,7 +3,6 @@ import { PressableStars } from "@/components/pressable-stars";
 import { Colors, Fonts } from "@/constants/theme";
 import { supabase } from "@/lib/supabase";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import Constants from "expo-constants";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 
@@ -40,46 +39,6 @@ export default function MakePin() {
       prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag],
     );
   };
-
-  const handleSave = async () => {
-    if (!name || !address) {
-      Alert.alert("Missing fields", "Please fill in name and address.");
-      return;
-    }
-
-    const { error } = await supabase.from("locations").insert({
-      name,
-      address,
-      latitude: parseFloat(lat),
-      longitude: parseFloat(lng),
-    });
-
-    if (error) {
-      Alert.alert("Error", error.message);
-      return;
-    }
-    router.replace("/");
-  };
-
-  const API_URL = Constants.expoConfig?.extra?.apiUrl;
-
-  // const createPin = async (pin_data: any) => {
-  //     let url = API_URL + "/createpin"
-  //     console.log("API_URL:", API_URL);
-  //     console.log("FULL URL:", url);
-  //     const response = await fetch(
-  //         url,
-  //         {
-  //             method: "POST",
-  //             headers: {
-  //                 "Content-Type": "application/json"
-  //             },
-  //             body: JSON.stringify(pin_data)
-  //         }
-  //     );
-  //     router.back()
-  //     return await response.json();
-  // };
 
   const savePinTags = async () => {
     const { data: tagIds, error: getTagIdsError } = await supabase
