@@ -1,6 +1,19 @@
 import { Ionicons } from "@expo/vector-icons";
 
 
+const NoStar = () => {
+    return (
+        <>
+            <Ionicons name="star-outline" color="#000000" size={30} />
+            <Ionicons name="star-outline" color="#000000" size={30} />
+            <Ionicons name="star-outline" color="#000000" size={30} />
+            <Ionicons name="star-outline" color="#000000" size={30} />
+            <Ionicons name="star-outline" color="#000000" size={30} />
+        </>
+    )
+}
+
+
 const OneStar = () => {
     return (
         <>
@@ -62,7 +75,12 @@ const FiveStar = () => {
 }
 
 
-export const Stars = ({ starnum }: { starnum: number }) => {
+type StarsProps = {
+  starnum?: number | null;
+};
+
+
+export const Stars = ({ starnum = 0 }: StarsProps) => {
   if ( starnum === 1 ) {
     return <OneStar />
   }
@@ -75,7 +93,10 @@ export const Stars = ({ starnum }: { starnum: number }) => {
   if ( starnum === 4 ) {
     return <FourStar />
   }
-  else {
+  if ( starnum === 5 ) {
     return <FiveStar />
+  }
+  else {
+    return <NoStar />
   }
 }
