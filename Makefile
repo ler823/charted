@@ -7,4 +7,4 @@ deploy:
 	cd backend/charted-backend && sam build && sam deploy
 
 frontend:
-	cd frontend && npx expo start --tunnel
+	cd frontend && npm install && npx expo start --tunnel
