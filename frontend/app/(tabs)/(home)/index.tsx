@@ -1,6 +1,6 @@
 import { supabase } from "@/lib/supabase";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 import MapView, { Marker } from "react-native-maps";
 import PinMarker from "../../../components/pin-marker";
@@ -14,7 +14,7 @@ import { Pin, ViewMode, ViewOption } from "@/types/types";
 
 // CSULB as initial region (for now)
 // Later it should be user's location if location services enabled
-const INITIAL_REGION = {
+const CSULB_REGION = {
   latitude: 33.7838,
   longitude: -118.1141,
   latitudeDelta: 0.05,
@@ -32,6 +32,16 @@ export default function Home() {
   const [viewMode, setViewMode] = useState<ViewMode>("map");
   const [selectedPin, setSelectedPin] = useState<Pin | null>(null);
   const [pins, setPins] = useState<Pin[]>([]);
+  const [pinCoords, setPinCoords] = useState<{
+    latitude: number;
+    longitude: number;
+  } | null>(null);
+
+  // Later: Will be user's location (if they enable location services)
+  // Otherwise should be CSULB?
+  const INITIAL_REGION = CSULB_REGION;
+
+  const mapRef = useRef<MapView>(null);
 
   // This fetches data from the 'locations' table in Supabase. Also has error handling if unable to fetch
   useEffect(() => {
@@ -56,11 +66,6 @@ export default function Home() {
     fetchLocations();
   }, []);
 
-  const [pinCoords, setPinCoords] = useState<{
-    latitude: number;
-    longitude: number;
-  } | null>(null);
-
   return (
     <View style={styles.container}>
       {!isDroppingPin && 
@@ -84,19 +89,22 @@ export default function Home() {
         <MapView
           initialRegion={INITIAL_REGION}
           style={styles.map}
-          onLongPress={() => {
+          ref={mapRef}
+          onLongPress={(e) => {
+            const { latitude, longitude } = e.nativeEvent.coordinate;
+            setPinCoords({ latitude, longitude });
             setIsDroppingPin(true);
+
+            mapRef.current?.animateToRegion(
+              {
+                latitude,
+                longitude,
+                latitudeDelta: 0.01, // your preferred zoom level
+                longitudeDelta: 0.01,
+              },
+              300,
+            ); // 300ms animation duration
           }}
-          onRegionChangeComplete={
-            isDroppingPin
-              ? (region) => {
-                  setPinCoords({
-                    latitude: region.latitude,
-                    longitude: region.longitude,
-                  });
-                }
-              : undefined
-          }
         >
           {/* 
             controls pin marker, takes from pin-marker component
