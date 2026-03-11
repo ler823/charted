@@ -2,7 +2,8 @@ import { supabase } from "@/lib/supabase";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import React, { useEffect, useRef, useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
-import MapView, { Marker } from "react-native-maps";
+import ClusteredMapView from "react-native-map-clustering";
+import { Marker } from "react-native-maps";
 import PinMarker from "../../../components/pin-marker";
 import PinListView from "./pin_list_view";
 
@@ -35,7 +36,7 @@ export default function Home() {
   const [selectedPin, setSelectedPin] = useState<Pin | null>(null);
   const [pins, setPins] = useState<Pin[]>([]);
   const [pinCoords, setPinCoords] = useState<Coords | null>(null);
-  const mapRef = useRef<MapView>(null);
+  const mapRef = useRef<any>(null);
   const { userCoords, permissionStatus, fetchUserLocation } = useLocation();
 
   // This fetches data from the 'locations' table in Supabase. Also has error handling if unable to fetch
@@ -80,7 +81,7 @@ export default function Home() {
       )}
 
       {viewMode === "map" && (
-        <MapView
+        <ClusteredMapView
           initialRegion={INITIAL_REGION}
           style={styles.map}
           ref={mapRef}
@@ -93,17 +94,17 @@ export default function Home() {
               {
                 latitude,
                 longitude,
-                latitudeDelta: 0.01, // your preferred zoom level
+                latitudeDelta: 0.01,
                 longitudeDelta: 0.01,
               },
               300,
-            ); // 300ms animation duration
+            );
           }}
           showsUserLocation={permissionStatus === "granted"}
+          clusterColor="#243e36"
+          clusterTextColor="#fefbea"
+          clusterFontFamily="System"
         >
-          {/* 
-            controls pin marker, takes from pin-marker component
-          */}
           {pins
             .filter((pin) => pin.latitude !== 0 && pin.longitude !== 0)
             .map((pin) => (
@@ -119,7 +120,7 @@ export default function Home() {
                 <PinMarker />
               </Marker>
             ))}
-        </MapView>
+        </ClusteredMapView>
       )}
       {viewMode === "list" && (
         <View style={styles.cardsContainer}>
