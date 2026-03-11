@@ -74,9 +74,12 @@ export default function PinPage() {
       <ScrollView>
         {/* Image */}
         
-        <Image source={require("@/assets/images/no_image_default.png")} style={styles.img} placeholder="blur"/>
-        
-        {/* <Image source={{ uri: pin.pin_photos?.photos?.link}} style={styles.img} placeholder="blur"/> */}
+        {!pin.pin_photos?.photos?.link && (
+          <Image source={require("@/assets/images/no_image_default.png")} style={styles.img} placeholder="blur"/>
+        )}
+        {pin.pin_photos?.photos?.link && (
+          <Image source={{ uri: pin.pin_photos?.photos?.link!}} style={styles.img} placeholder="blur"/>
+        )}
 
         {/* Title */}
         <View style={{marginHorizontal: 10}}>
@@ -99,12 +102,6 @@ export default function PinPage() {
               <View style={{flexDirection: "column", flex: 1, alignItems: "center", justifyContent: "center"}}>
                 <View style={[styles.avatar, {marginBottom: 10}]}></View>
                 <Text style={{fontFamily: Fonts.bold, fontSize: 15,}}>OliverCJ</Text>
-              </View>
-            </Pressable>
-            <Pressable style={styles.cardPartialRow}>
-              <View style={{flexDirection: "column", flex: 1, alignItems: "center", justifyContent: "center"}}>
-                <View style={[styles.avatar, {marginBottom: 10}]}></View>
-                <Text style={{fontFamily: Fonts.bold, fontSize: 15,}}>TimTimTim</Text>
               </View>
             </Pressable>
           </ScrollView>
