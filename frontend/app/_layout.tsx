@@ -22,12 +22,15 @@ export default function RootLayout() {
     }
   }, [fontsLoaded]); // wait for fonts before redirecting
 
+  // Location services logic (redirect to Enable Location screen if permission undetermined)
   const redirectBasedOnPermission = async () => {
     const { status } = await Location.getForegroundPermissionsAsync();
 
     if (status === Location.PermissionStatus.UNDETERMINED) {
-      router.replace("/onboarding/location");
+      // First time — show primer screen
+      router.replace("/onboarding/enable-location");
     } else {
+      // Already granted or denied — skip onboarding
       router.replace("/(tabs)/(home)");
     }
   };
@@ -41,7 +44,7 @@ export default function RootLayout() {
       <Stack>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen
-          name="onboarding/location"
+          name="onboarding/enable-location"
           options={{ headerShown: false }}
         />
       </Stack>

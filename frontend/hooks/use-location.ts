@@ -7,7 +7,7 @@ type Coords = {
 };
 
 type LocationState = {
-  coords: Coords | null;
+  userCoords: Coords | null;
   permissionStatus: Location.PermissionStatus | null;
   loading: boolean;
   error: string | null;
@@ -15,7 +15,7 @@ type LocationState = {
 
 export function useLocation() {
   const [state, setState] = useState<LocationState>({
-    coords: null,
+    userCoords: null,
     permissionStatus: null,
     loading: true,
     error: null,
@@ -32,6 +32,7 @@ export function useLocation() {
   };
 
   // Call this only on explicit user action (button tap)
+  // This triggers the native OS prompt.
   const requestPermission = async (): Promise<boolean> => {
     setState((prev) => ({ ...prev, loading: true }));
     const { status } = await Location.requestForegroundPermissionsAsync();
@@ -39,7 +40,7 @@ export function useLocation() {
     return status === Location.PermissionStatus.GRANTED;
   };
 
-  const fetchLocation = async () => {
+  const fetchUserLocation = async () => {
     try {
       setState((prev) => ({ ...prev, loading: true }));
       const location = await Location.getCurrentPositionAsync({
@@ -47,7 +48,7 @@ export function useLocation() {
       });
       setState((prev) => ({
         ...prev,
-        coords: {
+        userCoords: {
           latitude: location.coords.latitude,
           longitude: location.coords.longitude,
         },
@@ -62,5 +63,5 @@ export function useLocation() {
     }
   };
 
-  return { ...state, requestPermission, fetchLocation };
+  return { ...state, requestPermission, fetchUserLocation };
 }

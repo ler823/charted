@@ -1,14 +1,15 @@
+import { Colors, Fonts } from "@/constants/theme";
 import { useLocation } from "@/hooks/use-location";
 import { router } from "expo-router";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 export default function LocationPrimerScreen() {
-  const { requestPermission, fetchLocation } = useLocation();
+  const { requestPermission, fetchUserLocation } = useLocation();
 
   const handleAllow = async () => {
     const granted = await requestPermission();
     if (granted) {
-      await fetchLocation(); // grab coords immediately while we have momentum
+      await fetchUserLocation(); // grab coords immediately while we have momentum
     }
     router.replace("/(tabs)/(home)"); // always proceed regardless
   };
@@ -62,17 +63,30 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     textAlign: "center",
     marginBottom: 12,
+    fontFamily: Fonts.bold,
+    color: Colors.light.background,
   },
-  body: { fontSize: 16, color: "#555", textAlign: "center", marginBottom: 32 },
+  body: {
+    fontSize: 16,
+    color: "#555",
+    textAlign: "center",
+    marginBottom: 32,
+    fontFamily: Fonts.regular,
+  },
   benefits: { alignSelf: "stretch", marginBottom: 40, gap: 12 },
-  benefit: { fontSize: 15, color: "#333" },
+  benefit: { fontSize: 15, color: "#333", fontFamily: Fonts.regular },
   primaryBtn: {
-    backgroundColor: "#007AFF",
+    backgroundColor: Colors.light.background,
     borderRadius: 14,
     paddingVertical: 16,
     paddingHorizontal: 48,
     marginBottom: 16,
   },
-  primaryBtnText: { color: "#fff", fontSize: 17, fontWeight: "600" },
-  skipText: { color: "#888", fontSize: 15 },
+  primaryBtnText: {
+    color: "#fff",
+    fontSize: 17,
+    fontWeight: "600",
+    fontFamily: Fonts.bold,
+  },
+  skipText: { color: "#888", fontSize: 15, fontFamily: Fonts.regular },
 });
