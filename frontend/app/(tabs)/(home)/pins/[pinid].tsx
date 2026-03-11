@@ -9,6 +9,7 @@ import { router, useLocalSearchParams } from "expo-router";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Image } from "expo-image";
 import { AutoSkeletonView } from "react-native-auto-skeleton";
+import LoadingPage from "@/components/loading-page"
 
 
 type Pin = {
@@ -54,9 +55,8 @@ export default function PinPage() {
       fetchPin();
     }, [pinid]);
 
-  { /* temporary loading page, doesnt have styling yet */}
   if (!pin) {
-    return <Text>Loading...</Text>
+    return <LoadingPage />
   }
 
   return (
