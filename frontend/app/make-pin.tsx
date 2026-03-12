@@ -227,7 +227,7 @@ export default function MakePin() {
     <Pressable onPress={Keyboard.dismiss} style={{ flex: 1 }}>
       {/*  SafeAreaView places elements under the phone's status bar */}
       <SafeAreaView style={styles.container}>
-        <Stack.Screen options={{ headerShown: false }} />
+        <Stack.Screen options={{ headerShown: false, animation: "slide_from_right" }} />
         <View style={styles.topBar}>
           <Pressable style={styles.cancelBtn} onPress={() => router.back()}>
             <Text style={styles.cancelText}>Cancel</Text>
