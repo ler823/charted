@@ -1,4 +1,5 @@
 import AddTagOrList from "@/components/add-tag";
+import LoadingPage from "@/components/loading-page";
 import { PressableStars } from "@/components/pressable-stars";
 import { Colors, Fonts } from "@/constants/theme";
 import { supabase } from "@/lib/supabase";
@@ -20,8 +21,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 export default function MakePin() {
   const router = useRouter();
   const { pinId, lat: latParam, lng: lngParam } = useLocalSearchParams<{ pinId?: string; lat?: string; lng?: string }>();
-  const [lat, setLat] = useState(latParam || "");
-  const [lng, setLng] = useState(lngParam || "");
+  const [lat, setLat] = useState((Math.round(parseFloat(latParam!) * 1e5) / 1e5).toString() || "");
+  const [lng, setLng] = useState((Math.round(parseFloat(lngParam!) * 1e5) / 1e5).toString() || "");
   const isEdit = pinId != undefined;
   const [name, setName] = useState("");
   const [address, setAddress] = useState("");
@@ -32,6 +33,7 @@ export default function MakePin() {
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [modalVisible, setAddTagVisible] = useState(false);
   const [newTag, setNewTag] = useState("");
+  const [dataLoaded, setDataLoaded] = useState(false);
   let inserted_pin_id = 0;
 
   const toggleTag = (tag: string) => {
@@ -313,12 +315,20 @@ export default function MakePin() {
 
   // This will run on launch
   useEffect(() => {
-    if (isEdit) {
-      getPinInfo();
+    const loadData = async () => {
+      if (isEdit) {
+        await getPinInfo();
+      }
+      await cleanupUnusedTags();
+      await loadTags();
+      setDataLoaded(true);
     }
-    cleanupUnusedTags();
-    loadTags();
+    loadData()
   }, []);
+
+  if (!dataLoaded) {
+    return <LoadingPage />
+  }
 
   return (
     /* This Pressable wrapper allows us to cancel text input by closing keyboard when clicking outside */
