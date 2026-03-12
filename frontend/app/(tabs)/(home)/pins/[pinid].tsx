@@ -34,6 +34,12 @@ type Pin = {
     visit_id: number | null;
     visit_timestamp: string | null;
   }[] | null;
+  pin_photos: {
+    photos: {
+      photo_id: number | null;
+      link: string | null;
+    } | null;
+  } | null;
 };
 
 
@@ -45,7 +51,11 @@ export default function PinPage() {
       async function fetchPin() {
         const { data, error } = await supabase
           .from("pins")
-          .select( `*, pin_tags(tags( tag_id, name )), pin_lists(lists( list_id, name )), pin_visits( visit_id, visit_timestamp )` )
+          .select( `*,
+            pin_tags(tags( tag_id, name )),
+            pin_lists(lists( list_id, name )),
+            pin_visits( visit_id, visit_timestamp ),
+            pin_photos(photos( photo_id, link ))` )
           .eq('pin_id', Number(pinid))
           .single();
         setPin(data as Pin);
@@ -61,7 +71,10 @@ export default function PinPage() {
     <>
       <ScrollView>
         {/* Image */}
-        <Image source={require("@/assets/images/test_ss_creamery.png")} style={styles.img} placeholder="blur"/>
+        
+        <Image source={require("@/assets/images/no_image_default.png")} style={styles.img} placeholder="blur"/>
+        
+        {/* <Image source={{ uri: pin.pin_photos?.photos?.link}} style={styles.img} placeholder="blur"/> */}
 
         {/* Title */}
         <View style={{marginHorizontal: 10}}>
