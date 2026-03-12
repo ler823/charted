@@ -17,12 +17,58 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+type Pin = {
+  pin_id: number | null;
+  location_id: number | null;
+  user_id: number | null;
+  user_rating: number | null;
+  user_note: string | null;
+  name: string | null;
+  address: string | null;
+  pin_tags: {
+    tags: {
+      tag_id: number | null;
+      name: string | null;
+    } | null;
+  }[] | null;
+  pin_lists: {
+    lists: {
+      list_id: number | null;
+      name: string | null;
+    } | null;
+  }[] | null;
+  pin_visits: {
+    visit_id: number | null;
+    visit_timestamp: string | null;
+  }[] | null;
+};
+
+const emptyPin: Pin = {
+  pin_id: null,
+  location_id: 41,
+  user_id: null,
+  user_rating: null,
+  user_note: null,
+  name: null,
+  address: null,
+  pin_tags: null,
+  pin_lists: null,
+  pin_visits: null
+};
+
+type MakePinProps = {
+  isEdit: boolean;
+  pin: Pin;
+};
+
 export default function MakePin() {
   const router = useRouter();
-  const { lat, lng } = useLocalSearchParams<{ lat: string; lng: string }>();
+  const { pinId, lat, lng } = useLocalSearchParams<{ pinId?: string; lat?: string; lng?: string }>();
+  console.log("params", { pinId, lat, lng });
+  const isEdit = pinId != undefined;
   const [name, setName] = useState("");
   const [address, setAddress] = useState("");
-  const [photo, setPhoto] = useState<string | null>(null);
+  const [photo, setPhoto] = useState("");
   const [rating, setRating] = useState(0);
   const [notes, setNotes] = useState("");
   const [tags, setTags] = useState<string[]>([]);
@@ -71,8 +117,8 @@ export default function MakePin() {
     const { data, error } = await supabase
       .rpc('create_pin', {
         p_address: address,
-        p_latitude: Math.round(parseFloat(lat) * 1e5) / 1e5,
-        p_longitude: Math.round(parseFloat(lng) * 1e5) / 1e5,
+        p_latitude: Math.round(parseFloat(lat!) * 1e5) / 1e5,
+        p_longitude: Math.round(parseFloat(lng!) * 1e5) / 1e5,
         p_pin_name: name,
         p_user_note: notes,
         p_user_rating: rating,
@@ -154,8 +200,26 @@ export default function MakePin() {
     }
   };
 
+  const getPinInfo = async () => {
+    const { data, error } = await supabase
+      .from("pins")
+      .select(`
+        name,
+        user_rating,
+        user_note,
+        address,
+        locations (
+        latitude,
+        longitude)`)
+      .eq("pin_id", pinId)
+    console.log(data)
+  }
+
   // This will run on launch
   useEffect(() => {
+    if (isEdit) {
+      getPinInfo();
+    }
     cleanupUnusedTags();
     loadTags();
   }, []);

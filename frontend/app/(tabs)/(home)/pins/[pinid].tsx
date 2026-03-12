@@ -1,15 +1,13 @@
-import { supabase } from "@/lib/supabase";
-import React, { useEffect, useState } from "react";
-import { Fonts } from "@/constants/theme";
-import { Ionicons } from "@expo/vector-icons";
-import { FontAwesome } from "@expo/vector-icons";
-import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
 import { Stars } from "@/components/stars";
-import { router, useLocalSearchParams } from "expo-router";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Fonts } from "@/constants/theme";
+import { supabase } from "@/lib/supabase";
+import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
-import { AutoSkeletonView } from "react-native-auto-skeleton";
-import LoadingPage from "@/components/loading-page"
+import { router, useLocalSearchParams } from "expo-router";
+import React, { useEffect, useState } from "react";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+//import { AutoSkeletonView } from "react-native-auto-skeleton";
+import LoadingPage from "@/components/loading-page";
 
 
 type Pin = {
@@ -205,7 +203,12 @@ export default function PinPage() {
           <Pressable
             style={styles.button}
             onPress={() => {
-              router.push("/make-pin");
+              router.push({
+                pathname: "/make-pin",
+                params: {
+                  pinId: pin.pin_id
+                }
+              })
             }}
           >
             <Text
