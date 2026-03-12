@@ -43,7 +43,7 @@ export default function MakePin() {
   const savePinTags = async () => {
     const { data: tagIds, error: getTagIdsError } = await supabase
       .from("tags")
-      .select("tag_id")
+      .select(`"tag_id"`)
       .in("name", selectedTags);
 
     if (tagIds === null || getTagIdsError) {
@@ -144,6 +144,7 @@ export default function MakePin() {
       return;
     }
     loadTags();
+    toggleTag(tagToAdd.name)
     setAddTagVisible(false)
   }
 
@@ -188,12 +189,108 @@ export default function MakePin() {
     if (locData == null) {
       return;
     }
+
+    const { data: userData, error: userDataError } = await supabase
+      .from("users")
+      .select("user_id")
+      .eq("username", "TimTimTim")
+    
+    if (userDataError) {
+      Alert.alert("Error", userDataError.message);
+      return;
+    }
+    if (userData == null) {
+      return;
+    }
+
+    const { data: tagData, error: tagDataError } = await supabase
+      .from("pin_tags")
+      .select(`
+        tags (
+          name
+        )
+      `)
+      .eq("pin_id", pinId)
+    if (tagDataError) {
+      Alert.alert("Error", tagDataError.message);
+      return;
+    }
+    if (tagData == null) {
+      return;
+    }
+    let loadedSelectedTags = tagData.map((data) => (data.tags as unknown as { name: any }).name); // kinda messy but it turns off the warnings lol
     setName(pinData[0].name)
     setAddress(pinData[0].address)
     setRating(pinData[0].user_rating)
     setNotes(pinData[0].user_note)
     setLat(locData[0].latitude.toString())
     setLng(locData[0].longitude.toString())
+    setSelectedTags(loadedSelectedTags)
+  }
+
+  const updatePinTags = async () => {
+    const { data: tagIds, error: getTagIdsError } = await supabase
+      .from("tags")
+      .select(`"tag_id"`)
+      .in("name", selectedTags);
+
+    if (getTagIdsError) {
+      Alert.alert("Error", getTagIdsError.message);
+      return;
+    }
+
+    if (tagIds === null) {
+      return
+    }
+
+    const { data: tagData, error: tagDataError } = await supabase
+      .from("pin_tags")
+      .select("tag_id")
+      .eq("pin_id", pinId)
+
+    if (tagDataError) {
+      Alert.alert("Error", tagDataError.message);
+      return;
+    }
+    
+    if (tagData === null) {
+      return
+    }
+
+    let locallySelectedTags = tagIds.map(tag => tag.tag_id)
+    let databaseSelectedTags = tagData.map(tag => tag.tag_id)
+
+    let deletedTags = databaseSelectedTags.filter((tag_id) => !locallySelectedTags.includes(tag_id))
+    let addedTags = locallySelectedTags.filter((tag_id) => !databaseSelectedTags.includes(tag_id))
+    if (addedTags.length != 0) {
+      const addPinTagAssociation = addedTags.map(tag => ({
+        pin_id: pinId,
+        tag_id: tag
+      }))
+      const { error: addToPinTagsError } = await supabase
+        .from("pin_tags")
+        .insert(addPinTagAssociation);
+  
+      if (addToPinTagsError) {
+        Alert.alert("Error", addToPinTagsError.message);
+        return;
+      }
+    }
+    if (deletedTags.length != 0) {
+      const { error: deleteFromPinTagsError } = await supabase
+        .from("pin_tags")
+        .delete()
+        .eq("pin_id", pinId)
+        .in("tag_id", deletedTags)
+  
+      if (deleteFromPinTagsError) {
+        Alert.alert("Error", deleteFromPinTagsError.message);
+        return;
+      }
+    }
+
+    return;
+    
   }
 
   const updatePin = async () => {
@@ -210,6 +307,7 @@ export default function MakePin() {
       Alert.alert("Error", error.message);
       return;
     }
+    updatePinTags()
     router.back();
   }
 
