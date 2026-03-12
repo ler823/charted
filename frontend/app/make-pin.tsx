@@ -17,54 +17,11 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-type Pin = {
-  pin_id: number | null;
-  location_id: number | null;
-  user_id: number | null;
-  user_rating: number | null;
-  user_note: string | null;
-  name: string | null;
-  address: string | null;
-  pin_tags: {
-    tags: {
-      tag_id: number | null;
-      name: string | null;
-    } | null;
-  }[] | null;
-  pin_lists: {
-    lists: {
-      list_id: number | null;
-      name: string | null;
-    } | null;
-  }[] | null;
-  pin_visits: {
-    visit_id: number | null;
-    visit_timestamp: string | null;
-  }[] | null;
-};
-
-const emptyPin: Pin = {
-  pin_id: null,
-  location_id: 41,
-  user_id: null,
-  user_rating: null,
-  user_note: null,
-  name: null,
-  address: null,
-  pin_tags: null,
-  pin_lists: null,
-  pin_visits: null
-};
-
-type MakePinProps = {
-  isEdit: boolean;
-  pin: Pin;
-};
-
 export default function MakePin() {
   const router = useRouter();
-  const { pinId, lat, lng } = useLocalSearchParams<{ pinId?: string; lat?: string; lng?: string }>();
-  console.log("params", { pinId, lat, lng });
+  const { pinId, lat: latParam, lng: lngParam } = useLocalSearchParams<{ pinId?: string; lat?: string; lng?: string }>();
+  const [lat, setLat] = useState(latParam || "");
+  const [lng, setLng] = useState(lngParam || "");
   const isEdit = pinId != undefined;
   const [name, setName] = useState("");
   const [address, setAddress] = useState("");
@@ -201,18 +158,59 @@ export default function MakePin() {
   };
 
   const getPinInfo = async () => {
-    const { data, error } = await supabase
+    const { data: pinData, error: pinDataError } = await supabase
       .from("pins")
       .select(`
         name,
         user_rating,
         user_note,
         address,
-        locations (
-        latitude,
-        longitude)`)
+        location_id`)
       .eq("pin_id", pinId)
-    console.log(data)
+    if (pinDataError) {
+      Alert.alert("Error", pinDataError.message);
+      return;
+    }
+    if (pinData == null) {
+      return;
+    }
+    const { data: locData, error: locDataError } = await supabase
+      .from("locations")
+      .select(`
+        latitude,
+        longitude
+      `)
+      .eq("id", pinData[0].location_id)
+    if (locDataError) {
+      Alert.alert("Error", locDataError.message);
+      return;
+    }
+    if (locData == null) {
+      return;
+    }
+    setName(pinData[0].name)
+    setAddress(pinData[0].address)
+    setRating(pinData[0].user_rating)
+    setNotes(pinData[0].user_note)
+    setLat(locData[0].latitude.toString())
+    setLng(locData[0].longitude.toString())
+  }
+
+  const updatePin = async () => {
+    const { error } = await supabase
+      .from("pins")
+      .update({
+        name: name,
+        address: address,
+        user_rating: rating,
+        user_note: notes
+      })
+      .eq("pin_id", pinId)
+    if (error) {
+      Alert.alert("Error", error.message);
+      return;
+    }
+    router.back();
   }
 
   // This will run on launch
@@ -234,7 +232,7 @@ export default function MakePin() {
           <Pressable style={styles.cancelBtn} onPress={() => router.back()}>
             <Text style={styles.cancelText}>Cancel</Text>
           </Pressable>
-          <Pressable style={styles.saveBtn} onPress={() => createPin()}>
+          <Pressable style={styles.saveBtn} onPress={() => isEdit ? updatePin() : createPin()}>
             <Text style={styles.saveText}>Save</Text>
           </Pressable>
         </View>
@@ -254,28 +252,28 @@ export default function MakePin() {
             <TextInput
               style={styles.input}
               placeholder="Name"
-              placeholderTextColor="#aaaaaa" 
+              placeholderTextColor="#aaaaaa"
               value={name}
               onChangeText={setName}
             />
             <TextInput
               style={styles.input}
               placeholder="Address"
-              placeholderTextColor="#aaaaaa" 
+              placeholderTextColor="#aaaaaa"
               value={address}
               onChangeText={setAddress}
             />
             <TextInput
               style={[styles.input, styles.inputDisabled]}
               placeholder="Latitude"
-              placeholderTextColor="#aaaaaa" 
+              placeholderTextColor="#aaaaaa"
               value={lat}
               editable={false}
             />
             <TextInput
               style={[styles.input, styles.inputDisabled]}
               placeholder="Longitude"
-              placeholderTextColor="#aaaaaa" 
+              placeholderTextColor="#aaaaaa"
               value={lng}
               editable={false}
             />
