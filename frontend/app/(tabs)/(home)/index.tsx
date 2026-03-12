@@ -38,6 +38,7 @@ export default function Home() {
   const [pinCoords, setPinCoords] = useState<Coords | null>(null);
   const mapRef = useRef<any>(null);
   const { userCoords, permissionStatus, fetchUserLocation } = useLocation();
+  const [region, setRegion] = useState(INITIAL_REGION);
 
   // This fetches data from the 'locations' table in Supabase. Also has error handling if unable to fetch
   useEffect(() => {
@@ -67,7 +68,13 @@ export default function Home() {
       {!isDroppingPin && viewMode === "map" && (
         <Pressable
           style={styles.plusButton}
-          onPress={() => setIsDroppingPin(true)}
+          onPress={() => {
+            setPinCoords({
+              latitude: region.latitude,
+              longitude: region.longitude,
+            });
+            setIsDroppingPin(true);
+          }}
         >
           <MaterialCommunityIcons name="plus" size={45} color="#fefbea" />
         </Pressable>
@@ -85,6 +92,7 @@ export default function Home() {
           initialRegion={INITIAL_REGION}
           style={styles.map}
           ref={mapRef}
+          onRegionChangeComplete={(r) => setRegion(r)}
           onLongPress={(e) => {
             const { latitude, longitude } = e.nativeEvent.coordinate;
             setPinCoords({ latitude, longitude });
