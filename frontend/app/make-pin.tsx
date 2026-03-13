@@ -345,6 +345,7 @@ export default function MakePin() {
           </Pressable>
         </View>
         <View style={styles.row}>
+          <View style={styles.shadowWrapper}>
           <Pressable style={styles.photoInput} onPress={handlePickPhoto}>
             {photo ? (
               <Image source={{ uri: photo }} style={styles.photo} />
@@ -356,6 +357,7 @@ export default function MakePin() {
               />
             )}
           </Pressable>
+          </View>
           <View style={styles.fields}>
             <TextInput
               style={styles.input}
@@ -453,6 +455,11 @@ const styles = StyleSheet.create({
     padding: 16,
     backgroundColor: Colors.light.error,
     borderRadius: 999,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
+    elevation: 4,
   },
   cancelText: {
     color: "#fff",
@@ -463,6 +470,11 @@ const styles = StyleSheet.create({
     padding: 16,
     backgroundColor: "#243e36",
     borderRadius: 999,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
+    elevation: 4,
   },
   saveText: {
     color: "#fff",
@@ -499,6 +511,11 @@ const styles = StyleSheet.create({
     fontSize: 15,
     backgroundColor: Colors.light.accentLight,
     fontFamily: Fonts.regular,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
+    elevation: 4,
   },
   inputDisabled: {
     color: "#ccc",
@@ -523,6 +540,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     flexWrap: "wrap",
     backgroundColor: Colors.light.accentLight,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
+    elevation: 4,
   },
   tagRow: {
     flexDirection: "row",
@@ -552,7 +574,18 @@ const styles = StyleSheet.create({
   starRow: {
     flexDirection: "row",
     gap: 5,
-    marginVertical: 10,
+    backgroundColor: Colors.light.accentLight,
+    alignSelf: "flex-start",
+    padding: "2%",
+    borderWidth: 1,
+    borderColor: "#ddd",
+    borderRadius: 8,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
+    elevation: 4,
+
   },
   tagTitle: {
     flexDirection: "row",
@@ -562,6 +595,13 @@ const styles = StyleSheet.create({
   addTags: {
     marginTop: 24,
     paddingBottom: 6,
-    paddingLeft: 10
+    paddingLeft: 10,
+  },
+  shadowWrapper: {
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
+    elevation: 4,
   }
 });
