@@ -3,9 +3,9 @@ import { Fonts } from "@/constants/theme";
 import { supabase } from "@/lib/supabase";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
-import { router, useLocalSearchParams } from "expo-router";
-import React, { useEffect, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
+import React, { useCallback, useState } from "react";
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 //import { AutoSkeletonView } from "react-native-auto-skeleton";
 import LoadingPage from "@/components/loading-page";
 
@@ -45,23 +45,29 @@ type Pin = {
 
 export default function PinPage() {
   const { pinid } = useLocalSearchParams();
-  const [ pin, setPin ] = useState<Pin | null>(null);
+  const [pin, setPin] = useState<Pin | null>(null);
 
-  useEffect(() => {
+  useFocusEffect(
+    useCallback(() => {
       async function fetchPin() {
         const { data, error } = await supabase
           .from("pins")
-          .select( `*,
+          .select(`*,
             pin_tags(tags( tag_id, name )),
             pin_lists(lists( list_id, name )),
             pin_visits( visit_id, visit_timestamp ),
             pin_photos(photos( photo_id, link ))` )
           .eq('pin_id', Number(pinid))
           .single();
+        if (error) {
+          Alert.alert(error.message)
+          return;
+        }
         setPin(data as Pin);
       }
       fetchPin();
-    }, [pinid]);
+    }, [pinid])
+  );
 
   if (!pin) {
     return <LoadingPage />
@@ -71,21 +77,21 @@ export default function PinPage() {
     <>
       <ScrollView>
         {/* Image */}
-        
-        <Image source={require("@/assets/images/no_image_default.png")} style={styles.img} placeholder="blur"/>
-        
+
+        <Image source={require("@/assets/images/no_image_default.png")} style={styles.img} placeholder="blur" />
+
         {/* <Image source={{ uri: pin.pin_photos?.photos?.link}} style={styles.img} placeholder="blur"/> */}
 
         {/* Title */}
-        <View style={{marginHorizontal: 10}}>
-          <Text style={[styles.title, {marginTop: 10}]}>{pin.name ?? "No pin name"}</Text>
+        <View style={{ marginHorizontal: 10 }}>
+          <Text style={[styles.title, { marginTop: 10 }]}>{pin.name ?? "No pin name"}</Text>
           <View>
             <Text style={styles.address}>{pin.address ?? "No pin address"}</Text>
           </View>
 
           {/* Stars */}
           <View style={styles.starRow}>
-            <Stars starnum={pin.user_rating}/>
+            <Stars starnum={pin.user_rating} />
           </View>
 
           {/* Friend Visits */}
@@ -94,15 +100,15 @@ export default function PinPage() {
           </Text>
           <ScrollView horizontal style={styles.cardRow}>
             <Pressable style={styles.cardPartialRow}>
-              <View style={{flexDirection: "column", flex: 1, alignItems: "center", justifyContent: "center"}}>
-                <View style={[styles.avatar, {marginBottom: 10}]}></View>
-                <Text style={{fontFamily: Fonts.bold, fontSize: 15,}}>OliverCJ</Text>
+              <View style={{ flexDirection: "column", flex: 1, alignItems: "center", justifyContent: "center" }}>
+                <View style={[styles.avatar, { marginBottom: 10 }]}></View>
+                <Text style={{ fontFamily: Fonts.bold, fontSize: 15, }}>OliverCJ</Text>
               </View>
             </Pressable>
             <Pressable style={styles.cardPartialRow}>
-              <View style={{flexDirection: "column", flex: 1, alignItems: "center", justifyContent: "center"}}>
-                <View style={[styles.avatar, {marginBottom: 10}]}></View>
-                <Text style={{fontFamily: Fonts.bold, fontSize: 15,}}>TimTimTim</Text>
+              <View style={{ flexDirection: "column", flex: 1, alignItems: "center", justifyContent: "center" }}>
+                <View style={[styles.avatar, { marginBottom: 10 }]}></View>
+                <Text style={{ fontFamily: Fonts.bold, fontSize: 15, }}>TimTimTim</Text>
               </View>
             </Pressable>
           </ScrollView>
@@ -140,11 +146,11 @@ export default function PinPage() {
             </Text>
           </View>
           <View style={styles.cardFullRow}>
-            <ScrollView contentContainerStyle={{flexDirection: "row", gap: 20, flexWrap: "wrap"}}>
+            <ScrollView contentContainerStyle={{ flexDirection: "row", gap: 20, flexWrap: "wrap" }}>
               {pin.pin_tags?.length === 0 && (
                 <Text style={styles.boxText}>You have no tags yet</Text>
               )}
-              {pin.pin_tags?.map( (pin_tag) => (
+              {pin.pin_tags?.map((pin_tag) => (
                 <Text key={pin_tag.tags?.tag_id} style={styles.boxText}>{pin_tag.tags?.name ?? "Unnamed tag"}</Text>
               ))}
             </ScrollView>
@@ -157,11 +163,11 @@ export default function PinPage() {
             </Text>
           </View>
           <View style={styles.cardFullRow}>
-            <ScrollView contentContainerStyle={{flexDirection: "row", gap: 20, flexWrap: "wrap"}}>
+            <ScrollView contentContainerStyle={{ flexDirection: "row", gap: 20, flexWrap: "wrap" }}>
               {pin.pin_lists?.length === 0 && (
                 <Text style={styles.boxText}>You have no lists yet</Text>
               )}
-              {pin.pin_lists?.map( (pin_list) => (
+              {pin.pin_lists?.map((pin_list) => (
                 <Text key={pin_list.lists?.list_id} style={styles.boxText}>{pin_list.lists?.name ?? "Unnamed list"}</Text>
               ))}
             </ScrollView>
@@ -171,9 +177,9 @@ export default function PinPage() {
           <Text style={styles.subtitle}>
             Visit History
           </Text>
-          <View style={[styles.cardFullRow, {height: 200, flexDirection: "column", alignItems: "flex-start"}]}>
+          <View style={[styles.cardFullRow, { height: 200, flexDirection: "column", alignItems: "flex-start" }]}>
             <Pressable
-              style={[styles.button, {height: 30, marginBottom: 20}]}
+              style={[styles.button, { height: 30, marginBottom: 20 }]}
               onPress={() => {
                 router.back();
               }}
@@ -188,7 +194,7 @@ export default function PinPage() {
               {pin.pin_visits?.length === 0 && (
                 <Text style={styles.boxText}>You have no logged visits</Text>
               )}
-              {pin.pin_visits?.map( (pin_visit) => (
+              {pin.pin_visits?.map((pin_visit) => (
                 <Text key={pin_visit?.visit_id} style={styles.boxText}>{pin_visit?.visit_timestamp ? new Date(pin_visit.visit_timestamp).toLocaleDateString() : "No timestamp"}</Text>
               ))}
             </ScrollView>
@@ -196,7 +202,7 @@ export default function PinPage() {
         </View>
       </ScrollView>
 
-      { /* Back and Edit Buttons */ }
+      { /* Back and Edit Buttons */}
       <View style={styles.header}>
         <View style={styles.buttonRow}>
           <Pressable

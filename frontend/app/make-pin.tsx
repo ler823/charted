@@ -309,7 +309,7 @@ export default function MakePin() {
       Alert.alert("Error", error.message);
       return;
     }
-    updatePinTags()
+    await updatePinTags()
     router.back();
   }
 
