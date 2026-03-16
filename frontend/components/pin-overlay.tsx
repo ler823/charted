@@ -28,12 +28,13 @@ export default function PinOverlay({
             <Text style={styles.pinAddress}>{selectedPin?.address}</Text>
           </View>
           <Pressable
-            onPress={() =>
+            onPress={() => {
+              if (!selectedPin?.id) return;
               router.push({
                 pathname: "/pins/[pinid]",
-                params: { pinid: 1 },
-              })
-            }
+                params: { pinid: selectedPin?.id },
+            })
+            }}
           >
             <Ionicons name="expand-outline" size={20} color="#555" />
           </Pressable>
