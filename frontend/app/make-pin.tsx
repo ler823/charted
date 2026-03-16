@@ -12,6 +12,7 @@ import {
   Keyboard,
   Pressable,
   StyleSheet,
+  Switch,
   Text,
   TextInput,
   View,
@@ -35,8 +36,11 @@ export default function MakePin() {
   const [modalVisible, setAddTagVisible] = useState(false);
   const [newTag, setNewTag] = useState("");
   const [dataLoaded, setDataLoaded] = useState(false);
+  const [isPrivate, setIsPrivate] = useState(false)
   const scrollRef = React.useRef<KeyboardAwareScrollView>(null);
   let inserted_pin_id = 0;
+
+  const togglePrivacy = () => setIsPrivate(previousState => !previousState);
 
   const toggleTag = (tag: string) => {
     setSelectedTags((prev) =>
@@ -81,6 +85,7 @@ export default function MakePin() {
         p_latitude: Math.round(parseFloat(lat!) * 1e5) / 1e5,
         p_longitude: Math.round(parseFloat(lng!) * 1e5) / 1e5,
         p_pin_name: name,
+        p_private: isPrivate,
         p_user_note: notes,
         p_user_rating: rating,
         p_username: "TimTimTim"
@@ -317,13 +322,13 @@ export default function MakePin() {
 
   const deletePin = async () => {
     Alert.alert('Are you sure you want to delete this pin?', 'This action cannot be undone', [
-      {text: 'Cancel'},
+      { text: 'Cancel' },
       {
         text: 'Delete',
         style: 'destructive',
         onPress: async () => {
           const { error } = await supabase
-          .rpc("delete_pin", {p_pin_id: pinId})
+            .rpc("delete_pin", { p_pin_id: pinId })
           if (error) {
             console.log(error.message)
           }
@@ -422,10 +427,25 @@ export default function MakePin() {
               />
             </View>
           </View>
-          <View>
-            <Text style={styles.notesHeading}>Rating</Text>
-            <View style={styles.starRow}>
-              <PressableStars rating={rating} setRating={setRating} />
+          <View style={styles.ratingsPrivacyRow}>
+            <View>
+              <Text style={styles.notesHeading}>Rating</Text>
+              <View style={styles.starRow}>
+                <PressableStars rating={rating} setRating={setRating} />
+              </View>
+            </View>
+            <View>
+              <Text style={styles.notesHeading}>Private</Text>
+              <View style={styles.privacySwitchBackground}>
+                <Switch
+                  trackColor={{ false: Colors.light.text, true: Colors.light.accent }}
+                  thumbColor={Colors.light.accentLight}
+                  ios_backgroundColor="#3e3e3e"
+                  onValueChange={togglePrivacy}
+                  value={isPrivate}
+                  style={styles.privacySwitch}
+                />
+              </View>
             </View>
           </View>
           <View>
@@ -435,7 +455,7 @@ export default function MakePin() {
               placeholder="Enter notes here"
               value={notes}
               onChangeText={setNotes}
-              multiline
+              multiline={true}
               textAlignVertical="top"
               onFocus={(event) => {
                 scrollRef.current?.scrollToFocusedInput(event.target);
@@ -471,7 +491,7 @@ export default function MakePin() {
             ))}
             <AddTagOrList isVisible={modalVisible} onClose={() => setAddTagVisible(false)} onSave={addTag} newTag={newTag} setNewTag={setNewTag} />
           </View>
-          {isEdit && (<View style={{alignSelf: "center"}}>
+          {isEdit && (<View style={{ alignSelf: "center" }}>
             <Pressable style={styles.deleteBtn} onPress={deletePin}>
               <MaterialCommunityIcons name="trash-can-outline" size={24} color="#fff" />
               <Text style={styles.cancelText}>Delete</Text>
@@ -619,7 +639,7 @@ const styles = StyleSheet.create({
     gap: 5,
     backgroundColor: Colors.light.accentLight,
     alignSelf: "flex-start",
-    padding: "2%",
+    padding: 8,
     borderWidth: 1,
     borderColor: "#ddd",
     borderRadius: 8,
@@ -663,4 +683,26 @@ const styles = StyleSheet.create({
     elevation: 4,
     marginTop: 24
   },
+  ratingsPrivacyRow: {
+    flexDirection: "row",
+    gap: 16,
+    justifyContent: "flex-start"
+  },
+  privacySwitchBackground: {
+    flexDirection: "row",
+    gap: 8,
+    backgroundColor: Colors.light.accentLight,
+    alignSelf: "flex-start",
+    padding: 9.5,
+    borderWidth: 1,
+    borderColor: "#ddd",
+    borderRadius: 8,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
+    elevation: 4,
+  },
+  privacySwitch: {
+  }
 });
