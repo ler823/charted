@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "react-native-auto-size-text": "^1.1.1",
     "react-native-auto-skeleton": "^0.1.30"
   }
 }

@@ -4,11 +4,17 @@ import { supabase } from "@/lib/supabase";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useState, useEffect } from "react";
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 //import { AutoSkeletonView } from "react-native-auto-skeleton";
 import LoadingPage from "@/components/loading-page";
 
+
+type Friend = {
+  user_id: number;
+  username: string;
+  location: string | null;
+};
 
 type Pin = {
   pin_id: number | null;
@@ -45,9 +51,11 @@ type Pin = {
 
 export default function PinPage() {
   const { pinid } = useLocalSearchParams();
-  const [pin, setPin] = useState<Pin | null>(null);
 
-  useFocusEffect(
+  const [pin, setPin] = useState<Pin | null>(null);
+  const [friends, setFriends] = useState<Friend[] | null>([]);
+
+  useEffect(
     useCallback(() => {
       async function fetchPin() {
         const { data, error } = await supabase
@@ -69,7 +77,17 @@ export default function PinPage() {
     }, [pinid])
   );
 
-  if (!pin) {
+  useEffect(() => {
+      async function fetchUsers() {
+        const { data } = await supabase
+          .from("users")
+          .select("user_id, username, location");
+        setFriends(data ?? []);
+      }
+      fetchUsers();
+    }, []);
+
+  if (!pin || !friends) {
     return <LoadingPage />
   }
 
@@ -102,12 +120,24 @@ export default function PinPage() {
             Friends Who Have Visited
           </Text>
           <ScrollView horizontal style={styles.cardRow}>
-            <Pressable style={styles.cardPartialRow}>
-              <View style={{ flexDirection: "column", flex: 1, alignItems: "center", justifyContent: "center" }}>
-                <View style={[styles.avatar, { marginBottom: 10 }]}></View>
-                <Text style={{ fontFamily: Fonts.bold, fontSize: 15, }}>OliverCJ</Text>
-              </View>
-            </Pressable>
+            {friends?.length === 0 && (
+                <Text style={styles.boxText}>None of your friends share this pin yet</Text>
+              )}
+              {friends?.map((friend) => (
+                <Pressable key={friend?.user_id} style={styles.cardPartialRow}>
+                  <View style={{ flexDirection: "column", flex: 1, alignItems: "center", justifyContent: "center" }}>
+                    <View style={[styles.avatar, { marginBottom: 10 }]}></View>
+                    <Text 
+                      style={{ fontFamily: Fonts.bold, fontSize: 15, }}
+                      adjustsFontSizeToFit
+                      minimumFontScale={0.5}
+                      numberOfLines={1}
+                    >
+                        {friend?.username ?? "Unnamed friend"}
+                    </Text>
+                  </View>
+                </Pressable>
+              ))}
           </ScrollView>
 
           {/* Notes */}
@@ -122,11 +152,8 @@ export default function PinPage() {
           <Text style={styles.subtitle}>
             Friends' Notes
           </Text>
-          <Pressable style={styles.cardFullRow}>
-            {/* 
-            Placeholder circle for now. 
-            Picture will be added once figured out how to load pictures from cloud/db
-            */}
+          {/* Formatting for friend notes, once we implement that:
+            <Pressable style={styles.cardFullRow}>
             <View style={styles.avatar}></View>
             <View style={styles.cardInfo}>
               <Text style={styles.username}>seasideauthor</Text>
@@ -135,6 +162,10 @@ export default function PinPage() {
               </Text>
             </View>
           </Pressable>
+          */}
+          <View style={styles.cardFullRow}>
+            <Text style={styles.boxText}>None of your friends share this pin yet</Text>
+          </View>
 
           {/* Tags */}
           <View style={styles.editRow}>
