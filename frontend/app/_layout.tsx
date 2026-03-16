@@ -6,8 +6,12 @@ import {
 } from "@expo-google-fonts/raleway";
 import { useFonts } from "expo-font";
 import * as Location from "expo-location";
-import { Stack } from "expo-router";
-import { useEffect, useState } from "react";
+import { Stack, router } from "expo-router";
+import * as SplashScreen from "expo-splash-screen";
+import { useEffect } from "react";
+
+// Hold the splash screen until we're ready
+SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
@@ -15,29 +19,25 @@ export default function RootLayout() {
     Raleway_400Regular,
     Raleway_700Bold,
   });
-  const [initialRoute, setInitialRoute] = useState<string | null>(null);
 
   useEffect(() => {
-    if (fontsLoaded) {
-      Location.getForegroundPermissionsAsync().then(({ status }) => {
-        setInitialRoute(
-          status === Location.PermissionStatus.UNDETERMINED
-            ? "onboarding/enable-location"
-            : "(tabs)",
-        );
-      });
-    }
-  }, [fontsLoaded]);
+    if (!fontsLoaded) return;
 
-  // Hold render until both fonts AND permission status are known
-  if (!fontsLoaded || !initialRoute) return null;
+    Location.getForegroundPermissionsAsync().then(({ status }) => {
+      // Hide splash screen first, THEN navigate — no animation occurs
+      SplashScreen.hideAsync().then(() => {
+        if (status === Location.PermissionStatus.UNDETERMINED) {
+          router.replace("/onboarding/enable-location");
+        } else {
+          router.replace("/(tabs)/(home)");
+        }
+      });
+    });
+  }, [fontsLoaded]);
 
   return (
     <DroppingPinProvider>
-      <Stack
-        initialRouteName={initialRoute}
-        screenOptions={{ headerShown: false, animation: "none" }}
-      >
+      <Stack screenOptions={{ headerShown: false, animation: "none" }}>
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="onboarding/enable-location" />
       </Stack>
