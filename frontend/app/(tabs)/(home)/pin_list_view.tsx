@@ -1,17 +1,17 @@
+import { useRouter } from "expo-router";
 import React from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 import ListCard from "./list_card";
-import { useRouter } from "expo-router";
 
 export default function PinListView() {
-    const router = useRouter()
-    // const {cards} = useCards()
-    // this is the context that should be set up with the database for viewing card locations. tutorial #22 i think for how to set it up
+  const router = useRouter();
+  // const {cards} = useCards()
+  // this is the context that should be set up with the database for viewing card locations. tutorial #22 i think for how to set it up
 
-    return (
-        <View>
-            <View style={styles.spacer} />
-            {/*<FlatList
+  return (
+    <View>
+      <View style={styles.spacer} />
+      {/*<FlatList
                 // here's the flatlist i believe set up correctly?? it may be easier to just move the list cards into this module and not pass props at all
                 data={cards}
                 keyExtractor={(item) => item.$id}
@@ -21,24 +21,29 @@ export default function PinListView() {
                     </Pressable>
                 )}
             />*/}
-            <Pressable style={styles.cards} onPress={() => 
-                router.push({
-                    pathname: "/pins/[pinid]",
-                    params: {
-                        pinid: 28
-                    }})}>
-                <ListCard />
-            </Pressable>
-        </View>
-    );
+      <Pressable
+        style={styles.cards}
+        onPress={() =>
+          router.push({
+            pathname: "/pins/[pinid]",
+            params: {
+              pinid: 28,
+            },
+          })
+        }
+      >
+        <ListCard />
+      </Pressable>
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({
-    cards: {
-        width: "100%",
-        alignItems: "center",
-    },
-    spacer: {
-        marginTop: 170,
-    }
+  cards: {
+    width: "100%",
+    alignItems: "center",
+  },
+  spacer: {
+    marginTop: 170,
+  },
 });
