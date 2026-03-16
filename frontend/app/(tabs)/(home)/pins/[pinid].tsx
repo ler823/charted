@@ -129,7 +129,9 @@ export default function PinPage() {
               {friends?.map((friend) => (
                 <Pressable key={friend?.user_id} style={styles.cardPartialRow}>
                   <View style={{ flexDirection: "column", flex: 1, alignItems: "center", justifyContent: "center" }}>
-                    <View style={[styles.avatar, { marginBottom: 10 }]}></View>
+                    <View style={[styles.avatar, { marginBottom: 10 }]}>
+                      <Text style={styles.avatarInitial}>{friend?.username?.[0]?.toUpperCase()}</Text>
+                    </View>
                     <Text 
                       style={{ fontFamily: Fonts.bold, fontSize: 15, }}
                       adjustsFontSizeToFit
@@ -380,9 +382,14 @@ const styles = StyleSheet.create({
     width: 55,
     height: 55,
     borderRadius: 999,
-    backgroundColor: "#fff",
+    backgroundColor: "#d8d8d8",
     alignItems: "center",
     justifyContent: "center",
+  },
+  avatarInitial: {
+    fontSize: 28,
+    fontFamily: Fonts.regular,
+    color: "#000",
   },
   cardInfo: {
     flex: 1,
