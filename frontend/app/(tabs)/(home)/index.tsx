@@ -44,19 +44,31 @@ export default function Home() {
   useEffect(() => {
     async function fetchLocations() {
       const { data, error } = await supabase
-        .from("locations")
-        .select("id, name, address, latitude, longitude");
+        .from("pins")
+        .select(`pin_id, location_id, user_id, name, address,
+           locations:location_id( id, latitude, longitude )`)
+        .eq("user_id", 4);
       if (error) {
         console.error("Failed to fetch locations:", error.message);
         return;
       }
+
+      const typedData = (data as unknown as {
+        pin_id: number;
+        name: string;
+        address: string;
+        location_id: number;
+        user_id: number;
+        locations?: { id: number; latitude: number; longitude: number } | null;
+      }[]);
+
       setPins(
-        (data ?? []).map((row) => ({
-          id: String(row.id),
+        typedData.map((row) => ({
+          id: String(row.pin_id),
           name: row.name,
           address: row.address,
-          latitude: row.latitude ?? 0,
-          longitude: row.longitude ?? 0,
+          latitude: row.locations?.latitude ?? 0,
+          longitude: row.locations?.longitude ?? 0,
         })),
       );
     }
