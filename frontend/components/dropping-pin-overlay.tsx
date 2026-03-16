@@ -70,6 +70,11 @@ const styles = StyleSheet.create({
     padding: 16,
     backgroundColor: Colors.light.error,
     borderRadius: 999,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
+    elevation: 4,
   },
   btnText: {
     color: "#fff",
@@ -79,5 +84,10 @@ const styles = StyleSheet.create({
     padding: 16,
     backgroundColor: "#243e36",
     borderRadius: 999,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
+    elevation: 4,
   },
 });
