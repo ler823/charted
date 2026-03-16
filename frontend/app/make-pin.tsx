@@ -16,6 +16,7 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function MakePin() {
@@ -34,6 +35,7 @@ export default function MakePin() {
   const [modalVisible, setAddTagVisible] = useState(false);
   const [newTag, setNewTag] = useState("");
   const [dataLoaded, setDataLoaded] = useState(false);
+  const scrollRef = React.useRef<KeyboardAwareScrollView>(null);
   let inserted_pin_id = 0;
 
   const toggleTag = (tag: string) => {
@@ -196,7 +198,7 @@ export default function MakePin() {
       .from("users")
       .select("user_id")
       .eq("username", "TimTimTim")
-    
+
     if (userDataError) {
       Alert.alert("Error", userDataError.message);
       return;
@@ -254,7 +256,7 @@ export default function MakePin() {
       Alert.alert("Error", tagDataError.message);
       return;
     }
-    
+
     if (tagData === null) {
       return
     }
@@ -272,7 +274,7 @@ export default function MakePin() {
       const { error: addToPinTagsError } = await supabase
         .from("pin_tags")
         .insert(addPinTagAssociation);
-  
+
       if (addToPinTagsError) {
         Alert.alert("Error", addToPinTagsError.message);
         return;
@@ -284,7 +286,7 @@ export default function MakePin() {
         .delete()
         .eq("pin_id", pinId)
         .in("tag_id", deletedTags)
-  
+
       if (deleteFromPinTagsError) {
         Alert.alert("Error", deleteFromPinTagsError.message);
         return;
@@ -292,7 +294,7 @@ export default function MakePin() {
     }
 
     return;
-    
+
   }
 
   const updatePin = async () => {
@@ -332,111 +334,128 @@ export default function MakePin() {
 
   return (
     /* This Pressable wrapper allows us to cancel text input by closing keyboard when clicking outside */
-    <Pressable onPress={Keyboard.dismiss} style={{ flex: 1 }}>
-      {/*  SafeAreaView places elements under the phone's status bar */}
-      <SafeAreaView style={styles.container}>
-        <Stack.Screen options={{ headerShown: false, animation: "slide_from_right" }} />
-        <View style={styles.topBar}>
-          <Pressable style={styles.cancelBtn} onPress={() => router.back()}>
-            <Text style={styles.cancelText}>Cancel</Text>
-          </Pressable>
-          <Pressable style={styles.saveBtn} onPress={() => isEdit ? updatePin() : createPin()}>
-            <Text style={styles.saveText}>Save</Text>
-          </Pressable>
-        </View>
-        <View style={styles.row}>
-          <View style={styles.shadowWrapper}>
-          <Pressable style={styles.photoInput} onPress={handlePickPhoto}>
-            {photo ? (
-              <Image source={{ uri: photo }} style={styles.photo} />
-            ) : (
-              <MaterialCommunityIcons
-                name="camera-plus"
-                size={28}
-                color="#888"
-              />
-            )}
-          </Pressable>
-          </View>
-          <View style={styles.fields}>
-            <TextInput
-              style={styles.input}
-              placeholder="Name"
-              placeholderTextColor="#aaaaaa"
-              value={name}
-              onChangeText={setName}
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="Address"
-              placeholderTextColor="#aaaaaa"
-              value={address}
-              onChangeText={setAddress}
-            />
-            <TextInput
-              style={[styles.input, styles.inputDisabled]}
-              placeholder="Latitude"
-              placeholderTextColor="#aaaaaa"
-              value={lat}
-              editable={false}
-            />
-            <TextInput
-              style={[styles.input, styles.inputDisabled]}
-              placeholder="Longitude"
-              placeholderTextColor="#aaaaaa"
-              value={lng}
-              editable={false}
-            />
-          </View>
-        </View>
-        <View>
-          <Text style={styles.notesHeading}>Rating</Text>
-          <View style={styles.starRow}>
-            <PressableStars rating={rating} setRating={setRating} />
-          </View>
-        </View>
-        <View>
-          <Text style={styles.notesHeading}>Notes</Text>
-          <TextInput
-            style={[styles.input, styles.notesInput]}
-            placeholder="Enter notes here"
-            value={notes}
-            onChangeText={setNotes}
-            multiline
-            textAlignVertical="top"
-          />
-        </View>
-        <View style={styles.tagTitle}>
-          <Text style={styles.notesHeading}>Tags</Text>
-          <Pressable onPress={() => setAddTagVisible(true)}>
-            <MaterialCommunityIcons name="plus-circle-outline" size={24} color="black" style={styles.addTags} />
-          </Pressable>
-        </View>
+    <KeyboardAwareScrollView
+      style={{ flex: 1 }}
+      contentContainerStyle={styles.container}
+      keyboardShouldPersistTaps="handled"
+      ref={scrollRef}
+    >
 
-        <View style={styles.tagsContainer}>
-          {tags.map((tag) => (
-            <Pressable
-              key={tag}
-              style={styles.tagRow}
-              onPress={() => toggleTag(tag)}
-            >
-              <View
-                style={[
-                  styles.checkbox,
-                  selectedTags.includes(tag) && styles.checkboxChecked,
-                ]}
-              >
-                {selectedTags.includes(tag) && (
-                  <MaterialCommunityIcons name="check" size={14} color="#fff" />
-                )}
-              </View>
-              <Text style={styles.tagLabel}>{tag}</Text>
+      <Pressable onPress={Keyboard.dismiss} style={{ flex: 1 }}>
+        {/*  SafeAreaView places elements under the phone's status bar */}
+        <SafeAreaView>
+          <Stack.Screen options={{ headerShown: false, animation: "slide_from_right" }} />
+          <View style={styles.topBar}>
+            <Pressable style={styles.cancelBtn} onPress={() => router.back()}>
+              <Text style={styles.cancelText}>Cancel</Text>
             </Pressable>
-          ))}
-          <AddTagOrList isVisible={modalVisible} onClose={() => setAddTagVisible(false)} onSave={addTag} newTag={newTag} setNewTag={setNewTag} />
-        </View>
-      </SafeAreaView>
-    </Pressable>
+            <Pressable style={styles.saveBtn} onPress={() => isEdit ? updatePin() : createPin()}>
+              <Text style={styles.saveText}>Save</Text>
+            </Pressable>
+          </View>
+          <View style={styles.row}>
+            <View style={styles.shadowWrapper}>
+              <Pressable style={styles.photoInput} onPress={handlePickPhoto}>
+                {photo ? (
+                  <Image source={{ uri: photo }} style={styles.photo} />
+                ) : (
+                  <MaterialCommunityIcons
+                    name="camera-plus"
+                    size={28}
+                    color="#888"
+                  />
+                )}
+              </Pressable>
+            </View>
+            <View style={styles.fields}>
+              <TextInput
+                style={styles.input}
+                placeholder="Name"
+                placeholderTextColor="#aaaaaa"
+                value={name}
+                onChangeText={setName}
+                onFocus={(event) => {
+                  scrollRef.current?.scrollToFocusedInput(event.target);
+                }}
+              />
+              <TextInput
+                style={styles.input}
+                placeholder="Address"
+                placeholderTextColor="#aaaaaa"
+                value={address}
+                onChangeText={setAddress}
+                onFocus={(event) => {
+                  scrollRef.current?.scrollToFocusedInput(event.target);
+                }}
+              />
+              <TextInput
+                style={[styles.input, styles.inputDisabled]}
+                placeholder="Latitude"
+                placeholderTextColor="#aaaaaa"
+                value={lat}
+                editable={false}
+              />
+              <TextInput
+                style={[styles.input, styles.inputDisabled]}
+                placeholder="Longitude"
+                placeholderTextColor="#aaaaaa"
+                value={lng}
+                editable={false}
+              />
+            </View>
+          </View>
+          <View>
+            <Text style={styles.notesHeading}>Rating</Text>
+            <View style={styles.starRow}>
+              <PressableStars rating={rating} setRating={setRating} />
+            </View>
+          </View>
+          <View>
+            <Text style={styles.notesHeading}>Notes</Text>
+            <TextInput
+              style={[styles.input, styles.notesInput]}
+              placeholder="Enter notes here"
+              value={notes}
+              onChangeText={setNotes}
+              multiline
+              textAlignVertical="top"
+              onFocus={(event) => {
+                scrollRef.current?.scrollToFocusedInput(event.target);
+              }}
+            />
+          </View>
+          <View style={styles.tagTitle}>
+            <Text style={styles.notesHeading}>Tags</Text>
+            <Pressable onPress={() => setAddTagVisible(true)}>
+              <MaterialCommunityIcons name="plus-circle-outline" size={24} color="black" style={styles.addTags} />
+            </Pressable>
+          </View>
+
+          <View style={styles.tagsContainer}>
+            {tags.map((tag) => (
+              <Pressable
+                key={tag}
+                style={styles.tagRow}
+                onPress={() => toggleTag(tag)}
+              >
+                <View
+                  style={[
+                    styles.checkbox,
+                    selectedTags.includes(tag) && styles.checkboxChecked,
+                  ]}
+                >
+                  {selectedTags.includes(tag) && (
+                    <MaterialCommunityIcons name="check" size={14} color="#fff" />
+                  )}
+                </View>
+                <Text style={styles.tagLabel}>{tag}</Text>
+              </Pressable>
+            ))}
+            <AddTagOrList isVisible={modalVisible} onClose={() => setAddTagVisible(false)} onSave={addTag} newTag={newTag} setNewTag={setNewTag} />
+          </View>
+        </SafeAreaView>
+      </Pressable>
+    </KeyboardAwareScrollView>
   );
 }
 
