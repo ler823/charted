@@ -1,13 +1,14 @@
 import { Fonts } from "@/constants/theme";
 import { Pin } from "@/types/types";
+import { router } from "expo-router";
 import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
 
 type Props = {
   pins: Pin[];
-  onSelectPin: (pin: Pin) => void;
+  // onSelectPin: (pin: Pin) => void;
 };
 
-export default function PinCardsView({ pins, onSelectPin }: Props) {
+export default function PinGridView({ pins }: Props) {
   return (
     <FlatList
       data={pins}
@@ -17,7 +18,17 @@ export default function PinCardsView({ pins, onSelectPin }: Props) {
       columnWrapperStyle={styles.row}
       showsVerticalScrollIndicator={false}
       renderItem={({ item }) => (
-        <Pressable style={styles.card} onPress={() => onSelectPin(item)}>
+        <Pressable
+          style={styles.card}
+          onPress={() =>
+            router.push({
+              pathname: "/pins/[pinid]",
+              params: {
+                pinid: 28,
+              },
+            })
+          }
+        >
           <View style={styles.imgPlaceholder}>
             <Text style={styles.imgText}>Image</Text>
           </View>
