@@ -1,4 +1,5 @@
 import AddTagOrList from "@/components/add-tag";
+import LoadingPage from "@/components/loading-page";
 import { PressableStars } from "@/components/pressable-stars";
 import { Colors, Fonts } from "@/constants/theme";
 import { supabase } from "@/lib/supabase";
@@ -19,16 +20,20 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function MakePin() {
   const router = useRouter();
-  const { lat, lng } = useLocalSearchParams<{ lat: string; lng: string }>();
+  const { pinId, lat: latParam, lng: lngParam } = useLocalSearchParams<{ pinId?: string; lat?: string; lng?: string }>();
+  const [lat, setLat] = useState((Math.round(parseFloat(latParam!) * 1e5) / 1e5).toString() || "");
+  const [lng, setLng] = useState((Math.round(parseFloat(lngParam!) * 1e5) / 1e5).toString() || "");
+  const isEdit = pinId != undefined;
   const [name, setName] = useState("");
   const [address, setAddress] = useState("");
-  const [photo, setPhoto] = useState<string | null>(null);
+  const [photo, setPhoto] = useState("");
   const [rating, setRating] = useState(0);
   const [notes, setNotes] = useState("");
   const [tags, setTags] = useState<string[]>([]);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [modalVisible, setAddTagVisible] = useState(false);
   const [newTag, setNewTag] = useState("");
+  const [dataLoaded, setDataLoaded] = useState(false);
   let inserted_pin_id = 0;
 
   const toggleTag = (tag: string) => {
@@ -40,7 +45,7 @@ export default function MakePin() {
   const savePinTags = async () => {
     const { data: tagIds, error: getTagIdsError } = await supabase
       .from("tags")
-      .select("tag_id")
+      .select(`"tag_id"`)
       .in("name", selectedTags);
 
     if (tagIds === null || getTagIdsError) {
@@ -71,8 +76,8 @@ export default function MakePin() {
     const { data, error } = await supabase
       .rpc('create_pin', {
         p_address: address,
-        p_latitude: Math.round(parseFloat(lat) * 1e5) / 1e5,
-        p_longitude: Math.round(parseFloat(lng) * 1e5) / 1e5,
+        p_latitude: Math.round(parseFloat(lat!) * 1e5) / 1e5,
+        p_longitude: Math.round(parseFloat(lng!) * 1e5) / 1e5,
         p_pin_name: name,
         p_user_note: notes,
         p_user_rating: rating,
@@ -141,6 +146,7 @@ export default function MakePin() {
       return;
     }
     loadTags();
+    toggleTag(tagToAdd.name)
     setAddTagVisible(false)
   }
 
@@ -154,27 +160,192 @@ export default function MakePin() {
     }
   };
 
+  const getPinInfo = async () => {
+    const { data: pinData, error: pinDataError } = await supabase
+      .from("pins")
+      .select(`
+        name,
+        user_rating,
+        user_note,
+        address,
+        location_id`)
+      .eq("pin_id", pinId)
+    if (pinDataError) {
+      Alert.alert("Error", pinDataError.message);
+      return;
+    }
+    if (pinData == null) {
+      return;
+    }
+    const { data: locData, error: locDataError } = await supabase
+      .from("locations")
+      .select(`
+        latitude,
+        longitude
+      `)
+      .eq("id", pinData[0].location_id)
+    if (locDataError) {
+      Alert.alert("Error", locDataError.message);
+      return;
+    }
+    if (locData == null) {
+      return;
+    }
+
+    const { data: userData, error: userDataError } = await supabase
+      .from("users")
+      .select("user_id")
+      .eq("username", "TimTimTim")
+    
+    if (userDataError) {
+      Alert.alert("Error", userDataError.message);
+      return;
+    }
+    if (userData == null) {
+      return;
+    }
+
+    const { data: tagData, error: tagDataError } = await supabase
+      .from("pin_tags")
+      .select(`
+        tags (
+          name
+        )
+      `)
+      .eq("pin_id", pinId)
+    if (tagDataError) {
+      Alert.alert("Error", tagDataError.message);
+      return;
+    }
+    if (tagData == null) {
+      return;
+    }
+    let loadedSelectedTags = tagData.map((data) => (data.tags as unknown as { name: any }).name); // kinda messy but it turns off the warnings lol
+    setName(pinData[0].name)
+    setAddress(pinData[0].address)
+    setRating(pinData[0].user_rating)
+    setNotes(pinData[0].user_note)
+    setLat(locData[0].latitude.toString())
+    setLng(locData[0].longitude.toString())
+    setSelectedTags(loadedSelectedTags)
+  }
+
+  const updatePinTags = async () => {
+    const { data: tagIds, error: getTagIdsError } = await supabase
+      .from("tags")
+      .select(`"tag_id"`)
+      .in("name", selectedTags);
+
+    if (getTagIdsError) {
+      Alert.alert("Error", getTagIdsError.message);
+      return;
+    }
+
+    if (tagIds === null) {
+      return
+    }
+
+    const { data: tagData, error: tagDataError } = await supabase
+      .from("pin_tags")
+      .select("tag_id")
+      .eq("pin_id", pinId)
+
+    if (tagDataError) {
+      Alert.alert("Error", tagDataError.message);
+      return;
+    }
+    
+    if (tagData === null) {
+      return
+    }
+
+    let locallySelectedTags = tagIds.map(tag => tag.tag_id)
+    let databaseSelectedTags = tagData.map(tag => tag.tag_id)
+
+    let deletedTags = databaseSelectedTags.filter((tag_id) => !locallySelectedTags.includes(tag_id))
+    let addedTags = locallySelectedTags.filter((tag_id) => !databaseSelectedTags.includes(tag_id))
+    if (addedTags.length != 0) {
+      const addPinTagAssociation = addedTags.map(tag => ({
+        pin_id: pinId,
+        tag_id: tag
+      }))
+      const { error: addToPinTagsError } = await supabase
+        .from("pin_tags")
+        .insert(addPinTagAssociation);
+  
+      if (addToPinTagsError) {
+        Alert.alert("Error", addToPinTagsError.message);
+        return;
+      }
+    }
+    if (deletedTags.length != 0) {
+      const { error: deleteFromPinTagsError } = await supabase
+        .from("pin_tags")
+        .delete()
+        .eq("pin_id", pinId)
+        .in("tag_id", deletedTags)
+  
+      if (deleteFromPinTagsError) {
+        Alert.alert("Error", deleteFromPinTagsError.message);
+        return;
+      }
+    }
+
+    return;
+    
+  }
+
+  const updatePin = async () => {
+    const { error } = await supabase
+      .from("pins")
+      .update({
+        name: name,
+        address: address,
+        user_rating: rating,
+        user_note: notes
+      })
+      .eq("pin_id", pinId)
+    if (error) {
+      Alert.alert("Error", error.message);
+      return;
+    }
+    await updatePinTags()
+    router.back();
+  }
+
   // This will run on launch
   useEffect(() => {
-    cleanupUnusedTags();
-    loadTags();
+    const loadData = async () => {
+      if (isEdit) {
+        await getPinInfo();
+      }
+      await cleanupUnusedTags();
+      await loadTags();
+      setDataLoaded(true);
+    }
+    loadData()
   }, []);
+
+  if (!dataLoaded) {
+    return <LoadingPage />
+  }
 
   return (
     /* This Pressable wrapper allows us to cancel text input by closing keyboard when clicking outside */
     <Pressable onPress={Keyboard.dismiss} style={{ flex: 1 }}>
       {/*  SafeAreaView places elements under the phone's status bar */}
       <SafeAreaView style={styles.container}>
-        <Stack.Screen options={{ headerShown: false }} />
+        <Stack.Screen options={{ headerShown: false, animation: "slide_from_right" }} />
         <View style={styles.topBar}>
           <Pressable style={styles.cancelBtn} onPress={() => router.back()}>
             <Text style={styles.cancelText}>Cancel</Text>
           </Pressable>
-          <Pressable style={styles.saveBtn} onPress={() => createPin()}>
+          <Pressable style={styles.saveBtn} onPress={() => isEdit ? updatePin() : createPin()}>
             <Text style={styles.saveText}>Save</Text>
           </Pressable>
         </View>
         <View style={styles.row}>
+          <View style={styles.shadowWrapper}>
           <Pressable style={styles.photoInput} onPress={handlePickPhoto}>
             {photo ? (
               <Image source={{ uri: photo }} style={styles.photo} />
@@ -186,32 +357,33 @@ export default function MakePin() {
               />
             )}
           </Pressable>
+          </View>
           <View style={styles.fields}>
             <TextInput
               style={styles.input}
               placeholder="Name"
-              placeholderTextColor="#aaaaaa" 
+              placeholderTextColor="#aaaaaa"
               value={name}
               onChangeText={setName}
             />
             <TextInput
               style={styles.input}
               placeholder="Address"
-              placeholderTextColor="#aaaaaa" 
+              placeholderTextColor="#aaaaaa"
               value={address}
               onChangeText={setAddress}
             />
             <TextInput
               style={[styles.input, styles.inputDisabled]}
               placeholder="Latitude"
-              placeholderTextColor="#aaaaaa" 
+              placeholderTextColor="#aaaaaa"
               value={lat}
               editable={false}
             />
             <TextInput
               style={[styles.input, styles.inputDisabled]}
               placeholder="Longitude"
-              placeholderTextColor="#aaaaaa" 
+              placeholderTextColor="#aaaaaa"
               value={lng}
               editable={false}
             />
@@ -283,6 +455,11 @@ const styles = StyleSheet.create({
     padding: 16,
     backgroundColor: Colors.light.error,
     borderRadius: 999,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
+    elevation: 4,
   },
   cancelText: {
     color: "#fff",
@@ -293,6 +470,11 @@ const styles = StyleSheet.create({
     padding: 16,
     backgroundColor: "#243e36",
     borderRadius: 999,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
+    elevation: 4,
   },
   saveText: {
     color: "#fff",
@@ -329,6 +511,11 @@ const styles = StyleSheet.create({
     fontSize: 15,
     backgroundColor: Colors.light.accentLight,
     fontFamily: Fonts.regular,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
+    elevation: 4,
   },
   inputDisabled: {
     color: "#ccc",
@@ -353,6 +540,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     flexWrap: "wrap",
     backgroundColor: Colors.light.accentLight,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
+    elevation: 4,
   },
   tagRow: {
     flexDirection: "row",
@@ -382,7 +574,18 @@ const styles = StyleSheet.create({
   starRow: {
     flexDirection: "row",
     gap: 5,
-    marginVertical: 10,
+    backgroundColor: Colors.light.accentLight,
+    alignSelf: "flex-start",
+    padding: "2%",
+    borderWidth: 1,
+    borderColor: "#ddd",
+    borderRadius: 8,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
+    elevation: 4,
+
   },
   tagTitle: {
     flexDirection: "row",
@@ -392,6 +595,13 @@ const styles = StyleSheet.create({
   addTags: {
     marginTop: 24,
     paddingBottom: 6,
-    paddingLeft: 10
+    paddingLeft: 10,
+  },
+  shadowWrapper: {
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
+    elevation: 4,
   }
 });
