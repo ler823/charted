@@ -4,7 +4,7 @@ import { supabase } from "@/lib/supabase";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
-import React, { useCallback, useState, useEffect } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 //import { AutoSkeletonView } from "react-native-auto-skeleton";
 import LoadingPage from "@/components/loading-page";
@@ -55,7 +55,7 @@ export default function PinPage() {
   const [pin, setPin] = useState<Pin | null>(null);
   const [friends, setFriends] = useState<Friend[] | null>([]);
 
-  useEffect(
+  useFocusEffect(
     useCallback(() => {
       async function fetchPin() {
         const { data, error } = await supabase

@@ -89,9 +89,9 @@ export default function MakePin() {
       Alert.alert("Error", error.message);
       return;
     }
-    savePinTags();
-    router.back();
     inserted_pin_id = data;
+    await savePinTags();
+    router.back();
     return;
   };
 
@@ -227,8 +227,8 @@ export default function MakePin() {
     setAddress(pinData[0].address)
     setRating(pinData[0].user_rating)
     setNotes(pinData[0].user_note)
-    setLat(locData[0].latitude.toString())
-    setLng(locData[0].longitude.toString())
+    setLat(locData[0].latitude.toString() ?? "")
+    setLng(locData[0].longitude.toString() ?? "")
     setSelectedTags(loadedSelectedTags)
   }
 
@@ -313,6 +313,24 @@ export default function MakePin() {
     }
     await updatePinTags()
     router.back();
+  }
+
+  const deletePin = async () => {
+    Alert.alert('Are you sure you want to delete this pin?', 'This action cannot be undone', [
+      {text: 'Cancel'},
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: async () => {
+          const { error } = await supabase
+          .rpc("delete_pin", {p_pin_id: pinId})
+          if (error) {
+            console.log(error.message)
+          }
+          router.push("/")
+        },
+      },
+    ]);
   }
 
   // This will run on launch
@@ -453,6 +471,12 @@ export default function MakePin() {
             ))}
             <AddTagOrList isVisible={modalVisible} onClose={() => setAddTagVisible(false)} onSave={addTag} newTag={newTag} setNewTag={setNewTag} />
           </View>
+          {isEdit && (<View style={{alignSelf: "center"}}>
+            <Pressable style={styles.deleteBtn} onPress={deletePin}>
+              <MaterialCommunityIcons name="trash-can-outline" size={24} color="#fff" />
+              <Text style={styles.cancelText}>Delete</Text>
+            </Pressable>
+          </View>)}
         </SafeAreaView>
       </Pressable>
     </KeyboardAwareScrollView>
@@ -622,5 +646,21 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 2,
     elevation: 4,
-  }
+  },
+  deleteBtn: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    alignSelf: "flex-start",
+    gap: 10,
+    padding: 16,
+    backgroundColor: Colors.light.error,
+    borderRadius: 999,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
+    elevation: 4,
+    marginTop: 24
+  },
 });
