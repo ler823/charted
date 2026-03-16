@@ -78,12 +78,15 @@ export default function PinPage() {
   );
 
   useEffect(() => {
-      async function fetchUsers() {
-        const { data } = await supabase
-          .from("users")
-          .select("user_id, username, location");
-        setFriends(data ?? []);
-      }
+    async function fetchUsers() {
+      const { data, error } = await supabase
+        .from("users")
+        .select("user_id, username, location");
+      setFriends(data ?? []);
+      if (error) {
+        Alert.alert(error.message)
+        return;
+      }}
       fetchUsers();
     }, []);
 
