@@ -1,7 +1,9 @@
+import { Colors, Fonts } from "@/constants/theme";
 import { Pin } from "@/types/types";
 import { Ionicons } from "@expo/vector-icons";
 import { Dispatch, SetStateAction } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
+import { useRouter } from "expo-router";
 
 type PinOverlayProps = {
   selectedPin: Pin | null;
@@ -12,11 +14,12 @@ export default function PinOverlay({
   selectedPin,
   setSelectedPin,
 }: PinOverlayProps) {
+  const router = useRouter();
   return (
     <Pressable style={styles.backdrop} onPress={() => setSelectedPin(null)}>
       <Pressable style={styles.overlayCard} onPress={() => {}}>
         <View style={styles.picturePlaceholder}>
-          <Ionicons name="image-outline" size={48} color="#bbb" />
+          <Ionicons name="image-outline" size={48}/>
         </View>
 
         <View style={styles.infoContainer}>
@@ -24,7 +27,17 @@ export default function PinOverlay({
             <Text style={styles.pinName}>{selectedPin?.name}</Text>
             <Text style={styles.pinAddress}>{selectedPin?.address}</Text>
           </View>
-          <Ionicons name="expand-outline" size={20} color="#555" />
+          <Pressable
+            onPress={() => {
+              if (!selectedPin?.id) return;
+              router.push({
+                pathname: "/pins/[pinid]",
+                params: { pinid: selectedPin?.id },
+            })
+            }}
+          >
+            <Ionicons name="expand-outline" size={20} color="#555" />
+          </Pressable>
         </View>
       </Pressable>
     </Pressable>
@@ -38,16 +51,18 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: "transparent",
+    backgroundColor: "rgba(0,0,0,0.3)",
     alignItems: "center",
     justifyContent: "center",
     zIndex: 30,
   },
   overlayCard: {
-    width: "85%",
+    width: "80%",
     aspectRatio: 1,
     backgroundColor: "#fff",
     borderRadius: 14,
+    borderWidth: 2,
+    borderColor: "#111",
     overflow: "hidden",
     shadowColor: "#000",
     shadowOpacity: 0.25,
@@ -65,7 +80,7 @@ const styles = StyleSheet.create({
   infoContainer: {
     flexDirection: "row",
     alignItems: "center",
-    padding: 16,
+    padding: 12,
   },
   infoText: {
     flex: 1,
@@ -73,11 +88,12 @@ const styles = StyleSheet.create({
   },
   pinName: {
     fontSize: 12,
-    fontWeight: "700",
-    color: "162722",
+    fontFamily: Fonts.bold,
+    color: Colors.light.text,
   },
   pinAddress: {
     fontSize: 10,
-    color: "#654236",
+    fontFamily: Fonts.regular,
+    color: "#888",
   },
 });

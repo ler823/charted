@@ -20,6 +20,7 @@ export default function PinMarker({
         </View>
       </View>
       <View style={styles.stem} />
+      <View style={{height: 62}}/>
     </View>
   );
 }
@@ -31,31 +32,32 @@ export default function PinMarker({
 const styles = StyleSheet.create({
   wrapper: {
     alignItems: "center",
+    justifyContent: "flex-end",
   },
   outer: {
-    width: 46,
-    height: 46,
-    borderRadius: 24,
+    width: 42,
+    height: 42,
+    borderRadius: 22,
     alignItems: "center",
     justifyContent: "center",
   },
   middle: {
-    width: 34,
-    height: 34,
-    borderRadius: 18,
+    width: 30,
+    height: 30,
+    borderRadius: 16,
     backgroundColor: "#DEE9E0",
     alignItems: "center",
     justifyContent: "center",
   },
   inner: {
-    width: 14,
-    height: 14,
-    borderRadius: 10,
+    width: 12,
+    height: 12,
+    borderRadius: 8,
     backgroundColor: "#243E36",
   },
   stem: {
-    width: 5,
-    height: 24,
+    width: 4,
+    height: 20,
     backgroundColor: "#111",
     borderBottomLeftRadius: 2,
     borderBottomRightRadius: 2,

@@ -1,12 +1,11 @@
 import AddTagOrList from "@/components/add-tag";
+import LoadingPage from "@/components/loading-page";
 import { PressableStars } from "@/components/pressable-stars";
 import { Colors, Fonts } from "@/constants/theme";
 import { supabase } from "@/lib/supabase";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import Constants from "expo-constants";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
-
 import {
   Alert,
   Image,
@@ -17,22 +16,26 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function MakePin() {
   const router = useRouter();
-  const { lat, lng } = useLocalSearchParams<{ lat: string; lng: string }>();
-  // const addPin = usePinsStore((state) => state.addPin);
-
+  const { pinId, lat: latParam, lng: lngParam } = useLocalSearchParams<{ pinId?: string; lat?: string; lng?: string }>();
+  const [lat, setLat] = useState((Math.round(parseFloat(latParam!) * 1e5) / 1e5).toString() || "");
+  const [lng, setLng] = useState((Math.round(parseFloat(lngParam!) * 1e5) / 1e5).toString() || "");
+  const isEdit = pinId != undefined;
   const [name, setName] = useState("");
   const [address, setAddress] = useState("");
-  const [photo, setPhoto] = useState<string | null>(null);
+  const [photo, setPhoto] = useState("");
   const [rating, setRating] = useState(0);
   const [notes, setNotes] = useState("");
   const [tags, setTags] = useState<string[]>([]);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [modalVisible, setAddTagVisible] = useState(false);
   const [newTag, setNewTag] = useState("");
+  const [dataLoaded, setDataLoaded] = useState(false);
+  const scrollRef = React.useRef<KeyboardAwareScrollView>(null);
   let inserted_pin_id = 0;
 
   const toggleTag = (tag: string) => {
@@ -41,50 +44,10 @@ export default function MakePin() {
     );
   };
 
-  const handleSave = async () => {
-    if (!name || !address) {
-      Alert.alert("Missing fields", "Please fill in name and address.");
-      return;
-    }
-
-    const { error } = await supabase.from("locations").insert({
-      name,
-      address,
-      latitude: parseFloat(lat),
-      longitude: parseFloat(lng),
-    });
-
-    if (error) {
-      Alert.alert("Error", error.message);
-      return;
-    }
-    router.replace("/");
-  };
-
-  const API_URL = Constants.expoConfig?.extra?.apiUrl;
-
-  // const createPin = async (pin_data: any) => {
-  //     let url = API_URL + "/createpin"
-  //     console.log("API_URL:", API_URL);
-  //     console.log("FULL URL:", url);
-  //     const response = await fetch(
-  //         url,
-  //         {
-  //             method: "POST",
-  //             headers: {
-  //                 "Content-Type": "application/json"
-  //             },
-  //             body: JSON.stringify(pin_data)
-  //         }
-  //     );
-  //     router.back()
-  //     return await response.json();
-  // };
-
   const savePinTags = async () => {
     const { data: tagIds, error: getTagIdsError } = await supabase
       .from("tags")
-      .select("tag_id")
+      .select(`"tag_id"`)
       .in("name", selectedTags);
 
     if (tagIds === null || getTagIdsError) {
@@ -115,8 +78,8 @@ export default function MakePin() {
     const { data, error } = await supabase
       .rpc('create_pin', {
         p_address: address,
-        p_latitude: Math.round(parseFloat(lat) * 1e5) / 1e5,
-        p_longitude: Math.round(parseFloat(lng) * 1e5) / 1e5,
+        p_latitude: Math.round(parseFloat(lat!) * 1e5) / 1e5,
+        p_longitude: Math.round(parseFloat(lng!) * 1e5) / 1e5,
         p_pin_name: name,
         p_user_note: notes,
         p_user_rating: rating,
@@ -126,9 +89,9 @@ export default function MakePin() {
       Alert.alert("Error", error.message);
       return;
     }
-    savePinTags();
-    router.back();
     inserted_pin_id = data;
+    await savePinTags();
+    router.back();
     return;
   };
 
@@ -185,6 +148,7 @@ export default function MakePin() {
       return;
     }
     loadTags();
+    toggleTag(tagToAdd.name)
     setAddTagVisible(false)
   }
 
@@ -198,117 +162,324 @@ export default function MakePin() {
     }
   };
 
+  const getPinInfo = async () => {
+    const { data: pinData, error: pinDataError } = await supabase
+      .from("pins")
+      .select(`
+        name,
+        user_rating,
+        user_note,
+        address,
+        location_id`)
+      .eq("pin_id", pinId)
+    if (pinDataError) {
+      Alert.alert("Error", pinDataError.message);
+      return;
+    }
+    if (pinData == null) {
+      return;
+    }
+    const { data: locData, error: locDataError } = await supabase
+      .from("locations")
+      .select(`
+        latitude,
+        longitude
+      `)
+      .eq("id", pinData[0].location_id)
+    if (locDataError) {
+      Alert.alert("Error", locDataError.message);
+      return;
+    }
+    if (locData == null) {
+      return;
+    }
+
+    const { data: userData, error: userDataError } = await supabase
+      .from("users")
+      .select("user_id")
+      .eq("username", "TimTimTim")
+
+    if (userDataError) {
+      Alert.alert("Error", userDataError.message);
+      return;
+    }
+    if (userData == null) {
+      return;
+    }
+
+    const { data: tagData, error: tagDataError } = await supabase
+      .from("pin_tags")
+      .select(`
+        tags (
+          name
+        )
+      `)
+      .eq("pin_id", pinId)
+    if (tagDataError) {
+      Alert.alert("Error", tagDataError.message);
+      return;
+    }
+    if (tagData == null) {
+      return;
+    }
+    let loadedSelectedTags = tagData.map((data) => (data.tags as unknown as { name: any }).name); // kinda messy but it turns off the warnings lol
+    setName(pinData[0].name)
+    setAddress(pinData[0].address)
+    setRating(pinData[0].user_rating)
+    setNotes(pinData[0].user_note)
+    setLat(locData[0].latitude.toString() ?? "")
+    setLng(locData[0].longitude.toString() ?? "")
+    setSelectedTags(loadedSelectedTags)
+  }
+
+  const updatePinTags = async () => {
+    const { data: tagIds, error: getTagIdsError } = await supabase
+      .from("tags")
+      .select(`"tag_id"`)
+      .in("name", selectedTags);
+
+    if (getTagIdsError) {
+      Alert.alert("Error", getTagIdsError.message);
+      return;
+    }
+
+    if (tagIds === null) {
+      return
+    }
+
+    const { data: tagData, error: tagDataError } = await supabase
+      .from("pin_tags")
+      .select("tag_id")
+      .eq("pin_id", pinId)
+
+    if (tagDataError) {
+      Alert.alert("Error", tagDataError.message);
+      return;
+    }
+
+    if (tagData === null) {
+      return
+    }
+
+    let locallySelectedTags = tagIds.map(tag => tag.tag_id)
+    let databaseSelectedTags = tagData.map(tag => tag.tag_id)
+
+    let deletedTags = databaseSelectedTags.filter((tag_id) => !locallySelectedTags.includes(tag_id))
+    let addedTags = locallySelectedTags.filter((tag_id) => !databaseSelectedTags.includes(tag_id))
+    if (addedTags.length != 0) {
+      const addPinTagAssociation = addedTags.map(tag => ({
+        pin_id: pinId,
+        tag_id: tag
+      }))
+      const { error: addToPinTagsError } = await supabase
+        .from("pin_tags")
+        .insert(addPinTagAssociation);
+
+      if (addToPinTagsError) {
+        Alert.alert("Error", addToPinTagsError.message);
+        return;
+      }
+    }
+    if (deletedTags.length != 0) {
+      const { error: deleteFromPinTagsError } = await supabase
+        .from("pin_tags")
+        .delete()
+        .eq("pin_id", pinId)
+        .in("tag_id", deletedTags)
+
+      if (deleteFromPinTagsError) {
+        Alert.alert("Error", deleteFromPinTagsError.message);
+        return;
+      }
+    }
+
+    return;
+
+  }
+
+  const updatePin = async () => {
+    const { error } = await supabase
+      .from("pins")
+      .update({
+        name: name,
+        address: address,
+        user_rating: rating,
+        user_note: notes
+      })
+      .eq("pin_id", pinId)
+    if (error) {
+      Alert.alert("Error", error.message);
+      return;
+    }
+    await updatePinTags()
+    router.back();
+  }
+
+  const deletePin = async () => {
+    Alert.alert('Are you sure you want to delete this pin?', 'This action cannot be undone', [
+      {text: 'Cancel'},
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: async () => {
+          const { error } = await supabase
+          .rpc("delete_pin", {p_pin_id: pinId})
+          if (error) {
+            console.log(error.message)
+          }
+          router.push("/")
+        },
+      },
+    ]);
+  }
+
   // This will run on launch
   useEffect(() => {
-    cleanupUnusedTags();
-    loadTags();
+    const loadData = async () => {
+      if (isEdit) {
+        await getPinInfo();
+      }
+      await cleanupUnusedTags();
+      await loadTags();
+      setDataLoaded(true);
+    }
+    loadData()
   }, []);
+
+  if (!dataLoaded) {
+    return <LoadingPage />
+  }
 
   return (
     /* This Pressable wrapper allows us to cancel text input by closing keyboard when clicking outside */
-    <Pressable onPress={Keyboard.dismiss} style={{ flex: 1 }}>
-      {/*  SafeAreaView places elements under the phone's status bar */}
-      <SafeAreaView style={styles.container}>
-        <Stack.Screen options={{ headerShown: false }} />
-        <View style={styles.topBar}>
-          <Pressable style={styles.cancelBtn} onPress={() => router.back()}>
-            <Text style={styles.cancelText}>Cancel</Text>
-          </Pressable>
-          <Pressable style={styles.saveBtn} onPress={() => createPin()}>
-            <Text style={styles.saveText}>Save</Text>
-          </Pressable>
-        </View>
-        <View style={styles.row}>
-          <Pressable style={styles.photoInput} onPress={handlePickPhoto}>
-            {photo ? (
-              <Image source={{ uri: photo }} style={styles.photo} />
-            ) : (
-              <MaterialCommunityIcons
-                name="camera-plus"
-                size={28}
-                color="#888"
-              />
-            )}
-          </Pressable>
-          <View style={styles.fields}>
-            <TextInput
-              style={styles.input}
-              placeholder="Name"
-              placeholderTextColor="#aaaaaa" 
-              value={name}
-              onChangeText={setName}
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="Address"
-              placeholderTextColor="#aaaaaa" 
-              value={address}
-              onChangeText={setAddress}
-            />
-            <TextInput
-              style={[styles.input, styles.inputDisabled]}
-              placeholder="Latitude"
-              placeholderTextColor="#aaaaaa" 
-              value={lat}
-              editable={false}
-            />
-            <TextInput
-              style={[styles.input, styles.inputDisabled]}
-              placeholder="Longitude"
-              placeholderTextColor="#aaaaaa" 
-              value={lng}
-              editable={false}
-            />
-          </View>
-        </View>
-        <View>
-          <Text style={styles.notesHeading}>Rating</Text>
-          <View style={styles.starRow}>
-            <PressableStars rating={rating} setRating={setRating} />
-          </View>
-        </View>
-        <View>
-          <Text style={styles.notesHeading}>Notes</Text>
-          <TextInput
-            style={[styles.input, styles.notesInput]}
-            placeholder="Enter notes here"
-            value={notes}
-            onChangeText={setNotes}
-            multiline
-            textAlignVertical="top"
-          />
-        </View>
-        <View style={styles.tagTitle}>
-          <Text style={styles.notesHeading}>Tags</Text>
-          <Pressable onPress={() => setAddTagVisible(true)}>
-            <MaterialCommunityIcons name="plus-circle-outline" size={24} color="black" style={styles.addTags} />
-          </Pressable>
-        </View>
+    <KeyboardAwareScrollView
+      style={{ flex: 1 }}
+      contentContainerStyle={styles.container}
+      keyboardShouldPersistTaps="handled"
+      ref={scrollRef}
+    >
 
-        <View style={styles.tagsContainer}>
-          {tags.map((tag) => (
-            <Pressable
-              key={tag}
-              style={styles.tagRow}
-              onPress={() => toggleTag(tag)}
-            >
-              <View
-                style={[
-                  styles.checkbox,
-                  selectedTags.includes(tag) && styles.checkboxChecked,
-                ]}
-              >
-                {selectedTags.includes(tag) && (
-                  <MaterialCommunityIcons name="check" size={14} color="#fff" />
-                )}
-              </View>
-              <Text style={styles.tagLabel}>{tag}</Text>
+      <Pressable onPress={Keyboard.dismiss} style={{ flex: 1 }}>
+        {/*  SafeAreaView places elements under the phone's status bar */}
+        <SafeAreaView>
+          <Stack.Screen options={{ headerShown: false, animation: "slide_from_right" }} />
+          <View style={styles.topBar}>
+            <Pressable style={styles.cancelBtn} onPress={() => router.back()}>
+              <Text style={styles.cancelText}>Cancel</Text>
             </Pressable>
-          ))}
-          <AddTagOrList isVisible={modalVisible} onClose={() => setAddTagVisible(false)} onSave={addTag} newTag={newTag} setNewTag={setNewTag} />
-        </View>
-      </SafeAreaView>
-    </Pressable>
+            <Pressable style={styles.saveBtn} onPress={() => isEdit ? updatePin() : createPin()}>
+              <Text style={styles.saveText}>Save</Text>
+            </Pressable>
+          </View>
+          <View style={styles.row}>
+            <View style={styles.shadowWrapper}>
+              <Pressable style={styles.photoInput} onPress={handlePickPhoto}>
+                {photo ? (
+                  <Image source={{ uri: photo }} style={styles.photo} />
+                ) : (
+                  <MaterialCommunityIcons
+                    name="camera-plus"
+                    size={28}
+                    color="#888"
+                  />
+                )}
+              </Pressable>
+            </View>
+            <View style={styles.fields}>
+              <TextInput
+                style={styles.input}
+                placeholder="Name"
+                placeholderTextColor="#aaaaaa"
+                value={name}
+                onChangeText={setName}
+                onFocus={(event) => {
+                  scrollRef.current?.scrollToFocusedInput(event.target);
+                }}
+              />
+              <TextInput
+                style={styles.input}
+                placeholder="Address"
+                placeholderTextColor="#aaaaaa"
+                value={address}
+                onChangeText={setAddress}
+                onFocus={(event) => {
+                  scrollRef.current?.scrollToFocusedInput(event.target);
+                }}
+              />
+              <TextInput
+                style={[styles.input, styles.inputDisabled]}
+                placeholder="Latitude"
+                placeholderTextColor="#aaaaaa"
+                value={lat}
+                editable={false}
+              />
+              <TextInput
+                style={[styles.input, styles.inputDisabled]}
+                placeholder="Longitude"
+                placeholderTextColor="#aaaaaa"
+                value={lng}
+                editable={false}
+              />
+            </View>
+          </View>
+          <View>
+            <Text style={styles.notesHeading}>Rating</Text>
+            <View style={styles.starRow}>
+              <PressableStars rating={rating} setRating={setRating} />
+            </View>
+          </View>
+          <View>
+            <Text style={styles.notesHeading}>Notes</Text>
+            <TextInput
+              style={[styles.input, styles.notesInput]}
+              placeholder="Enter notes here"
+              value={notes}
+              onChangeText={setNotes}
+              multiline
+              textAlignVertical="top"
+              onFocus={(event) => {
+                scrollRef.current?.scrollToFocusedInput(event.target);
+              }}
+            />
+          </View>
+          <View style={styles.tagTitle}>
+            <Text style={styles.notesHeading}>Tags</Text>
+            <Pressable onPress={() => setAddTagVisible(true)}>
+              <MaterialCommunityIcons name="plus-circle-outline" size={24} color="black" style={styles.addTags} />
+            </Pressable>
+          </View>
+
+          <View style={styles.tagsContainer}>
+            {tags.map((tag) => (
+              <Pressable
+                key={tag}
+                style={styles.tagRow}
+                onPress={() => toggleTag(tag)}
+              >
+                <View
+                  style={[
+                    styles.checkbox,
+                    selectedTags.includes(tag) && styles.checkboxChecked,
+                  ]}
+                >
+                  {selectedTags.includes(tag) && (
+                    <MaterialCommunityIcons name="check" size={14} color="#fff" />
+                  )}
+                </View>
+                <Text style={styles.tagLabel}>{tag}</Text>
+              </Pressable>
+            ))}
+            <AddTagOrList isVisible={modalVisible} onClose={() => setAddTagVisible(false)} onSave={addTag} newTag={newTag} setNewTag={setNewTag} />
+          </View>
+          {isEdit && (<View style={{alignSelf: "center"}}>
+            <Pressable style={styles.deleteBtn} onPress={deletePin}>
+              <MaterialCommunityIcons name="trash-can-outline" size={24} color="#fff" />
+              <Text style={styles.cancelText}>Delete</Text>
+            </Pressable>
+          </View>)}
+        </SafeAreaView>
+      </Pressable>
+    </KeyboardAwareScrollView>
   );
 }
 
@@ -327,6 +498,11 @@ const styles = StyleSheet.create({
     padding: 16,
     backgroundColor: Colors.light.error,
     borderRadius: 999,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
+    elevation: 4,
   },
   cancelText: {
     color: "#fff",
@@ -337,6 +513,11 @@ const styles = StyleSheet.create({
     padding: 16,
     backgroundColor: "#243e36",
     borderRadius: 999,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
+    elevation: 4,
   },
   saveText: {
     color: "#fff",
@@ -373,6 +554,11 @@ const styles = StyleSheet.create({
     fontSize: 15,
     backgroundColor: Colors.light.accentLight,
     fontFamily: Fonts.regular,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
+    elevation: 4,
   },
   inputDisabled: {
     color: "#ccc",
@@ -397,6 +583,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     flexWrap: "wrap",
     backgroundColor: Colors.light.accentLight,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
+    elevation: 4,
   },
   tagRow: {
     flexDirection: "row",
@@ -426,7 +617,18 @@ const styles = StyleSheet.create({
   starRow: {
     flexDirection: "row",
     gap: 5,
-    marginVertical: 10,
+    backgroundColor: Colors.light.accentLight,
+    alignSelf: "flex-start",
+    padding: "2%",
+    borderWidth: 1,
+    borderColor: "#ddd",
+    borderRadius: 8,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
+    elevation: 4,
+
   },
   tagTitle: {
     flexDirection: "row",
@@ -436,6 +638,29 @@ const styles = StyleSheet.create({
   addTags: {
     marginTop: 24,
     paddingBottom: 6,
-    paddingLeft: 10
-  }
+    paddingLeft: 10,
+  },
+  shadowWrapper: {
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
+    elevation: 4,
+  },
+  deleteBtn: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    alignSelf: "flex-start",
+    gap: 10,
+    padding: 16,
+    backgroundColor: Colors.light.error,
+    borderRadius: 999,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
+    elevation: 4,
+    marginTop: 24
+  },
 });

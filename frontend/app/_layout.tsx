@@ -7,7 +7,11 @@ import {
 import { useFonts } from "expo-font";
 import * as Location from "expo-location";
 import { Stack, router } from "expo-router";
+import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
+
+// Hold the splash screen until we're ready
+SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
@@ -17,36 +21,25 @@ export default function RootLayout() {
   });
 
   useEffect(() => {
-    if (fontsLoaded) {
-      redirectBasedOnPermission();
-    }
-  }, [fontsLoaded]); // wait for fonts before redirecting
+    if (!fontsLoaded) return;
 
-  // Location services logic (redirect to Enable Location screen if permission undetermined)
-  const redirectBasedOnPermission = async () => {
-    const { status } = await Location.getForegroundPermissionsAsync();
-
-    if (status === Location.PermissionStatus.UNDETERMINED) {
-      // First time — show primer screen
-      router.replace("/onboarding/enable-location");
-    } else {
-      // Already granted or denied — skip onboarding
-      router.replace("/(tabs)/(home)");
-    }
-  };
-
-  if (!fontsLoaded) {
-    return null; // your splash/loading screen goes here
-  }
+    Location.getForegroundPermissionsAsync().then(({ status }) => {
+      // Hide splash screen first, THEN navigate — no animation occurs
+      SplashScreen.hideAsync().then(() => {
+        if (status === Location.PermissionStatus.UNDETERMINED) {
+          router.replace("/onboarding/enable-location");
+        } else {
+          router.replace("/(tabs)/(home)");
+        }
+      });
+    });
+  }, [fontsLoaded]);
 
   return (
     <DroppingPinProvider>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen
-          name="onboarding/enable-location"
-          options={{ headerShown: false }}
-        />
+      <Stack screenOptions={{ headerShown: false, animation: "none" }}>
+        <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="onboarding/enable-location" />
       </Stack>
     </DroppingPinProvider>
   );

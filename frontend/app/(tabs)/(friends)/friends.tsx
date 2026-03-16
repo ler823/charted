@@ -4,6 +4,7 @@ import { useRouter, Stack } from "expo-router";
 import React, { useEffect, useState } from "react";
 import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
 import { Colors, Fonts } from "../../../constants/theme";
+import LoadingPage from "@/components/loading-page";
 
 type Friend = {
   user_id: number;
@@ -13,21 +14,25 @@ type Friend = {
 
 export default function Friends() {
   const [friends, setFriends] = useState<Friend[]>([]);
+  const [loading, setLoading] = useState(true);
   const router = useRouter()
 
-  /* 
+  /*
   This chunk queries the database for 'users' table in Supabase
   photo_id is left out for once we start dealing with photos, for now there is a white circle
   */
   useEffect(() => {
     async function fetchUsers() {
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from("users")
         .select("user_id, username, location");
       setFriends(data ?? []);
+      setLoading(false);
     }
     fetchUsers();
   }, []);
+
+  if (loading) return <LoadingPage />;
 
   return (
     <View style={styles.container}>
@@ -76,6 +81,8 @@ export default function Friends() {
         data={friends}
         keyExtractor={(item) => String(item.user_id)}
         contentContainerStyle={styles.list}
+        // Handling if user has no friends/if not data fetched from DB
+        ListEmptyComponent={<Text style={styles.emptyText}>No Friends Available</Text>}
         renderItem={({ item }) => (
           <Pressable style={styles.card} onPress={() => 
             router.push({
@@ -86,9 +93,11 @@ export default function Friends() {
             {/* 
             Placeholder cirlce for now. 
             PIcture will be added once figured out how to load pictures from cloud/db
+            Later implement: display uploaded photo or default initial for no photo 
             */}
-            <View style={styles.avatar}></View>
-
+            <View style={styles.avatar}>
+              <Text style={styles.avatarInitial}>{item.username?.[0]?.toUpperCase()}</Text>
+            </View>
             <View style={styles.cardInfo}>
               <Text style={styles.username}>{item.username}</Text>
               <View style={styles.locationRow}>
@@ -232,9 +241,14 @@ const styles = StyleSheet.create({
     width: 65,
     height: 65,
     borderRadius: 999,
-    backgroundColor: "#fff",
+    backgroundColor: "#d8d8d8",
     alignItems: "center",
     justifyContent: "center",
+  },
+  avatarInitial: {
+    fontSize: 28,
+    fontFamily: Fonts.regular,
+    color: "#000",
   },
   cardInfo: {
     flex: 1,
@@ -253,5 +267,11 @@ const styles = StyleSheet.create({
   location: {
     fontFamily: Fonts.regular,
     fontSize: 12,
+  },
+  emptyText: {
+    fontFamily: Fonts.regular,
+    fontSize: 16,
+    color: "#888",
+    marginTop: 40,
   },
 });
