@@ -113,7 +113,13 @@ export default function Home() {
           initialRegion={INITIAL_REGION}
           style={styles.map}
           ref={mapRef}
-          onRegionChangeComplete={(r) => setRegion(r)}
+          onRegionChangeComplete={(r) => {
+            setPinCoords({
+              latitude: r.latitude,
+              longitude: r.longitude,
+            });
+            setRegion(r);
+          }}
           onLongPress={(e) => {
             const { latitude, longitude } = e.nativeEvent.coordinate;
             setPinCoords({ latitude, longitude });
