@@ -1,6 +1,6 @@
 import { supabase } from "@/lib/supabase";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useRef, useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 import ClusteredMapView from "react-native-map-clustering";
 import { Marker } from "react-native-maps";
@@ -13,6 +13,7 @@ import PinOverlay from "@/components/pin-overlay";
 import { useDroppingPin } from "@/context/DroppingPinContext";
 import { useLocation } from "@/hooks/use-location";
 import { Coords, Pin, ViewMode, ViewOption } from "@/types/types";
+import { useFocusEffect } from "expo-router";
 
 // CSULB is default region if user does not share location
 const CSULB = {
@@ -41,39 +42,47 @@ export default function Home() {
   const [region, setRegion] = useState(INITIAL_REGION);
 
   // This fetches data from the 'pins' table in Supabase. Also has error handling if unable to fetch
-  useEffect(() => {
-    async function fetchLocations() {
-      const { data, error } = await supabase
-        .from("pins")
-        .select(`pin_id, location_id, user_id, name, address,
-           locations:location_id( id, latitude, longitude )`)
-        .eq("user_id", 4);
-      if (error) {
-        console.error("Failed to fetch locations:", error.message);
-        return;
+  useFocusEffect(
+    useCallback(() => {
+      async function fetchLocations() {
+        const { data, error } = await supabase
+          .from("pins")
+          .select(
+            `pin_id, location_id, user_id, name, address,
+           locations:location_id( id, latitude, longitude )`,
+          )
+          .eq("user_id", 4);
+        if (error) {
+          console.error("Failed to fetch locations:", error.message);
+          return;
+        }
+
+        const typedData = data as unknown as {
+          pin_id: number;
+          name: string;
+          address: string;
+          location_id: number;
+          user_id: number;
+          locations?: {
+            id: number;
+            latitude: number;
+            longitude: number;
+          } | null;
+        }[];
+
+        setPins(
+          typedData.map((row) => ({
+            id: String(row.pin_id),
+            name: row.name,
+            address: row.address,
+            latitude: row.locations?.latitude ?? 0,
+            longitude: row.locations?.longitude ?? 0,
+          })),
+        );
       }
-
-      const typedData = (data as unknown as {
-        pin_id: number;
-        name: string;
-        address: string;
-        location_id: number;
-        user_id: number;
-        locations?: { id: number; latitude: number; longitude: number } | null;
-      }[]);
-
-      setPins(
-        typedData.map((row) => ({
-          id: String(row.pin_id),
-          name: row.name,
-          address: row.address,
-          latitude: row.locations?.latitude ?? 0,
-          longitude: row.locations?.longitude ?? 0,
-        })),
-      );
-    }
-    fetchLocations();
-  }, []);
+      fetchLocations();
+    }, []),
+  );
 
   return (
     <View style={styles.container}>
