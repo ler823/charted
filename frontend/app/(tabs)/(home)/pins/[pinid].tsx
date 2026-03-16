@@ -5,7 +5,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import React, { useCallback, useState, useEffect } from "react";
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, Pressable, ScrollView, StyleSheet, Switch, Text, View } from "react-native";
 //import { AutoSkeletonView } from "react-native-auto-skeleton";
 import LoadingPage from "@/components/loading-page";
 
@@ -54,8 +54,10 @@ export default function PinPage() {
 
   const [pin, setPin] = useState<Pin | null>(null);
   const [friends, setFriends] = useState<Friend[] | null>([]);
+  const [isEnabled, setIsEnabled] = useState(false);
+  const toggleSwitch = () => setIsEnabled(previousState => !previousState);
 
-  useEffect(
+  useFocusEffect(
     useCallback(() => {
       async function fetchPin() {
         const { data, error } = await supabase
@@ -106,9 +108,15 @@ export default function PinPage() {
           <Image source={{ uri: pin.pin_photos?.photos?.link!}} style={styles.img} placeholder="blur"/>
         )}
 
-        {/* Title */}
         <View style={{ marginHorizontal: 10 }}>
-          <Text style={[styles.title, { marginTop: 10 }]}>{pin.name ?? "No pin name"}</Text>
+          {/* Title */}
+          <View style={[styles.editRow, {alignItems: "center", alignContent: "center", marginTop: 10, gap: 6}]}>
+            <Text style={styles.title}>{pin.name ?? "No pin name"}</Text>
+            <Ionicons name="lock-closed" size={20} color="#243e36"/>
+            <Ionicons name="people" size={20} color="#243e36"/>
+          </View>
+
+          {/* Address */}
           <View>
             <Text style={styles.address}>{pin.address ?? "No pin address"}</Text>
           </View>
@@ -209,18 +217,6 @@ export default function PinPage() {
             Visit History
           </Text>
           <View style={[styles.cardFullRow, { height: 200, flexDirection: "column", alignItems: "flex-start" }]}>
-            <Pressable
-              style={[styles.button, { height: 30, marginBottom: 20 }]}
-              onPress={() => {
-                router.back();
-              }}
-            >
-              <Text
-                style={{ fontFamily: Fonts.bold, color: "#d9d9d9", fontSize: 12 }}
-              >
-                Log New Visit
-              </Text>
-            </Pressable>
             <ScrollView>
               {pin.pin_visits?.length === 0 && (
                 <Text style={styles.boxText}>You have no logged visits</Text>
@@ -230,6 +226,7 @@ export default function PinPage() {
               ))}
             </ScrollView>
           </View>
+
         </View>
       </ScrollView>
 
