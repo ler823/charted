@@ -20,6 +20,7 @@ export default function PinMarker({
         </View>
       </View>
       <View style={styles.stem} />
+      <View style={{height: 62}}/>
     </View>
   );
 }
@@ -31,6 +32,7 @@ export default function PinMarker({
 const styles = StyleSheet.create({
   wrapper: {
     alignItems: "center",
+    justifyContent: "flex-end",
   },
   outer: {
     width: 42,

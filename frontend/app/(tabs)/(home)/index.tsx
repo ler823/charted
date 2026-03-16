@@ -40,7 +40,7 @@ export default function Home() {
   const { userCoords, permissionStatus, fetchUserLocation } = useLocation();
   const [region, setRegion] = useState(INITIAL_REGION);
 
-  // This fetches data from the 'locations' table in Supabase. Also has error handling if unable to fetch
+  // This fetches data from the 'pins' table in Supabase. Also has error handling if unable to fetch
   useEffect(() => {
     async function fetchLocations() {
       const { data, error } = await supabase
