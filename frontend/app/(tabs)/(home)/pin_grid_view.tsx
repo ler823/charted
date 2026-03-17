@@ -1,15 +1,35 @@
 import { Fonts } from "@/constants/theme";
 import { Pin } from "@/types/types";
-import { router } from "expo-router";
 import { Image } from "expo-image";
-import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
+import { router } from "expo-router";
+import React, { useState } from "react";
+import { FlatList, Pressable, Share, StyleSheet, Text, View } from "react-native";
 
 type Props = {
   pins: Pin[];
-  // onSelectPin: (pin: Pin) => void;
 };
 
 export default function PinGridView({ pins }: Props) {
+  const [savedPins, setSavedPins] = useState<number[]>([]);
+
+  const handleSaveToggle = (pinId: number) => {
+    setSavedPins((prev) =>
+      prev.includes(pinId)
+        ? prev.filter((id) => id !== pinId)
+        : [...prev, pinId]
+    );
+  };
+
+  const handleShare = async (pin: Pin) => {
+    try {
+      await Share.share({
+        message: `Check out this pin: ${pin.name || "Unnamed Pin"}${pin.address ? `\n${pin.address}` : ""}`,
+      });
+    } catch (error) {
+      console.log("Share error:", error);
+    }
+  };
+
   return (
     <FlatList
       data={pins}
@@ -18,31 +38,58 @@ export default function PinGridView({ pins }: Props) {
       contentContainerStyle={styles.listContainer}
       columnWrapperStyle={styles.row}
       showsVerticalScrollIndicator={false}
-      renderItem={({ item }) => (
-        <Pressable
-          style={styles.card}
-          onPress={() =>
-            router.push({
-              pathname: "/pins/[pinid]",
-              params: {
-                pinid: item.id,
-              },
-            })
-          }
-        >
-          <View style={styles.imgPlaceholder}>
-            <Image source={require("@/assets/images/no_image_default.png")} style={{width: "100%", height: "100%", borderRadius: 9}} placeholder="blur"/>
+      renderItem={({ item }) => {
+        const isSaved = savedPins.includes(Number(item.id));
+
+        return (
+          <View style={styles.card}>
+            <Pressable
+              onPress={() =>
+                router.push({
+                  pathname: "/pins/[pinid]",
+                  params: {
+                    pinid: item.id,
+                  },
+                })
+              }
+            >
+              <View style={styles.imgPlaceholder}>
+                <Image
+                  source={require("@/assets/images/no_image_default.png")}
+                  style={styles.image}
+                  placeholder="blur"
+                />
+              </View>
+
+              <Text style={styles.cardTitle} numberOfLines={2}>
+                {item.name || "Unnamed Pin"}
+              </Text>
+
+              <Text style={styles.cardLoc} numberOfLines={3}>
+                {item.address || "No address available"}
+              </Text>
+            </Pressable>
+
+            <View style={styles.actionsRow}>
+              <Pressable
+                style={styles.actionButton}
+                onPress={() => handleSaveToggle(Number(item.id))}
+              >
+                <Text style={styles.actionText}>
+                  {isSaved ? "Unsave" : "Save"}
+                </Text>
+              </Pressable>
+
+              <Pressable
+                style={styles.actionButton}
+                onPress={() => handleShare(item)}
+              >
+                <Text style={styles.actionText}>Share</Text>
+              </Pressable>
+            </View>
           </View>
-
-          <Text style={styles.cardTitle} numberOfLines={2}>
-            {item.name || "Unnamed Pin"}
-          </Text>
-
-          <Text style={styles.cardLoc} numberOfLines={3}>
-            {item.address || "No address available"}
-          </Text>
-        </Pressable>
-      )}
+        );
+      }}
       ListEmptyComponent={
         <View style={styles.emptyContainer}>
           <Text style={styles.emptyText}>No pins to display yet.</Text>
@@ -54,7 +101,8 @@ export default function PinGridView({ pins }: Props) {
 
 const styles = StyleSheet.create({
   listContainer: {
-    paddingHorizontal: 10,
+    paddingLeft: 20,
+    paddingRight: 5,
     paddingTop: 170,
     paddingBottom: 24,
   },
@@ -81,17 +129,16 @@ const styles = StyleSheet.create({
     width: "100%",
     height: 110,
     borderRadius: 9,
-    resizeMode: "cover",
     backgroundColor: "#cfd8d1",
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 10,
   },
 
-  imgText: {
-    fontFamily: Fonts.regular,
-    fontSize: 12,
-    color: "#243e36",
+  image: {
+    width: "100%",
+    height: "100%",
+    borderRadius: 9,
   },
 
   cardTitle: {
@@ -106,6 +153,28 @@ const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 17,
     color: "#000",
+    marginBottom: 10,
+  },
+
+  actionsRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    gap: 8,
+    marginTop: "auto",
+  },
+
+  actionButton: {
+    flex: 1,
+    backgroundColor: "#B7CDBB",
+    paddingVertical: 8,
+    borderRadius: 6,
+    alignItems: "center",
+  },
+
+  actionText: {
+    fontFamily: Fonts.bold,
+    fontSize: 12,
+    color: "#243e36",
   },
 
   emptyContainer: {
