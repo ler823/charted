@@ -4,7 +4,7 @@ import { PressableStars } from "@/components/pressable-stars";
 import { Colors, Fonts } from "@/constants/theme";
 import { supabase } from "@/lib/supabase";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { Stack, useLocalSearchParams, useNavigation, useRouter } from "expo-router";
+import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
   Alert,
@@ -22,7 +22,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function MakePin() {
   const router = useRouter();
-  const { pinId, lat: latParam, lng: lngParam } = useLocalSearchParams<{ pinId?: string; lat?: string; lng?: string }>();
+  const { pinId, lat: latParam, lng: lngParam, viewMode } = useLocalSearchParams<{ pinId?: string; lat?: string; lng?: string; viewMode: string }>();
   const [lat, setLat] = useState((Math.round(parseFloat(latParam!) * 1e5) / 1e5).toString() || "");
   const [lng, setLng] = useState((Math.round(parseFloat(lngParam!) * 1e5) / 1e5).toString() || "");
   const isEdit = pinId != undefined;
@@ -41,7 +41,6 @@ export default function MakePin() {
   const publicDescription = "All of your friends can view this pin"
   const [privacyDescription, setPrivacyDescription] = useState(publicDescription);
   const scrollRef = React.useRef<KeyboardAwareScrollView>(null);
-  const navigation = useNavigation()
 
   let inserted_pin_id = 0;
 
@@ -347,8 +346,10 @@ export default function MakePin() {
           if (error) {
             console.log(error.message)
           }
-          console.log(navigation.getState())
-          router.replace("/(tabs)/(home)")
+          router.replace({
+            pathname: "/(tabs)/(home)",
+            params: { viewMode },
+          });
         },
       },
     ]);
@@ -456,7 +457,7 @@ export default function MakePin() {
                 />
               </View>
             </View>
-            <View style={{flex: 1}}>
+            <View style={{ flex: 1 }}>
               <Text style={styles.privacyDescription}>{privacyDescription}</Text>
             </View>
           </View>

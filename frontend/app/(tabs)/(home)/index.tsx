@@ -14,7 +14,7 @@ import PinOverlay from "@/components/pin-overlay";
 import { useDroppingPin } from "@/context/DroppingPinContext";
 import { useLocation } from "@/hooks/use-location";
 import { Coords, Pin, ViewMode, ViewOption } from "@/types/types";
-import { useFocusEffect } from "expo-router";
+import { useFocusEffect, useLocalSearchParams } from "expo-router";
 
 // CSULB is default region if user does not share location
 const CSULB = {
@@ -33,8 +33,9 @@ const VIEW_OPTIONS: ViewOption[] = [
 ];
 
 export default function Home() {
+  const { viewMode: incomingViewMode } = useLocalSearchParams<{ viewMode?: ViewMode }>();
   const { isDroppingPin, setIsDroppingPin } = useDroppingPin();
-  const [viewMode, setViewMode] = useState<ViewMode>("map");
+  const [viewMode, setViewMode] = useState<ViewMode>(incomingViewMode ?? "map");
   const [selectedPin, setSelectedPin] = useState<Pin | null>(null);
   const [pins, setPins] = useState<Pin[]>([]);
   const [pinCoords, setPinCoords] = useState<Coords | null>(null);
@@ -166,7 +167,7 @@ export default function Home() {
       )}
       {viewMode === "grid" && (
         <View>
-          <PinGridView pins={pins} />
+          <PinGridView pins={pins} viewMode={viewMode} />
         </View>
       )}
       {/* 
@@ -177,7 +178,7 @@ export default function Home() {
       )}
 
       {/* Dropping pin overlay */}
-      {isDroppingPin && <DroppingPinOverlay coords={pinCoords} />}
+      {isDroppingPin && <DroppingPinOverlay coords={pinCoords} viewMode={viewMode}/>}
     </View>
   );
 }

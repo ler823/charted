@@ -50,7 +50,7 @@ type Pin = {
 
 
 export default function PinPage() {
-  const { pinid } = useLocalSearchParams();
+  const { pinid, viewMode } = useLocalSearchParams();
 
   const [pin, setPin] = useState<Pin | null>(null);
   const [friends, setFriends] = useState<Friend[] | null>([]);
@@ -258,7 +258,8 @@ export default function PinPage() {
               router.push({
                 pathname: "/make-pin",
                 params: {
-                  pinId: pin.pin_id
+                  pinId: pin.pin_id,
+                  viewMode: viewMode
                 }
               })
             }}

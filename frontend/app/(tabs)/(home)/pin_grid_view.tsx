@@ -1,15 +1,16 @@
 import { Fonts } from "@/constants/theme";
 import { Pin } from "@/types/types";
-import { router } from "expo-router";
 import { Image } from "expo-image";
+import { router } from "expo-router";
 import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
 
 type Props = {
   pins: Pin[];
   // onSelectPin: (pin: Pin) => void;
+  viewMode: string
 };
 
-export default function PinGridView({ pins }: Props) {
+export default function PinGridView({ pins, viewMode }: Props) {
   return (
     <FlatList
       data={pins}
@@ -26,6 +27,7 @@ export default function PinGridView({ pins }: Props) {
               pathname: "/pins/[pinid]",
               params: {
                 pinid: item.id,
+                viewMode: viewMode,
               },
             })
           }
