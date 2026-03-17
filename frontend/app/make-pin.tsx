@@ -1,4 +1,5 @@
 import AddTagOrList from "@/components/add-tag";
+import AddVisit from "@/components/add-visit";
 import LoadingPage from "@/components/loading-page";
 import { PressableStars } from "@/components/pressable-stars";
 import { Colors, Fonts } from "@/constants/theme";
@@ -33,6 +34,7 @@ export default function MakePin() {
   const [tags, setTags] = useState<string[]>([]);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [modalVisible, setAddTagVisible] = useState(false);
+  const [modalVisitVisible, setAddVisitVisible] = useState(false);
   const [newTag, setNewTag] = useState("");
   const [dataLoaded, setDataLoaded] = useState(false);
   const scrollRef = React.useRef<KeyboardAwareScrollView>(null);
@@ -471,6 +473,16 @@ export default function MakePin() {
             ))}
             <AddTagOrList isVisible={modalVisible} onClose={() => setAddTagVisible(false)} onSave={addTag} newTag={newTag} setNewTag={setNewTag} />
           </View>
+          <View style={styles.tagTitle}>
+            <Text style={styles.notesHeading}>Visits</Text>
+            <Pressable onPress={() => setAddVisitVisible(true)}>
+              <MaterialCommunityIcons name="plus-circle-outline" size={24} color="black" style={styles.addTags} />
+            </Pressable>
+          </View>
+
+          <View style={styles.tagsContainer}>
+            <AddVisit isVisible={modalVisitVisible} onClose={() => setAddVisitVisible(false)} onSave={addTag} newVisit={newTag} setNewVisit={setNewTag} />
+          </View>
           {isEdit && (<View style={{alignSelf: "center"}}>
             <Pressable style={styles.deleteBtn} onPress={deletePin}>
               <MaterialCommunityIcons name="trash-can-outline" size={24} color="#fff" />
@@ -485,7 +497,6 @@ export default function MakePin() {
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
     padding: 16,
   },
   topBar: {

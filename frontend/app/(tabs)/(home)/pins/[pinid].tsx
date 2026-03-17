@@ -46,6 +46,7 @@ type Pin = {
       link: string | null;
     } | null;
   } | null;
+  private: boolean | null;
 };
 
 
@@ -112,8 +113,12 @@ export default function PinPage() {
           {/* Title */}
           <View style={[styles.editRow, {alignItems: "center", alignContent: "center", marginTop: 10, gap: 6}]}>
             <Text style={styles.title}>{pin.name ?? "No pin name"}</Text>
-            <Ionicons name="lock-closed" size={20} color="#243e36"/>
-            <Ionicons name="people" size={20} color="#243e36"/>
+            {pin.private === true && (
+              <Ionicons name="lock-closed" size={20} color="#243e36"/>
+            )}
+            {pin.private === false && (
+                <Ionicons name="people" size={20} color="#243e36"/>
+            )}
           </View>
 
           {/* Address */}
@@ -219,7 +224,7 @@ export default function PinPage() {
           <View style={[styles.cardFullRow, { height: 200, flexDirection: "column", alignItems: "flex-start" }]}>
             <ScrollView>
               {pin.pin_visits?.length === 0 && (
-                <Text style={styles.boxText}>You have no logged visits</Text>
+                <Text style={[styles.boxText, {marginTop: 10}]}>You have no logged visits</Text>
               )}
               {pin.pin_visits?.map((pin_visit) => (
                 <Text key={pin_visit?.visit_id} style={styles.boxText}>{pin_visit?.visit_timestamp ? new Date(pin_visit.visit_timestamp).toLocaleDateString() : "No timestamp"}</Text>
