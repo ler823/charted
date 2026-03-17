@@ -175,7 +175,8 @@ export default function MakePin() {
         user_rating,
         user_note,
         address,
-        location_id`)
+        location_id,
+        private`)
       .eq("pin_id", pinId)
     if (pinDataError) {
       Alert.alert("Error", pinDataError.message);
@@ -235,6 +236,7 @@ export default function MakePin() {
     setLat(locData[0].latitude.toString() ?? "")
     setLng(locData[0].longitude.toString() ?? "")
     setSelectedTags(loadedSelectedTags)
+    setIsPrivate(pinData[0].private)
   }
 
   const updatePinTags = async () => {
@@ -309,7 +311,8 @@ export default function MakePin() {
         name: name,
         address: address,
         user_rating: rating,
-        user_note: notes
+        user_note: notes,
+        private: isPrivate
       })
       .eq("pin_id", pinId)
     if (error) {
