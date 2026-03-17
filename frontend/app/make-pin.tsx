@@ -40,6 +40,7 @@ export default function MakePin() {
   const privateDescription = "Only you can view this pin"
   const publicDescription = "All of your friends can view this pin"
   const [privacyDescription, setPrivacyDescription] = useState(publicDescription);
+  const [notesHeight, setNotesHeight] = useState(100);
   const scrollRef = React.useRef<KeyboardAwareScrollView>(null);
 
   let inserted_pin_id = 0;
@@ -473,9 +474,13 @@ export default function MakePin() {
               value={notes}
               onChangeText={setNotes}
               multiline={true}
+              scrollEnabled={false}
               textAlignVertical="top"
               onFocus={(event) => {
                 scrollRef.current?.scrollToFocusedInput(event.target);
+              }}
+              onContentSizeChange={(event) => {
+                setNotesHeight(event.nativeEvent.contentSize.height)
               }}
             />
           </View>
@@ -611,7 +616,7 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.regular,
   },
   notesInput: {
-    height: 100,
+    minHeight: 100,
     backgroundColor: Colors.light.accentLight,
   },
   tagsContainer: {

@@ -353,7 +353,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     marginTop: 5,
     borderRadius: 5,
-    height: 80,
+    minHeight: 80,
     flexDirection: "row",
     alignItems: "center",
     shadowColor: "#000",
