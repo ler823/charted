@@ -41,7 +41,6 @@ export default function RootLayout() {
         <Stack.Screen name="(tabs)" options={{animation: "slide_from_left"}}/>
         <Stack.Screen name="onboarding/enable-location" options={{animation: "none"}}/>
         <Stack.Screen name="make-pin" />
-        <Stack.Screen name="(tabs)/(home)/pins/[pinid]" />
       </Stack>
     </DroppingPinProvider>
   );

@@ -36,13 +36,23 @@ export default function MakePin() {
   const [modalVisible, setAddTagVisible] = useState(false);
   const [newTag, setNewTag] = useState("");
   const [dataLoaded, setDataLoaded] = useState(false);
-  const [isPrivate, setIsPrivate] = useState(false)
+  const [isPrivate, setIsPrivate] = useState(false);
+  const privateDescription = "Only you can view this pin"
+  const publicDescription = "All of your friends can view this pin"
+  const [privacyDescription, setPrivacyDescription] = useState(publicDescription);
   const scrollRef = React.useRef<KeyboardAwareScrollView>(null);
   const navigation = useNavigation()
 
   let inserted_pin_id = 0;
 
-  const togglePrivacy = () => setIsPrivate(previousState => !previousState);
+  const togglePrivacy = () => {
+    setIsPrivate(previousState => !previousState);
+    if (isPrivate) {
+      setPrivacyDescription(publicDescription)
+    } else {
+      setPrivacyDescription(privateDescription);
+    }
+  }
 
   const toggleTag = (tag: string) => {
     setSelectedTags((prev) =>
@@ -378,6 +388,14 @@ export default function MakePin() {
             <Pressable style={styles.cancelBtn} onPress={() => router.back()}>
               <Text style={styles.cancelText}>Cancel</Text>
             </Pressable>
+            <View style={styles.latLngHeader}>
+              <Text style={styles.latLngText}>Latitude:</Text>
+              <Text style={styles.latLngText}>{lat}</Text>
+            </View>
+            <View style={styles.latLngHeader}>
+              <Text style={styles.latLngText}>Longitude:</Text>
+              <Text style={styles.latLngText}>{lng}</Text>
+            </View>
             <Pressable style={styles.saveBtn} onPress={() => isEdit ? updatePin() : createPin()}>
               <Text style={styles.saveText}>Save</Text>
             </Pressable>
@@ -417,20 +435,6 @@ export default function MakePin() {
                   scrollRef.current?.scrollToFocusedInput(event.target);
                 }}
               />
-              <TextInput
-                style={[styles.input, styles.inputDisabled]}
-                placeholder="Latitude"
-                placeholderTextColor="#aaaaaa"
-                value={lat}
-                editable={false}
-              />
-              <TextInput
-                style={[styles.input, styles.inputDisabled]}
-                placeholder="Longitude"
-                placeholderTextColor="#aaaaaa"
-                value={lng}
-                editable={false}
-              />
             </View>
           </View>
           <View style={styles.ratingsPrivacyRow}>
@@ -445,13 +449,15 @@ export default function MakePin() {
               <View style={styles.privacySwitchBackground}>
                 <Switch
                   trackColor={{ false: Colors.light.text, true: Colors.light.accent }}
-                  thumbColor={Colors.light.accentLight}
+                  thumbColor="#FFF"
                   ios_backgroundColor={Colors.light.text}
                   onValueChange={togglePrivacy}
                   value={isPrivate}
-                  style={styles.privacySwitch}
                 />
               </View>
+            </View>
+            <View style={{flex: 1}}>
+              <Text style={styles.privacyDescription}>{privacyDescription}</Text>
             </View>
           </View>
           <View>
@@ -563,6 +569,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     overflow: "hidden",
+    borderWidth: 1,
+    borderColor: "#ddd"
   },
   photo: {
     width: "100%",
@@ -639,6 +647,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: "#333",
     textTransform: "capitalize",
+    fontFamily: Fonts.regular
   },
   starRow: {
     flexDirection: "row",
@@ -709,6 +718,18 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
     elevation: 4,
   },
-  privacySwitch: {
+  latLngHeader: {
+    flexDirection: "column",
+    alignItems: "center",
+    alignSelf: "center",
+    justifyContent: "center",
+  },
+  latLngText: {
+    fontFamily: Fonts.regular
+  },
+  privacyDescription: {
+    flexShrink: 1,
+    fontFamily: Fonts.regular,
+    marginTop: 54
   }
 });
