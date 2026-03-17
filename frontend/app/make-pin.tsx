@@ -389,13 +389,17 @@ export default function MakePin() {
             <Pressable style={styles.cancelBtn} onPress={() => router.back()}>
               <Text style={styles.cancelText}>Cancel</Text>
             </Pressable>
-            <View style={styles.latLngHeader}>
+            {/* <View style={styles.latLngHeader}>
               <Text style={styles.latLngText}>Latitude:</Text>
               <Text style={styles.latLngText}>{lat}</Text>
             </View>
             <View style={styles.latLngHeader}>
               <Text style={styles.latLngText}>Longitude:</Text>
               <Text style={styles.latLngText}>{lng}</Text>
+            </View> */}
+            <View style={styles.latLngHeader}>
+              <Text style={styles.latLngText}>Pin at</Text>
+              <Text style={styles.latLngText}>({lat}, {lng})</Text>
             </View>
             <Pressable style={styles.saveBtn} onPress={() => isEdit ? updatePin() : createPin()}>
               <Text style={styles.saveText}>Save</Text>
@@ -726,7 +730,9 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   latLngText: {
-    fontFamily: Fonts.regular
+    fontFamily: Fonts.regular,
+    fontSize: 16,
+    flexShrink: 1,
   },
   privacyDescription: {
     flexShrink: 1,
