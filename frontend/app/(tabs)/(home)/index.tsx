@@ -1,12 +1,13 @@
+import PinMarker from "@/components/pin-marker";
 import { supabase } from "@/lib/supabase";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import React, { useCallback, useRef, useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 import ClusteredMapView from "react-native-map-clustering";
 import { Marker } from "react-native-maps";
-import PinMarker from "../../../components/pin-marker";
 import PinListView from "./pin_list_view";
 
+import PinGridView from "@/app/(tabs)/(home)/pin_grid_view";
 import DroppingPinOverlay from "@/components/dropping-pin-overlay";
 import Header from "@/components/header";
 import PinOverlay from "@/components/pin-overlay";
@@ -157,12 +158,17 @@ export default function Home() {
             ))}
         </ClusteredMapView>
       )}
+
       {viewMode === "list" && (
         <View style={styles.cardsContainer}>
           <PinListView />
         </View>
       )}
-      {viewMode === "grid" && <View style={styles.placeholder}></View>}
+      {viewMode === "grid" && (
+        <View>
+          <PinGridView pins={pins} />
+        </View>
+      )}
       {/* 
         PIN OVERLAY
       */}
