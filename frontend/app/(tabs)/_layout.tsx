@@ -47,6 +47,10 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     backgroundColor: Colors.light.background,
     padding: 20,
+    position: "absolute",
+    bottom: 0,
+    right: 0,
+    left: 0
   },
   tabTrigger: {
     paddingHorizontal: 20,

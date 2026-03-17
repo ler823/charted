@@ -201,7 +201,7 @@ const styles = StyleSheet.create({
 
   plusButton: {
     position: "absolute",
-    bottom: 25,
+    bottom: 115,
     right: 25,
     zIndex: 20,
     width: 50,
