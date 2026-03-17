@@ -4,7 +4,7 @@ import { PressableStars } from "@/components/pressable-stars";
 import { Colors, Fonts } from "@/constants/theme";
 import { supabase } from "@/lib/supabase";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { Stack, useLocalSearchParams, useRouter } from "expo-router";
+import { Stack, useLocalSearchParams, useNavigation, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
   Alert,
@@ -38,6 +38,8 @@ export default function MakePin() {
   const [dataLoaded, setDataLoaded] = useState(false);
   const [isPrivate, setIsPrivate] = useState(false)
   const scrollRef = React.useRef<KeyboardAwareScrollView>(null);
+  const navigation = useNavigation()
+
   let inserted_pin_id = 0;
 
   const togglePrivacy = () => setIsPrivate(previousState => !previousState);
@@ -335,7 +337,8 @@ export default function MakePin() {
           if (error) {
             console.log(error.message)
           }
-          router.push("/")
+          console.log(navigation.getState())
+          router.replace("/(tabs)/(home)")
         },
       },
     ]);
@@ -443,7 +446,7 @@ export default function MakePin() {
                 <Switch
                   trackColor={{ false: Colors.light.text, true: Colors.light.accent }}
                   thumbColor={Colors.light.accentLight}
-                  ios_backgroundColor="#3e3e3e"
+                  ios_backgroundColor={Colors.light.text}
                   onValueChange={togglePrivacy}
                   value={isPrivate}
                   style={styles.privacySwitch}

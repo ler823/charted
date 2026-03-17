@@ -20,10 +20,14 @@ export default function DroppingPinOverlay({ coords }: Props) {
   function handleDropPin() {
     // pin dropping logic here
     setIsDroppingPin(false);
-    router.push({
-      pathname: "/make-pin",
-      params: { lat: coords?.latitude, lng: coords?.longitude },
-    });
+    router.replace("/(tabs)/(home)");
+    setTimeout(() => {
+      router.push({
+        pathname: "/make-pin",
+        params: { lat: coords?.latitude, lng: coords?.longitude },
+      });
+
+    }, 0)
   }
 
   return (
