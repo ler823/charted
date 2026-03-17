@@ -1,6 +1,7 @@
 import { Fonts } from "@/constants/theme";
 import { Pin } from "@/types/types";
 import { router } from "expo-router";
+import { Image } from "expo-image";
 import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
 
 type Props = {
@@ -24,13 +25,13 @@ export default function PinGridView({ pins }: Props) {
             router.push({
               pathname: "/pins/[pinid]",
               params: {
-                pinid: 28,
+                pinid: item.id,
               },
             })
           }
         >
           <View style={styles.imgPlaceholder}>
-            <Text style={styles.imgText}>Image</Text>
+            <Image source={require("@/assets/images/no_image_default.png")} style={{width: "100%", height: "100%", borderRadius: 9}} placeholder="blur"/>
           </View>
 
           <Text style={styles.cardTitle} numberOfLines={2}>
@@ -80,6 +81,7 @@ const styles = StyleSheet.create({
     width: "100%",
     height: 110,
     borderRadius: 9,
+    resizeMode: "cover",
     backgroundColor: "#cfd8d1",
     alignItems: "center",
     justifyContent: "center",
