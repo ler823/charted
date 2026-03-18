@@ -228,10 +228,16 @@ export default function PinPage() {
               {pin.pin_visits?.length === 0 && (
                 <Text style={[styles.boxText, {marginTop: 10}]}>You have no logged visits</Text>
               )}
-              {pin.pin_visits?.map((pin_visit) => (
-                <Text key={pin_visit?.visit_id} style={styles.boxText}>{pin_visit?.visit_timestamp ? new Date(pin_visit.visit_timestamp).toLocaleDateString() : "No timestamp"}</Text>
-              ))}
+              {pin.pin_visits?.map((pin_visit) => {
+                if (!pin_visit.visit_timestamp) return null;
+                const [year, month, day] = pin_visit.visit_timestamp.split("-").map(Number);
+                const displayDate = `${month}/${day}/${year}`;
+                return <Text style={styles.boxText} key={pin_visit.visit_id}>{displayDate}</Text>
+              })}
             </ScrollView>
+          </View>
+          <View style={{height: 100}}>
+
           </View>
 
         </View>

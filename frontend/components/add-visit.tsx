@@ -1,13 +1,13 @@
 import { Colors, Fonts } from "@/constants/theme";
 import { Calendar } from "react-native-calendars";
 import React, { PropsWithChildren, useState } from 'react';
-import { Keyboard, Modal, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, Keyboard, Modal, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 
 type Props = PropsWithChildren<{
   isVisible: boolean;
   onClose: () => void;
-  onSave: () => void;
+  onSave: (visitDate: string) => void;
   newVisit: string;
   setNewVisit: (value: string) => void;
 }>;
@@ -16,12 +16,6 @@ export default function AddVisit({ isVisible, onClose, onSave, newVisit, setNewV
     const [date, setDate] = useState(new Date());
 
     const formattedDate = `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,"0")}-${String(date.getDate()).padStart(2,"0")}`;
-
-    const onChange = (event: any, selectedDate?: Date) => {
-        if (selectedDate) {
-        setDate(selectedDate);
-        }
-    };
 
     return (
     <View>
@@ -60,10 +54,19 @@ export default function AddVisit({ isVisible, onClose, onSave, newVisit, setNewV
                 style={styles.calendar}
               />
               <View style={styles.bottomButtons}>
-                <Pressable onPress={onClose} style={styles.cancelBtn}>
+                <Pressable onPress={onClose} 
+                  style={styles.cancelBtn}>
                   <Text style={styles.cancelText}>Cancel</Text>
                 </Pressable>
-                <Pressable onPress={onSave} style={styles.saveBtn}>
+                <Pressable onPress={() => {
+                      if (!date) {
+                        Alert.alert("Missing field", "Please pick a date");
+                        return;
+                      }
+                      setNewVisit(formattedDate);
+                      onSave(formattedDate);
+                    }} 
+                    style={styles.saveBtn}>
                   <Text style={styles.saveText}>Save</Text>
                 </Pressable>
               </View>

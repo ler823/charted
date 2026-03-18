@@ -12,6 +12,7 @@ import {
   Image,
   Keyboard,
   Pressable,
+  ScrollView,
   StyleSheet,
   Switch,
   Text,
@@ -36,6 +37,8 @@ export default function MakePin() {
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [modalVisible, setAddTagVisible] = useState(false);
   const [modalVisitVisible, setAddVisitVisible] = useState(false);
+  const [visits, setVisits] = useState<string[]>([]);
+  const [newVisit, setNewVisit] = useState("");
   const [newTag, setNewTag] = useState("");
   const [dataLoaded, setDataLoaded] = useState(false);
   const [isPrivate, setIsPrivate] = useState(false);
@@ -145,6 +148,7 @@ export default function MakePin() {
   const addTag = async () => {
     if (!newTag) {
       Alert.alert("Missing field", "Please enter a name for the new tag");
+      return;
     }
     const { data: userId, error: userIdError } = await supabase
       .from("users")
@@ -169,6 +173,44 @@ export default function MakePin() {
     loadTags();
     toggleTag(tagToAdd.name)
     setAddTagVisible(false)
+  }
+
+
+  const getUserVisits = async () => {
+    const { data, error } = await supabase
+      .from("pin_visits")
+      .select(`*`)
+      .eq("pin_id", Number(pinId));
+
+    if (error) {
+      Alert.alert("Error", error.message);
+      return;
+    }
+    return data.map((visit: { visit_timestamp: string }) => visit.visit_timestamp);
+  }
+
+  const loadVisits = async () => {
+    const userVisits = await getUserVisits();
+    if (userVisits) setVisits(userVisits);
+  };
+
+  const addVisit = async ( visitDate: string ) => {
+    if (!visitDate) {
+      Alert.alert("Missing field", "Please enter a date for the new visit");
+      return;
+    }
+    let visitToAdd = {
+      pin_id: Number(pinId),
+      visit_timestamp: visitDate
+    }
+
+    const { error: addVisitError } = await supabase
+      .from("pin_visits")
+      .insert(visitToAdd)
+    if (addVisitError) console.log(addVisitError.message)
+    setNewVisit(visitDate);
+    loadVisits();
+    setAddVisitVisible(false)
   }
 
   const cleanupUnusedTags = async () => {
@@ -243,6 +285,17 @@ export default function MakePin() {
       return;
     }
     let loadedSelectedTags = tagData.map((data) => (data.tags as unknown as { name: any }).name); // kinda messy but it turns off the warnings lol
+
+    const { data: visitData, error: visitDataError } = await supabase
+      .from("pin_visits")
+      .select("*")
+      .eq("pin_id", Number(pinId))
+    if (visitDataError) {
+      Alert.alert("Error", visitDataError.message);
+      return;
+    }
+    let loadedVisits = visitData.map((visit: { visit_timestamp: string }) => visit.visit_timestamp);
+
     setName(pinData[0].name)
     setAddress(pinData[0].address)
     setRating(pinData[0].user_rating)
@@ -250,6 +303,7 @@ export default function MakePin() {
     setLat(locData[0].latitude.toString() ?? "")
     setLng(locData[0].longitude.toString() ?? "")
     setSelectedTags(loadedSelectedTags)
+    setVisits(loadedVisits)
     setIsPrivate(pinData[0].private)
   }
 
@@ -366,6 +420,7 @@ export default function MakePin() {
       }
       await cleanupUnusedTags();
       await loadTags();
+      await loadVisits();
       setDataLoaded(true);
     }
     loadData()
@@ -515,16 +570,24 @@ export default function MakePin() {
             ))}
             <AddTagOrList isVisible={modalVisible} onClose={() => setAddTagVisible(false)} onSave={addTag} newTag={newTag} setNewTag={setNewTag} />
           </View>
+
           <View style={styles.tagTitle}>
             <Text style={styles.notesHeading}>Visits</Text>
             <Pressable onPress={() => setAddVisitVisible(true)}>
               <MaterialCommunityIcons name="plus-circle-outline" size={24} color="black" style={styles.addTags} />
             </Pressable>
           </View>
-
-          <View style={styles.tagsContainer}>
-            <AddVisit isVisible={modalVisitVisible} onClose={() => setAddVisitVisible(false)} onSave={addTag} newVisit={newTag} setNewVisit={setNewTag} />
+          <View style={[styles.tagsContainer, {minHeight: 100}]}>
+            <ScrollView>
+              {visits.map((visit) => {
+                const [year, month, day] = visit.split("-").map(Number);
+                const displayDate = `${month}/${day}/${year}`;
+                return <Text style={styles.tagLabel} key={visit}>{displayDate}</Text>
+              })}
+            </ScrollView>
+            <AddVisit isVisible={modalVisitVisible} onClose={() => setAddVisitVisible(false)} onSave={addVisit} newVisit={newVisit} setNewVisit={setNewVisit} />
           </View>
+
           {isEdit && (<View style={{alignSelf: "center"}}>
             <Pressable style={styles.deleteBtn} onPress={deletePin}>
               <MaterialCommunityIcons name="trash-can-outline" size={24} color="#fff" />
