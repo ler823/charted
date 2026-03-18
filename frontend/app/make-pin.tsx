@@ -196,7 +196,7 @@ export default function MakePin() {
     if (userVisits) setVisits(userVisits);
   };
 
-  const addVisit = async ( visitDate: string ) => {
+  const addVisit = async (visitDate: string) => {
     if (!visitDate) {
       Alert.alert("Missing field", "Please enter a date for the new visit");
       return;
@@ -525,6 +525,7 @@ export default function MakePin() {
                 <PressableStars rating={rating} setRating={setRating} />
               </View>
             </View>
+          </View>
             <View>
               <Text style={styles.notesHeading}>Private</Text>
               <View style={styles.privacySwitchBackground}>
@@ -535,12 +536,11 @@ export default function MakePin() {
                   onValueChange={togglePrivacy}
                   value={isPrivate}
                 />
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.privacyDescription}>{privacyDescription}</Text>
+                </View>
               </View>
             </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.privacyDescription}>{privacyDescription}</Text>
-            </View>
-          </View>
           <View>
             <Text style={styles.notesHeading}>Notes</Text>
             <TextInput
@@ -595,7 +595,7 @@ export default function MakePin() {
               <MaterialCommunityIcons name="plus-circle-outline" size={24} color="black" style={styles.addTags} />
             </Pressable>
           </View>
-          <View style={[styles.tagsContainer, {minHeight: 100}]}>
+          <View style={[styles.tagsContainer, { minHeight: 100 }]}>
             <ScrollView>
               {visits.map((visit) => {
                 const [year, month, day] = visit.split("-").map(Number);
@@ -606,7 +606,7 @@ export default function MakePin() {
             <AddVisit isVisible={modalVisitVisible} onClose={() => setAddVisitVisible(false)} onSave={addVisit} newVisit={newVisit} setNewVisit={setNewVisit} />
           </View>
 
-          {isEdit && (<View style={{alignSelf: "center"}}>
+          {isEdit && (<View style={{ alignSelf: "center" }}>
             <Pressable style={styles.deleteBtn} onPress={deletePin}>
               <MaterialCommunityIcons name="trash-can-outline" size={24} color="#fff" />
               <Text style={styles.cancelText}>Delete</Text>
@@ -810,6 +810,7 @@ const styles = StyleSheet.create({
     gap: 8,
     backgroundColor: Colors.light.accentLight,
     alignSelf: "flex-start",
+    alignItems: "center",
     padding: 9.5,
     borderWidth: 1,
     borderColor: "#ddd",
@@ -834,6 +835,6 @@ const styles = StyleSheet.create({
   privacyDescription: {
     flexShrink: 1,
     fontFamily: Fonts.regular,
-    marginTop: 54
+    marginLeft: 8
   }
 });
