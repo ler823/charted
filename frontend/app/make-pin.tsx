@@ -97,6 +97,10 @@ export default function MakePin() {
       Alert.alert("Missing fields", "Please fill in name and address.");
       return;
     }
+    if (name.length > 100) {
+      Alert.alert("Invalid name", "Name cannot be more than 100 characters")
+      return;
+    }
     const { data, error } = await supabase
       .rpc('create_pin', {
         p_address: address,
