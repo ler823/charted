@@ -93,9 +93,11 @@ export default function Friends() {
             {/* 
             Placeholder cirlce for now. 
             PIcture will be added once figured out how to load pictures from cloud/db
+            Later implement: display uploaded photo or default initial for no photo 
             */}
-            <View style={styles.avatar}></View>
-
+            <View style={styles.avatar}>
+              <Text style={styles.avatarInitial}>{item.username?.[0]?.toUpperCase()}</Text>
+            </View>
             <View style={styles.cardInfo}>
               <Text style={styles.username}>{item.username}</Text>
               <View style={styles.locationRow}>
@@ -239,9 +241,14 @@ const styles = StyleSheet.create({
     width: 65,
     height: 65,
     borderRadius: 999,
-    backgroundColor: "#fff",
+    backgroundColor: "#d8d8d8",
     alignItems: "center",
     justifyContent: "center",
+  },
+  avatarInitial: {
+    fontSize: 28,
+    fontFamily: Fonts.regular,
+    color: "#000",
   },
   cardInfo: {
     flex: 1,

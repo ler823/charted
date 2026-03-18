@@ -13,6 +13,7 @@ import {
   Keyboard,
   Pressable,
   StyleSheet,
+  Switch,
   Text,
   TextInput,
   View,
@@ -22,7 +23,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function MakePin() {
   const router = useRouter();
-  const { pinId, lat: latParam, lng: lngParam } = useLocalSearchParams<{ pinId?: string; lat?: string; lng?: string }>();
+  const { pinId, lat: latParam, lng: lngParam, viewMode } = useLocalSearchParams<{ pinId?: string; lat?: string; lng?: string; viewMode: string }>();
   const [lat, setLat] = useState((Math.round(parseFloat(latParam!) * 1e5) / 1e5).toString() || "");
   const [lng, setLng] = useState((Math.round(parseFloat(lngParam!) * 1e5) / 1e5).toString() || "");
   const isEdit = pinId != undefined;
@@ -37,8 +38,23 @@ export default function MakePin() {
   const [modalVisitVisible, setAddVisitVisible] = useState(false);
   const [newTag, setNewTag] = useState("");
   const [dataLoaded, setDataLoaded] = useState(false);
+  const [isPrivate, setIsPrivate] = useState(false);
+  const privateDescription = "Only you can view this pin"
+  const publicDescription = "All of your friends can view this pin"
+  const [privacyDescription, setPrivacyDescription] = useState(publicDescription);
+  const [notesHeight, setNotesHeight] = useState(100);
   const scrollRef = React.useRef<KeyboardAwareScrollView>(null);
+
   let inserted_pin_id = 0;
+
+  const togglePrivacy = () => {
+    setIsPrivate(previousState => !previousState);
+    if (isPrivate) {
+      setPrivacyDescription(publicDescription)
+    } else {
+      setPrivacyDescription(privateDescription);
+    }
+  }
 
   const toggleTag = (tag: string) => {
     setSelectedTags((prev) =>
@@ -83,6 +99,7 @@ export default function MakePin() {
         p_latitude: Math.round(parseFloat(lat!) * 1e5) / 1e5,
         p_longitude: Math.round(parseFloat(lng!) * 1e5) / 1e5,
         p_pin_name: name,
+        p_private: isPrivate,
         p_user_note: notes,
         p_user_rating: rating,
         p_username: "TimTimTim"
@@ -172,7 +189,8 @@ export default function MakePin() {
         user_rating,
         user_note,
         address,
-        location_id`)
+        location_id,
+        private`)
       .eq("pin_id", pinId)
     if (pinDataError) {
       Alert.alert("Error", pinDataError.message);
@@ -232,6 +250,7 @@ export default function MakePin() {
     setLat(locData[0].latitude.toString() ?? "")
     setLng(locData[0].longitude.toString() ?? "")
     setSelectedTags(loadedSelectedTags)
+    setIsPrivate(pinData[0].private)
   }
 
   const updatePinTags = async () => {
@@ -306,7 +325,8 @@ export default function MakePin() {
         name: name,
         address: address,
         user_rating: rating,
-        user_note: notes
+        user_note: notes,
+        private: isPrivate
       })
       .eq("pin_id", pinId)
     if (error) {
@@ -319,17 +339,20 @@ export default function MakePin() {
 
   const deletePin = async () => {
     Alert.alert('Are you sure you want to delete this pin?', 'This action cannot be undone', [
-      {text: 'Cancel'},
+      { text: 'Cancel' },
       {
         text: 'Delete',
         style: 'destructive',
         onPress: async () => {
           const { error } = await supabase
-          .rpc("delete_pin", {p_pin_id: pinId})
+            .rpc("delete_pin", { p_pin_id: pinId })
           if (error) {
             console.log(error.message)
           }
-          router.push("/")
+          router.replace({
+            pathname: "/(tabs)/(home)",
+            params: { viewMode },
+          });
         },
       },
     ]);
@@ -369,6 +392,18 @@ export default function MakePin() {
             <Pressable style={styles.cancelBtn} onPress={() => router.back()}>
               <Text style={styles.cancelText}>Cancel</Text>
             </Pressable>
+            {/* <View style={styles.latLngHeader}>
+              <Text style={styles.latLngText}>Latitude:</Text>
+              <Text style={styles.latLngText}>{lat}</Text>
+            </View>
+            <View style={styles.latLngHeader}>
+              <Text style={styles.latLngText}>Longitude:</Text>
+              <Text style={styles.latLngText}>{lng}</Text>
+            </View> */}
+            <View style={styles.latLngHeader}>
+              <Text style={styles.latLngText}>Pin at</Text>
+              <Text style={styles.latLngText}>({lat}, {lng})</Text>
+            </View>
             <Pressable style={styles.saveBtn} onPress={() => isEdit ? updatePin() : createPin()}>
               <Text style={styles.saveText}>Save</Text>
             </Pressable>
@@ -408,26 +443,29 @@ export default function MakePin() {
                   scrollRef.current?.scrollToFocusedInput(event.target);
                 }}
               />
-              <TextInput
-                style={[styles.input, styles.inputDisabled]}
-                placeholder="Latitude"
-                placeholderTextColor="#aaaaaa"
-                value={lat}
-                editable={false}
-              />
-              <TextInput
-                style={[styles.input, styles.inputDisabled]}
-                placeholder="Longitude"
-                placeholderTextColor="#aaaaaa"
-                value={lng}
-                editable={false}
-              />
             </View>
           </View>
-          <View>
-            <Text style={styles.notesHeading}>Rating</Text>
-            <View style={styles.starRow}>
-              <PressableStars rating={rating} setRating={setRating} />
+          <View style={styles.ratingsPrivacyRow}>
+            <View>
+              <Text style={styles.notesHeading}>Rating</Text>
+              <View style={styles.starRow}>
+                <PressableStars rating={rating} setRating={setRating} />
+              </View>
+            </View>
+            <View>
+              <Text style={styles.notesHeading}>Private</Text>
+              <View style={styles.privacySwitchBackground}>
+                <Switch
+                  trackColor={{ false: Colors.light.text, true: Colors.light.accent }}
+                  thumbColor="#FFF"
+                  ios_backgroundColor={Colors.light.text}
+                  onValueChange={togglePrivacy}
+                  value={isPrivate}
+                />
+              </View>
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.privacyDescription}>{privacyDescription}</Text>
             </View>
           </View>
           <View>
@@ -437,10 +475,14 @@ export default function MakePin() {
               placeholder="Enter notes here"
               value={notes}
               onChangeText={setNotes}
-              multiline
+              multiline={true}
+              scrollEnabled={false}
               textAlignVertical="top"
               onFocus={(event) => {
                 scrollRef.current?.scrollToFocusedInput(event.target);
+              }}
+              onContentSizeChange={(event) => {
+                setNotesHeight(event.nativeEvent.contentSize.height)
               }}
             />
           </View>
@@ -548,6 +590,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     overflow: "hidden",
+    borderWidth: 1,
+    borderColor: "#ddd"
   },
   photo: {
     width: "100%",
@@ -583,7 +627,7 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.regular,
   },
   notesInput: {
-    height: 100,
+    minHeight: 100,
     backgroundColor: Colors.light.accentLight,
   },
   tagsContainer: {
@@ -624,13 +668,14 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: "#333",
     textTransform: "capitalize",
+    fontFamily: Fonts.regular
   },
   starRow: {
     flexDirection: "row",
     gap: 5,
     backgroundColor: Colors.light.accentLight,
     alignSelf: "flex-start",
-    padding: "2%",
+    padding: 8,
     borderWidth: 1,
     borderColor: "#ddd",
     borderRadius: 8,
@@ -674,4 +719,40 @@ const styles = StyleSheet.create({
     elevation: 4,
     marginTop: 24
   },
+  ratingsPrivacyRow: {
+    flexDirection: "row",
+    gap: 16,
+    justifyContent: "flex-start"
+  },
+  privacySwitchBackground: {
+    flexDirection: "row",
+    gap: 8,
+    backgroundColor: Colors.light.accentLight,
+    alignSelf: "flex-start",
+    padding: 9.5,
+    borderWidth: 1,
+    borderColor: "#ddd",
+    borderRadius: 8,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
+    elevation: 4,
+  },
+  latLngHeader: {
+    flexDirection: "column",
+    alignItems: "center",
+    alignSelf: "center",
+    justifyContent: "center",
+  },
+  latLngText: {
+    fontFamily: Fonts.regular,
+    fontSize: 16,
+    flexShrink: 1,
+  },
+  privacyDescription: {
+    flexShrink: 1,
+    fontFamily: Fonts.regular,
+    marginTop: 54
+  }
 });

@@ -51,7 +51,7 @@ type Pin = {
 
 
 export default function PinPage() {
-  const { pinid } = useLocalSearchParams();
+  const { pinid, viewMode } = useLocalSearchParams();
 
   const [pin, setPin] = useState<Pin | null>(null);
   const [friends, setFriends] = useState<Friend[] | null>([]);
@@ -142,7 +142,9 @@ export default function PinPage() {
               {friends?.map((friend) => (
                 <Pressable key={friend?.user_id} style={styles.cardPartialRow}>
                   <View style={{ flexDirection: "column", flex: 1, alignItems: "center", justifyContent: "center" }}>
-                    <View style={[styles.avatar, { marginBottom: 10 }]}></View>
+                    <View style={[styles.avatar, { marginBottom: 10 }]}>
+                      <Text style={styles.avatarInitial}>{friend?.username?.[0]?.toUpperCase()}</Text>
+                    </View>
                     <Text 
                       style={{ fontFamily: Fonts.bold, fontSize: 15, }}
                       adjustsFontSizeToFit
@@ -258,7 +260,8 @@ export default function PinPage() {
               router.push({
                 pathname: "/make-pin",
                 params: {
-                  pinId: pin.pin_id
+                  pinId: pin.pin_id,
+                  viewMode: viewMode
                 }
               })
             }}
@@ -352,7 +355,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     marginTop: 5,
     borderRadius: 5,
-    height: 80,
+    minHeight: 80,
     flexDirection: "row",
     alignItems: "center",
     shadowColor: "#000",
@@ -382,9 +385,14 @@ const styles = StyleSheet.create({
     width: 55,
     height: 55,
     borderRadius: 999,
-    backgroundColor: "#fff",
+    backgroundColor: "#d8d8d8",
     alignItems: "center",
     justifyContent: "center",
+  },
+  avatarInitial: {
+    fontSize: 28,
+    fontFamily: Fonts.regular,
+    color: "#000",
   },
   cardInfo: {
     flex: 1,

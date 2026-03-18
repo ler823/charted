@@ -1,19 +1,20 @@
+import PinMarker from "@/components/pin-marker";
 import { supabase } from "@/lib/supabase";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import React, { useCallback, useRef, useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 import ClusteredMapView from "react-native-map-clustering";
 import { Marker } from "react-native-maps";
-import PinMarker from "../../../components/pin-marker";
 import PinListView from "./pin_list_view";
 
+import PinGridView from "@/app/(tabs)/(home)/pin_grid_view";
 import DroppingPinOverlay from "@/components/dropping-pin-overlay";
 import Header from "@/components/header";
 import PinOverlay from "@/components/pin-overlay";
 import { useDroppingPin } from "@/context/DroppingPinContext";
 import { useLocation } from "@/hooks/use-location";
 import { Coords, Pin, ViewMode, ViewOption } from "@/types/types";
-import { useFocusEffect } from "expo-router";
+import { useFocusEffect, useLocalSearchParams } from "expo-router";
 
 // CSULB is default region if user does not share location
 const CSULB = {
@@ -32,8 +33,9 @@ const VIEW_OPTIONS: ViewOption[] = [
 ];
 
 export default function Home() {
+  const { viewMode: incomingViewMode } = useLocalSearchParams<{ viewMode?: ViewMode }>();
   const { isDroppingPin, setIsDroppingPin } = useDroppingPin();
-  const [viewMode, setViewMode] = useState<ViewMode>("map");
+  const [viewMode, setViewMode] = useState<ViewMode>(incomingViewMode ?? "map");
   const [selectedPin, setSelectedPin] = useState<Pin | null>(null);
   const [pins, setPins] = useState<Pin[]>([]);
   const [pinCoords, setPinCoords] = useState<Coords | null>(null);
@@ -124,13 +126,14 @@ export default function Home() {
             const { latitude, longitude } = e.nativeEvent.coordinate;
             setPinCoords({ latitude, longitude });
             setIsDroppingPin(true);
-
             mapRef.current?.animateToRegion(
               {
                 latitude,
                 longitude,
-                latitudeDelta: 0.01,
-                longitudeDelta: 0.01,
+                latitudeDelta:
+                  region.latitudeDelta > 0.01 ? 0.01 : region.latitudeDelta,
+                longitudeDelta:
+                  region.longitudeDelta > 0.01 ? 0.01 : region.longitudeDelta,
               },
               300,
             );
@@ -157,12 +160,17 @@ export default function Home() {
             ))}
         </ClusteredMapView>
       )}
+
       {viewMode === "list" && (
         <View style={styles.cardsContainer}>
           <PinListView />
         </View>
       )}
-      {viewMode === "grid" && <View style={styles.placeholder}></View>}
+      {viewMode === "grid" && (
+        <View>
+          <PinGridView pins={pins} viewMode={viewMode} />
+        </View>
+      )}
       {/* 
         PIN OVERLAY
       */}
@@ -171,7 +179,7 @@ export default function Home() {
       )}
 
       {/* Dropping pin overlay */}
-      {isDroppingPin && <DroppingPinOverlay coords={pinCoords} />}
+      {isDroppingPin && <DroppingPinOverlay coords={pinCoords} viewMode={viewMode}/>}
     </View>
   );
 }
@@ -194,7 +202,7 @@ const styles = StyleSheet.create({
 
   plusButton: {
     position: "absolute",
-    bottom: 25,
+    bottom: 115,
     right: 25,
     zIndex: 20,
     width: 50,
