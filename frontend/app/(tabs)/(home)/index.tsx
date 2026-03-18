@@ -125,13 +125,14 @@ export default function Home() {
             const { latitude, longitude } = e.nativeEvent.coordinate;
             setPinCoords({ latitude, longitude });
             setIsDroppingPin(true);
-
             mapRef.current?.animateToRegion(
               {
                 latitude,
                 longitude,
-                latitudeDelta: 0.01,
-                longitudeDelta: 0.01,
+                latitudeDelta:
+                  region.latitudeDelta > 0.01 ? 0.01 : region.latitudeDelta,
+                longitudeDelta:
+                  region.longitudeDelta > 0.01 ? 0.01 : region.longitudeDelta,
               },
               300,
             );
