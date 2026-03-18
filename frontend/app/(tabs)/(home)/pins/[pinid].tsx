@@ -140,7 +140,12 @@ export default function PinPage() {
                 <Text style={styles.boxText}>None of your friends share this pin yet</Text>
               )}
               {friends?.map((friend) => (
-                <Pressable key={friend?.user_id} style={styles.cardPartialRow}>
+                <Pressable key={friend?.user_id} style={styles.cardPartialRow} onPress={() => 
+                            router.push({
+                              pathname: "/friend_profiles/[friendpf]",
+                              params: {
+                                friendpf: `${friend?.username}`
+                              }})}>
                   <View style={{ flexDirection: "column", flex: 1, alignItems: "center", justifyContent: "center" }}>
                     <View style={[styles.avatar, { marginBottom: 10 }]}>
                       <Text style={styles.avatarInitial}>{friend?.username?.[0]?.toUpperCase()}</Text>
