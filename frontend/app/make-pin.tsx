@@ -39,6 +39,7 @@ export default function MakePin() {
   const [modalVisitVisible, setAddVisitVisible] = useState(false);
   const [visits, setVisits] = useState<string[]>([]);
   const [newVisit, setNewVisit] = useState("");
+  const [originalVisits, setOriginalVisits] = useState<string[]>([]);
   const [newTag, setNewTag] = useState("");
   const [dataLoaded, setDataLoaded] = useState(false);
   const [isPrivate, setIsPrivate] = useState(false);
@@ -113,6 +114,7 @@ export default function MakePin() {
     }
     inserted_pin_id = data;
     await savePinTags();
+    await saveVisits();
     router.back();
     return;
   };
@@ -199,17 +201,8 @@ export default function MakePin() {
       Alert.alert("Missing field", "Please enter a date for the new visit");
       return;
     }
-    let visitToAdd = {
-      pin_id: Number(pinId),
-      visit_timestamp: visitDate
-    }
-
-    const { error: addVisitError } = await supabase
-      .from("pin_visits")
-      .insert(visitToAdd)
-    if (addVisitError) console.log(addVisitError.message)
-    setNewVisit(visitDate);
-    loadVisits();
+    setVisits((prev) => [...prev, visitDate]);
+    setNewVisit("");
     setAddVisitVisible(false)
   }
 
@@ -304,6 +297,7 @@ export default function MakePin() {
     setLng(locData[0].longitude.toString() ?? "")
     setSelectedTags(loadedSelectedTags)
     setVisits(loadedVisits)
+    setOriginalVisits(loadedVisits)
     setIsPrivate(pinData[0].private)
   }
 
@@ -372,6 +366,27 @@ export default function MakePin() {
 
   }
 
+  const saveVisits = async () => {
+    const newVisits = visits.filter(
+      (visit) => !originalVisits.includes(visit)
+    );
+
+    if (newVisits.length === 0) return;
+
+    const visitRows = newVisits.map((visit) => ({
+      pin_id: Number(pinId),
+      visit_timestamp: visit,
+    }));
+
+    const { error } = await supabase
+      .from("pin_visits")
+      .insert(visitRows);
+
+    if (error) {
+      Alert.alert("Error", error.message);
+    }
+  };
+
   const updatePin = async () => {
     const { error } = await supabase
       .from("pins")
@@ -388,6 +403,7 @@ export default function MakePin() {
       return;
     }
     await updatePinTags()
+    await saveVisits()
     router.back();
   }
 
