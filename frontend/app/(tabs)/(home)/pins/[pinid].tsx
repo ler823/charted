@@ -163,7 +163,7 @@ export default function PinPage() {
             My Notes
           </Text>
           <View style={styles.cardFullRow}>
-            <Text style={styles.boxText}>{pin.user_note ?? "You have no notes yet"}</Text>
+            <Text style={styles.boxText}>{pin.user_note || "You have no notes yet"}</Text>
           </View>
 
           {/* Friend Notes */}
