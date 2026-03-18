@@ -1,19 +1,28 @@
 import { Fonts } from "@/constants/theme";
+import { Image } from "expo-image";
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
-import { Image } from "expo-image";
 
-export default function ListCard() {
+type Props = {
+  name?: string;
+  loc?: string;
+};
+
+export default function ListCard({ name, loc }: Props) {
   return (
     <View style={styles.card}>
       <Image
-        source={require("@/assets/images/test_ss_creamery.png")}
+        source={require("@/assets/images/no_image_default.png")}
         style={styles.img}
         placeholder="blur"
       />
       <View>
-        <Text style={styles.cardTitle}>Seaside Creamery</Text>
-        <Text style={styles.cardLoc}>0.2 miles away</Text>
+        <Text style={styles.cardTitle}>
+          {name || "Unnamed Pin"}
+        </Text>
+        <Text style={styles.cardLoc}>
+          {loc || "No address available"}
+        </Text>
       </View>
     </View>
   );

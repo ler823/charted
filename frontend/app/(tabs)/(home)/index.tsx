@@ -161,7 +161,7 @@ export default function Home() {
 
       {viewMode === "list" && (
         <View style={styles.cardsContainer}>
-          <PinListView />
+          <PinListView pins={pins}/>
         </View>
       )}
       {viewMode === "grid" && (
