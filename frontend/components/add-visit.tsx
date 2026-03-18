@@ -47,6 +47,7 @@ export default function AddVisit({ isVisible, onClose, onSave, newVisit, setNewV
                     dayTextColor: Colors.light.background,
                     monthTextColor: Colors.light.background,
                     arrowColor: Colors.light.background,
+                    textDisabledColor: "rgba(36, 62, 54, 0.4)",
                     textDayFontFamily: Fonts.regular,
                     textMonthFontFamily: Fonts.regular,
                     textDayHeaderFontFamily: Fonts.regular,
@@ -79,22 +80,19 @@ export default function AddVisit({ isVisible, onClose, onSave, newVisit, setNewV
 
 const styles = StyleSheet.create({
   modalContent: {
-    height: 550,
     width: 300,
     backgroundColor: '#ffffff',
     borderRadius: 18,
     paddingLeft: 16,
     paddingRight: 16,
+    paddingBottom: 16,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 2,
   },
   titleContainer: {
-    height: '16%',
-    backgroundColor: '#ffffff',
-    paddingHorizontal: 20,
-    flexDirection: 'row',
+    paddingVertical: 16,
     alignItems: 'center',
     justifyContent: 'center',
   },
