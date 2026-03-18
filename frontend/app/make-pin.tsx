@@ -416,9 +416,11 @@ export default function MakePin() {
   useEffect(() => {
     const loadData = async () => {
       if (isEdit) {
+        // These two are loaded only when pins are edited
         await getPinInfo();
         await loadVisits();
       }
+      // These two are loaded for both adding and editing
       await cleanupUnusedTags();
       await loadTags();
       setDataLoaded(true);
