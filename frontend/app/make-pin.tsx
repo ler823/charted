@@ -417,10 +417,10 @@ export default function MakePin() {
     const loadData = async () => {
       if (isEdit) {
         await getPinInfo();
+        await loadVisits();
       }
       await cleanupUnusedTags();
       await loadTags();
-      await loadVisits();
       setDataLoaded(true);
     }
     loadData()
