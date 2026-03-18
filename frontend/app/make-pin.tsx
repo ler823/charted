@@ -114,7 +114,7 @@ export default function MakePin() {
     }
     inserted_pin_id = data;
     await savePinTags();
-    await saveVisits();
+    await saveVisits(inserted_pin_id);
     router.back();
     return;
   };
@@ -366,7 +366,7 @@ export default function MakePin() {
 
   }
 
-  const saveVisits = async () => {
+  const saveVisits = async (pinIdToUse: number) => {
     const newVisits = visits.filter(
       (visit) => !originalVisits.includes(visit)
     );
@@ -374,7 +374,7 @@ export default function MakePin() {
     if (newVisits.length === 0) return;
 
     const visitRows = newVisits.map((visit) => ({
-      pin_id: Number(pinId),
+      pin_id: pinIdToUse,
       visit_timestamp: visit,
     }));
 
@@ -403,7 +403,7 @@ export default function MakePin() {
       return;
     }
     await updatePinTags()
-    await saveVisits()
+    await saveVisits(Number(pinId))
     router.back();
   }
 
