@@ -2,34 +2,14 @@ import { Fonts } from "@/constants/theme";
 import { Pin } from "@/types/types";
 import { Image } from "expo-image";
 import { router } from "expo-router";
-import React, { useState } from "react";
-import { FlatList, Pressable, Share, StyleSheet, Text, View } from "react-native";
+import React from "react";
+import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
 
 type Props = {
   pins: Pin[];
 };
 
 export default function PinGridView({ pins }: Props) {
-  const [savedPins, setSavedPins] = useState<number[]>([]);
-
-  const handleSaveToggle = (pinId: number) => {
-    setSavedPins((prev) =>
-      prev.includes(pinId)
-        ? prev.filter((id) => id !== pinId)
-        : [...prev, pinId]
-    );
-  };
-
-  const handleShare = async (pin: Pin) => {
-    try {
-      await Share.share({
-        message: `Check out this pin: ${pin.name || "Unnamed Pin"}${pin.address ? `\n${pin.address}` : ""}`,
-      });
-    } catch (error) {
-      console.log("Share error:", error);
-    }
-  };
-
   return (
     <FlatList
       data={pins}
@@ -39,52 +19,45 @@ export default function PinGridView({ pins }: Props) {
       columnWrapperStyle={styles.row}
       showsVerticalScrollIndicator={false}
       renderItem={({ item }) => {
-        const isSaved = savedPins.includes(Number(item.id));
-
         return (
-          <View style={styles.card}>
-            <Pressable
-              onPress={() =>
-                router.push({
-                  pathname: "/pins/[pinid]",
-                  params: {
-                    pinid: item.id,
-                  },
-                })
-              }
-            >
-              <View style={styles.imgPlaceholder}>
-                <Image
-                  source={require("@/assets/images/no_image_default.png")}
-                  style={styles.image}
-                  placeholder="blur"
-                />
-              </View>
-
-              <Text style={styles.cardTitle} numberOfLines={2}>
-                {item.name || "Unnamed Pin"}
-              </Text>
-
-              <Text style={styles.cardLoc} numberOfLines={3}>
-                {item.address || "No address available"}
-              </Text>
-            </Pressable>
-
-            <View style={styles.actionsRow}>
+          <View style={styles.shadowWrapper}>
+            <View style={styles.card}>
               <Pressable
-                style={styles.actionButton}
-                onPress={() => handleSaveToggle(Number(item.id))}
+                onPress={() =>
+                  router.push({
+                    pathname: "/pins/[pinid]",
+                    params: {
+                      pinid: item.id,
+                    },
+                  })
+                }
               >
-                <Text style={styles.actionText}>
-                  {isSaved ? "Unsave" : "Save"}
-                </Text>
-              </Pressable>
+                <View style={styles.imgPlaceholder}>
+                  <Image
+                    source={require("@/assets/images/no_image_default.png")}
+                    style={styles.image}
+                    contentFit="cover"
+                    placeholder="blur"
+                  />
+                </View>
 
-              <Pressable
-                style={styles.actionButton}
-                onPress={() => handleShare(item)}
-              >
-                <Text style={styles.actionText}>Share</Text>
+                <View style={styles.textContainer}>
+                  <Text
+                    style={styles.cardTitle}
+                    numberOfLines={1}
+                    ellipsizeMode="tail"
+                  >
+                    {item.name || "Unnamed Pin"}
+                  </Text>
+
+                  <Text
+                    style={styles.cardLoc}
+                    numberOfLines={1}
+                    ellipsizeMode="tail"
+                  >
+                    {item.address || "No address available"}
+                  </Text>
+                </View>
               </Pressable>
             </View>
           </View>
@@ -101,80 +74,64 @@ export default function PinGridView({ pins }: Props) {
 
 const styles = StyleSheet.create({
   listContainer: {
-    paddingLeft: 20,
+    paddingLeft: 5,
     paddingRight: 5,
     paddingTop: 170,
-    paddingBottom: 24,
+    paddingBottom: 5,
   },
 
   row: {
     justifyContent: "space-between",
-    marginBottom: 8,
+    marginBottom: 12,
+    paddingHorizontal: 5,
+  },
+
+  shadowWrapper: {
+    width: "48%",
+    shadowColor: "#000",
+    marginHorizontal: 4,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
   },
 
   card: {
     backgroundColor: "#DEE9E0",
-    borderRadius: 8,
-    padding: 10,
-    width: "48%",
-    minHeight: 220,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 2,
-    elevation: 4,
+    borderRadius: 12,
+    overflow: "hidden",
   },
 
   imgPlaceholder: {
     width: "100%",
     height: 110,
-    borderRadius: 9,
     backgroundColor: "#cfd8d1",
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 10,
   },
 
   image: {
     width: "100%",
     height: "100%",
-    borderRadius: 9,
+  },
+
+  textContainer: {
+    paddingHorizontal: 10,
+    paddingTop: 6,
+    paddingBottom: 10,
   },
 
   cardTitle: {
     fontFamily: Fonts.bold,
     fontSize: 15,
-    marginBottom: 4,
+    marginBottom: 2,
     color: "#000",
   },
 
   cardLoc: {
     fontFamily: Fonts.regular,
     fontSize: 12,
-    lineHeight: 17,
     color: "#000",
-    marginBottom: 10,
-  },
-
-  actionsRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    gap: 8,
-    marginTop: "auto",
-  },
-
-  actionButton: {
-    flex: 1,
-    backgroundColor: "#B7CDBB",
-    paddingVertical: 8,
-    borderRadius: 6,
-    alignItems: "center",
-  },
-
-  actionText: {
-    fontFamily: Fonts.bold,
-    fontSize: 12,
-    color: "#243e36",
   },
 
   emptyContainer: {

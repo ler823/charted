@@ -20,6 +20,7 @@ export default function PinListView({ pins }: Props) {
       <FlatList
         data={pins}
         keyExtractor={(item) => item.id}
+        contentContainerStyle={styles.listContent}
         renderItem={({ item }) => (
           <Pressable
             style={styles.cards}
@@ -47,5 +48,8 @@ const styles = StyleSheet.create({
   },
   spacer: {
     marginTop: 170,
+  },
+  listContent: {
+    paddingBottom: 180,
   },
 });
