@@ -453,23 +453,30 @@ export default function MakePin() {
   }
 
   return (
-    /* This Pressable wrapper allows us to cancel text input by closing keyboard when clicking outside */
-    <KeyboardAwareScrollView
-      style={{ flex: 1 }}
-      contentContainerStyle={styles.container}
-      keyboardShouldPersistTaps="handled"
-      ref={scrollRef}
-    >
+    <View style={{ flex: 1 }}>
+      <View style={styles.topBar}>
+        <Pressable style={styles.cancelBtn} onPress={() => router.back()}>
+          <Text style={styles.cancelText}>Cancel</Text>
+        </Pressable>
 
-      <Pressable onPress={Keyboard.dismiss} style={{ flex: 1 }}>
-        {/*  SafeAreaView places elements under the phone's status bar */}
-        <SafeAreaView>
-          <Stack.Screen options={{ headerShown: false, animation: "slide_from_right" }} />
-          <View style={styles.topBar}>
-            <Pressable style={styles.cancelBtn} onPress={() => router.back()}>
-              <Text style={styles.cancelText}>Cancel</Text>
-            </Pressable>
-            {/* <View style={styles.latLngHeader}>
+        <Pressable style={styles.saveBtn} onPress={() => isEdit ? updatePin() : createPin()}>
+          <Text style={styles.saveText}>Save</Text>
+        </Pressable>
+      </View>
+      {/* This Pressable wrapper allows us to cancel text input by closing keyboard when clicking outside */}
+      <KeyboardAwareScrollView
+        style={{ flex: 1 }}
+        keyboardShouldPersistTaps="handled"
+        ref={scrollRef}
+      >
+        <View style={styles.container}>
+        <Pressable onPress={Keyboard.dismiss} style={{ flex: 1 }}>
+          {/*  SafeAreaView places elements under the phone's status bar */}
+          <SafeAreaView>
+            <Stack.Screen options={{ headerShown: false, animation: "slide_from_right" }} />
+
+            <View>
+              {/* <View style={styles.latLngHeader}>
               <Text style={styles.latLngText}>Latitude:</Text>
               <Text style={styles.latLngText}>{lat}</Text>
             </View>
@@ -477,59 +484,56 @@ export default function MakePin() {
               <Text style={styles.latLngText}>Longitude:</Text>
               <Text style={styles.latLngText}>{lng}</Text>
             </View> */}
-            <View style={styles.latLngHeader}>
-              <Text style={styles.latLngText}>Pin at</Text>
-              <Text style={styles.latLngText}>({lat}, {lng})</Text>
-            </View>
-            <Pressable style={styles.saveBtn} onPress={() => isEdit ? updatePin() : createPin()}>
-              <Text style={styles.saveText}>Save</Text>
-            </Pressable>
-          </View>
-          <View style={styles.row}>
-            <View style={styles.shadowWrapper}>
-              <Pressable style={styles.photoInput} onPress={handlePickPhoto}>
-                {photo ? (
-                  <Image source={{ uri: photo }} style={styles.photo} />
-                ) : (
-                  <MaterialCommunityIcons
-                    name="camera-plus"
-                    size={28}
-                    color="#888"
-                  />
-                )}
-              </Pressable>
-            </View>
-            <View style={styles.fields}>
-              <TextInput
-                style={styles.input}
-                placeholder="Name"
-                placeholderTextColor="#aaaaaa"
-                value={name}
-                onChangeText={setName}
-                onFocus={(event) => {
-                  scrollRef.current?.scrollToFocusedInput(event.target);
-                }}
-              />
-              <TextInput
-                style={styles.input}
-                placeholder="Address"
-                placeholderTextColor="#aaaaaa"
-                value={address}
-                onChangeText={setAddress}
-                onFocus={(event) => {
-                  scrollRef.current?.scrollToFocusedInput(event.target);
-                }}
-              />
-            </View>
-          </View>
-          <View style={styles.ratingsPrivacyRow}>
-            <View>
-              <Text style={styles.notesHeading}>Rating</Text>
-              <View style={styles.starRow}>
-                <PressableStars rating={rating} setRating={setRating} />
+              <View style={styles.latLngHeader}>
+                <Text style={styles.latLngText}>Pin at</Text>
+                <Text style={styles.latLngText}>({lat}, {lng})</Text>
               </View>
             </View>
-          </View>
+            <View style={styles.row}>
+              <View style={styles.shadowWrapper}>
+                <Pressable style={styles.photoInput} onPress={handlePickPhoto}>
+                  {photo ? (
+                    <Image source={{ uri: photo }} style={styles.photo} />
+                  ) : (
+                    <MaterialCommunityIcons
+                      name="camera-plus"
+                      size={28}
+                      color="#888"
+                    />
+                  )}
+                </Pressable>
+              </View>
+              <View style={styles.fields}>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Name"
+                  placeholderTextColor="#aaaaaa"
+                  value={name}
+                  onChangeText={setName}
+                  onFocus={(event) => {
+                    scrollRef.current?.scrollToFocusedInput(event.target);
+                  }}
+                />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Address"
+                  placeholderTextColor="#aaaaaa"
+                  value={address}
+                  onChangeText={setAddress}
+                  onFocus={(event) => {
+                    scrollRef.current?.scrollToFocusedInput(event.target);
+                  }}
+                />
+              </View>
+            </View>
+            <View style={styles.ratingsPrivacyRow}>
+              <View>
+                <Text style={styles.notesHeading}>Rating</Text>
+                <View style={styles.starRow}>
+                  <PressableStars rating={rating} setRating={setRating} />
+                </View>
+              </View>
+            </View>
             <View>
               <Text style={styles.notesHeading}>Private</Text>
               <View style={styles.privacySwitchBackground}>
@@ -545,92 +549,100 @@ export default function MakePin() {
                 </View>
               </View>
             </View>
-          <View>
-            <Text style={styles.notesHeading}>Notes</Text>
-            <TextInput
-              style={[styles.input, styles.notesInput]}
-              placeholder="Enter notes here"
-              value={notes}
-              onChangeText={setNotes}
-              multiline={true}
-              scrollEnabled={false}
-              textAlignVertical="top"
-              onFocus={(event) => {
-                scrollRef.current?.scrollToFocusedInput(event.target);
-              }}
-              onContentSizeChange={(event) => {
-                setNotesHeight(event.nativeEvent.contentSize.height)
-              }}
-            />
-          </View>
-          <View style={styles.tagTitle}>
-            <Text style={styles.notesHeading}>Tags</Text>
-            <Pressable onPress={() => setAddTagVisible(true)}>
-              <MaterialCommunityIcons name="plus-circle-outline" size={24} color="black" style={styles.addTags} />
-            </Pressable>
-          </View>
-
-          <View style={styles.tagsContainer}>
-            {tags.map((tag) => (
-              <Pressable
-                key={tag}
-                style={styles.tagRow}
-                onPress={() => toggleTag(tag)}
-              >
-                <View
-                  style={[
-                    styles.checkbox,
-                    selectedTags.includes(tag) && styles.checkboxChecked,
-                  ]}
-                >
-                  {selectedTags.includes(tag) && (
-                    <MaterialCommunityIcons name="check" size={14} color="#fff" />
-                  )}
-                </View>
-                <Text style={styles.tagLabel}>{tag}</Text>
+            <View>
+              <Text style={styles.notesHeading}>Notes</Text>
+              <TextInput
+                style={[styles.input, styles.notesInput]}
+                placeholder="Enter notes here"
+                value={notes}
+                onChangeText={setNotes}
+                multiline={true}
+                scrollEnabled={false}
+                textAlignVertical="top"
+                onFocus={(event) => {
+                  scrollRef.current?.scrollToFocusedInput(event.target);
+                }}
+                onContentSizeChange={(event) => {
+                  setNotesHeight(event.nativeEvent.contentSize.height)
+                }}
+              />
+            </View>
+            <View style={styles.tagTitle}>
+              <Text style={styles.notesHeading}>Tags</Text>
+              <Pressable onPress={() => setAddTagVisible(true)}>
+                <MaterialCommunityIcons name="plus-circle-outline" size={24} color="black" style={styles.addTags} />
               </Pressable>
-            ))}
-            <AddTagOrList isVisible={modalVisible} onClose={() => setAddTagVisible(false)} onSave={addTag} newTag={newTag} setNewTag={setNewTag} />
-          </View>
+            </View>
 
-          <View style={styles.tagTitle}>
-            <Text style={styles.notesHeading}>Visits</Text>
-            <Pressable onPress={() => setAddVisitVisible(true)}>
-              <MaterialCommunityIcons name="plus-circle-outline" size={24} color="black" style={styles.addTags} />
-            </Pressable>
-          </View>
-          <View style={[styles.tagsContainer, { minHeight: 100 }]}>
-            <ScrollView>
-              {visits.map((visit) => {
-                const [year, month, day] = visit.split("-").map(Number);
-                const displayDate = `${month}/${day}/${year}`;
-                return <Text style={styles.tagLabel} key={visit}>{displayDate}</Text>
-              })}
-            </ScrollView>
-            <AddVisit isVisible={modalVisitVisible} onClose={() => setAddVisitVisible(false)} onSave={addVisit} newVisit={newVisit} setNewVisit={setNewVisit} />
-          </View>
+            <View style={styles.tagsContainer}>
+              {tags.map((tag) => (
+                <Pressable
+                  key={tag}
+                  style={styles.tagRow}
+                  onPress={() => toggleTag(tag)}
+                >
+                  <View
+                    style={[
+                      styles.checkbox,
+                      selectedTags.includes(tag) && styles.checkboxChecked,
+                    ]}
+                  >
+                    {selectedTags.includes(tag) && (
+                      <MaterialCommunityIcons name="check" size={14} color="#fff" />
+                    )}
+                  </View>
+                  <Text style={styles.tagLabel}>{tag}</Text>
+                </Pressable>
+              ))}
+              <AddTagOrList isVisible={modalVisible} onClose={() => setAddTagVisible(false)} onSave={addTag} newTag={newTag} setNewTag={setNewTag} />
+            </View>
 
-          {isEdit && (<View style={{ alignSelf: "center" }}>
-            <Pressable style={styles.deleteBtn} onPress={deletePin}>
-              <MaterialCommunityIcons name="trash-can-outline" size={24} color="#fff" />
-              <Text style={styles.cancelText}>Delete</Text>
-            </Pressable>
-          </View>)}
-        </SafeAreaView>
-      </Pressable>
-    </KeyboardAwareScrollView>
+            <View style={styles.tagTitle}>
+              <Text style={styles.notesHeading}>Visits</Text>
+              <Pressable onPress={() => setAddVisitVisible(true)}>
+                <MaterialCommunityIcons name="plus-circle-outline" size={24} color="black" style={styles.addTags} />
+              </Pressable>
+            </View>
+            <View style={[styles.tagsContainer, { minHeight: 100 }]}>
+              <ScrollView>
+                {visits.map((visit) => {
+                  const [year, month, day] = visit.split("-").map(Number);
+                  const displayDate = `${month}/${day}/${year}`;
+                  return <Text style={styles.tagLabel} key={visit}>{displayDate}</Text>
+                })}
+              </ScrollView>
+              <AddVisit isVisible={modalVisitVisible} onClose={() => setAddVisitVisible(false)} onSave={addVisit} newVisit={newVisit} setNewVisit={setNewVisit} />
+            </View>
+
+            {isEdit && (<View style={{ alignSelf: "center" }}>
+              <Pressable style={styles.deleteBtn} onPress={deletePin}>
+                <MaterialCommunityIcons name="trash-can-outline" size={24} color="#fff" />
+                <Text style={styles.cancelText}>Delete</Text>
+              </Pressable>
+            </View>)}
+          </SafeAreaView>
+        </Pressable>
+        </View>
+      </KeyboardAwareScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    padding: 16,
+    paddingLeft: 16,
+    paddingRight: 16
   },
   topBar: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: 24,
+    position: "absolute",
+    top: 50,
+    right: 16,
+    left: 16,
+    zIndex: 10
   },
   cancelBtn: {
     padding: 16,
@@ -666,6 +678,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
+    marginTop: 25
   },
   photoInput: {
     width: 80,

@@ -89,9 +89,10 @@ export default function PinPage() {
       if (error) {
         Alert.alert(error.message)
         return;
-      }}
-      fetchUsers();
-    }, []);
+      }
+    }
+    fetchUsers();
+  }, []);
 
   if (!pin || !friends) {
     return <LoadingPage />
@@ -101,23 +102,23 @@ export default function PinPage() {
     <>
       <ScrollView>
         {/* Image */}
-        
+
         {!pin.pin_photos?.photos?.link && (
-          <Image source={require("@/assets/images/no_image_default.png")} style={styles.img} placeholder="blur"/>
+          <Image source={require("@/assets/images/no_image_default.png")} style={styles.img} placeholder="blur" />
         )}
         {pin.pin_photos?.photos?.link && (
-          <Image source={{ uri: pin.pin_photos?.photos?.link!}} style={styles.img} placeholder="blur"/>
+          <Image source={{ uri: pin.pin_photos?.photos?.link! }} style={styles.img} placeholder="blur" />
         )}
 
-        <View style={{ marginHorizontal: 10 }}>
+        <View style={{ marginHorizontal: 16 }}>
           {/* Title */}
-          <View style={[styles.editRow, {alignItems: "center", alignContent: "center", marginTop: 10, gap: 6}]}>
+          <View style={[styles.editRow, { alignItems: "center", alignContent: "center", marginTop: 10, gap: 6 }]}>
             <Text style={styles.title}>{pin.name ?? "No pin name"}</Text>
             {pin.private === true && (
-              <Ionicons name="lock-closed" size={20} color="#243e36"/>
+              <Ionicons name="lock-closed" size={20} color="#243e36" />
             )}
             {pin.private === false && (
-                <Ionicons name="people" size={20} color="#243e36"/>
+              <Ionicons name="people" size={20} color="#243e36" />
             )}
           </View>
 
@@ -135,33 +136,36 @@ export default function PinPage() {
           <Text style={styles.subtitle}>
             Friends Who Have Visited
           </Text>
-          <ScrollView horizontal style={styles.cardRow}>
-            {friends?.length === 0 && (
+          <View style={{ marginHorizontal: -16 }}>
+            <ScrollView horizontal style={styles.cardRow} contentContainerStyle={{ paddingHorizontal: 16, gap: 10 }}>
+              {friends?.length === 0 && (
                 <Text style={styles.boxText}>None of your friends share this pin yet</Text>
               )}
               {friends?.map((friend) => (
-                <Pressable key={friend?.user_id} style={styles.cardPartialRow} onPress={() => 
-                            router.push({
-                              pathname: "/friend_profiles/[friendpf]",
-                              params: {
-                                friendpf: `${friend?.username}`
-                              }})}>
+                <Pressable key={friend?.user_id} style={styles.cardPartialRow} onPress={() =>
+                  router.push({
+                    pathname: "/friend_profiles/[friendpf]",
+                    params: {
+                      friendpf: `${friend?.username}`
+                    }
+                  })}>
                   <View style={{ flexDirection: "column", flex: 1, alignItems: "center", justifyContent: "center" }}>
                     <View style={[styles.avatar, { marginBottom: 10 }]}>
                       <Text style={styles.avatarInitial}>{friend?.username?.[0]?.toUpperCase()}</Text>
                     </View>
-                    <Text 
+                    <Text
                       style={{ fontFamily: Fonts.bold, fontSize: 15, }}
                       adjustsFontSizeToFit
                       minimumFontScale={0.5}
                       numberOfLines={1}
                     >
-                        {friend?.username ?? "Unnamed friend"}
+                      {friend?.username ?? "Unnamed friend"}
                     </Text>
                   </View>
                 </Pressable>
               ))}
-          </ScrollView>
+            </ScrollView>
+          </View>
 
           {/* Notes */}
           <Text style={styles.subtitle}>
@@ -231,7 +235,7 @@ export default function PinPage() {
           <View style={[styles.cardFullRow, { height: 200, flexDirection: "column", alignItems: "flex-start" }]}>
             <ScrollView>
               {pin.pin_visits?.length === 0 && (
-                <Text style={[styles.boxText, {marginTop: 10}]}>You have no logged visits</Text>
+                <Text style={[styles.boxText, { marginTop: 10 }]}>You have no logged visits</Text>
               )}
               {pin.pin_visits?.map((pin_visit) => {
                 if (!pin_visit.visit_timestamp) return null;
@@ -241,7 +245,7 @@ export default function PinPage() {
               })}
             </ScrollView>
           </View>
-          <View style={{height: 100}}>
+          <View style={{ height: 100 }}>
 
           </View>
 
@@ -316,9 +320,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 999,
-    gap: 6,
-    width: 105,
-    height: 40,
+    padding: 16,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
@@ -379,8 +381,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#DEE9E0",
     padding: 12,
     marginBottom: 12,
-    marginRight: 12,
-    marginLeft: 2,
     marginTop: 5,
     borderRadius: 5,
     height: 120,
