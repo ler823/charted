@@ -1,4 +1,5 @@
 import AddTagOrList from "@/components/add-tag";
+import AddVisit from "@/components/add-visit";
 import LoadingPage from "@/components/loading-page";
 import { PressableStars } from "@/components/pressable-stars";
 import { Colors, Fonts } from "@/constants/theme";
@@ -11,6 +12,7 @@ import {
   Image,
   Keyboard,
   Pressable,
+  ScrollView,
   StyleSheet,
   Switch,
   Text,
@@ -22,7 +24,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function MakePin() {
   const router = useRouter();
-  const { pinId, lat: latParam, lng: lngParam } = useLocalSearchParams<{ pinId?: string; lat?: string; lng?: string }>();
+  const { pinId, lat: latParam, lng: lngParam, viewMode } = useLocalSearchParams<{ pinId?: string; lat?: string; lng?: string; viewMode: string }>();
   const [lat, setLat] = useState((Math.round(parseFloat(latParam!) * 1e5) / 1e5).toString() || "");
   const [lng, setLng] = useState((Math.round(parseFloat(lngParam!) * 1e5) / 1e5).toString() || "");
   const isEdit = pinId != undefined;
@@ -34,13 +36,29 @@ export default function MakePin() {
   const [tags, setTags] = useState<string[]>([]);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [modalVisible, setAddTagVisible] = useState(false);
+  const [modalVisitVisible, setAddVisitVisible] = useState(false);
+  const [visits, setVisits] = useState<string[]>([]);
+  const [newVisit, setNewVisit] = useState("");
+  const [originalVisits, setOriginalVisits] = useState<string[]>([]);
   const [newTag, setNewTag] = useState("");
   const [dataLoaded, setDataLoaded] = useState(false);
-  const [isPrivate, setIsPrivate] = useState(false)
+  const [isPrivate, setIsPrivate] = useState(false);
+  const privateDescription = "Only you can view this pin"
+  const publicDescription = "All of your friends can view this pin"
+  const [privacyDescription, setPrivacyDescription] = useState(publicDescription);
+  const [notesHeight, setNotesHeight] = useState(100);
   const scrollRef = React.useRef<KeyboardAwareScrollView>(null);
+
   let inserted_pin_id = 0;
 
-  const togglePrivacy = () => setIsPrivate(previousState => !previousState);
+  const togglePrivacy = () => {
+    setIsPrivate(previousState => !previousState);
+    if (isPrivate) {
+      setPrivacyDescription(publicDescription)
+    } else {
+      setPrivacyDescription(privateDescription);
+    }
+  }
 
   const toggleTag = (tag: string) => {
     setSelectedTags((prev) =>
@@ -79,6 +97,10 @@ export default function MakePin() {
       Alert.alert("Missing fields", "Please fill in name and address.");
       return;
     }
+    if (name.length > 100) {
+      Alert.alert("Invalid name", "Name cannot be more than 100 characters")
+      return;
+    }
     const { data, error } = await supabase
       .rpc('create_pin', {
         p_address: address,
@@ -96,6 +118,7 @@ export default function MakePin() {
     }
     inserted_pin_id = data;
     await savePinTags();
+    await saveVisits(inserted_pin_id);
     router.back();
     return;
   };
@@ -131,6 +154,7 @@ export default function MakePin() {
   const addTag = async () => {
     if (!newTag) {
       Alert.alert("Missing field", "Please enter a name for the new tag");
+      return;
     }
     const { data: userId, error: userIdError } = await supabase
       .from("users")
@@ -157,6 +181,35 @@ export default function MakePin() {
     setAddTagVisible(false)
   }
 
+
+  const getUserVisits = async () => {
+    const { data, error } = await supabase
+      .from("pin_visits")
+      .select(`*`)
+      .eq("pin_id", Number(pinId));
+
+    if (error) {
+      Alert.alert("Error", error.message);
+      return;
+    }
+    return data.map((visit: { visit_timestamp: string }) => visit.visit_timestamp);
+  }
+
+  const loadVisits = async () => {
+    const userVisits = await getUserVisits();
+    if (userVisits) setVisits(userVisits);
+  };
+
+  const addVisit = async (visitDate: string) => {
+    if (!visitDate) {
+      Alert.alert("Missing field", "Please enter a date for the new visit");
+      return;
+    }
+    setVisits((prev) => [...prev, visitDate]);
+    setNewVisit("");
+    setAddVisitVisible(false)
+  }
+
   const cleanupUnusedTags = async () => {
     const { error } = await supabase
       .rpc("update_tags", { p_username: "TimTimTim" });
@@ -175,7 +228,8 @@ export default function MakePin() {
         user_rating,
         user_note,
         address,
-        location_id`)
+        location_id,
+        private`)
       .eq("pin_id", pinId)
     if (pinDataError) {
       Alert.alert("Error", pinDataError.message);
@@ -228,6 +282,17 @@ export default function MakePin() {
       return;
     }
     let loadedSelectedTags = tagData.map((data) => (data.tags as unknown as { name: any }).name); // kinda messy but it turns off the warnings lol
+
+    const { data: visitData, error: visitDataError } = await supabase
+      .from("pin_visits")
+      .select("*")
+      .eq("pin_id", Number(pinId))
+    if (visitDataError) {
+      Alert.alert("Error", visitDataError.message);
+      return;
+    }
+    let loadedVisits = visitData.map((visit: { visit_timestamp: string }) => visit.visit_timestamp);
+
     setName(pinData[0].name)
     setAddress(pinData[0].address)
     setRating(pinData[0].user_rating)
@@ -235,6 +300,9 @@ export default function MakePin() {
     setLat(locData[0].latitude.toString() ?? "")
     setLng(locData[0].longitude.toString() ?? "")
     setSelectedTags(loadedSelectedTags)
+    setVisits(loadedVisits)
+    setOriginalVisits(loadedVisits)
+    setIsPrivate(pinData[0].private)
   }
 
   const updatePinTags = async () => {
@@ -302,6 +370,27 @@ export default function MakePin() {
 
   }
 
+  const saveVisits = async (pinIdToUse: number) => {
+    const newVisits = visits.filter(
+      (visit) => !originalVisits.includes(visit)
+    );
+
+    if (newVisits.length === 0) return;
+
+    const visitRows = newVisits.map((visit) => ({
+      pin_id: pinIdToUse,
+      visit_timestamp: visit,
+    }));
+
+    const { error } = await supabase
+      .from("pin_visits")
+      .insert(visitRows);
+
+    if (error) {
+      Alert.alert("Error", error.message);
+    }
+  };
+
   const updatePin = async () => {
     const { error } = await supabase
       .from("pins")
@@ -309,7 +398,8 @@ export default function MakePin() {
         name: name,
         address: address,
         user_rating: rating,
-        user_note: notes
+        user_note: notes,
+        private: isPrivate
       })
       .eq("pin_id", pinId)
     if (error) {
@@ -317,6 +407,7 @@ export default function MakePin() {
       return;
     }
     await updatePinTags()
+    await saveVisits(Number(pinId))
     router.back();
   }
 
@@ -332,7 +423,10 @@ export default function MakePin() {
           if (error) {
             console.log(error.message)
           }
-          router.push("/")
+          router.replace({
+            pathname: "/(tabs)/(home)",
+            params: { viewMode },
+          });
         },
       },
     ]);
@@ -342,8 +436,11 @@ export default function MakePin() {
   useEffect(() => {
     const loadData = async () => {
       if (isEdit) {
+        // These two are loaded only when pins are edited
         await getPinInfo();
+        await loadVisits();
       }
+      // These two are loaded for both adding and editing
       await cleanupUnusedTags();
       await loadTags();
       setDataLoaded(true);
@@ -372,6 +469,18 @@ export default function MakePin() {
             <Pressable style={styles.cancelBtn} onPress={() => router.back()}>
               <Text style={styles.cancelText}>Cancel</Text>
             </Pressable>
+            {/* <View style={styles.latLngHeader}>
+              <Text style={styles.latLngText}>Latitude:</Text>
+              <Text style={styles.latLngText}>{lat}</Text>
+            </View>
+            <View style={styles.latLngHeader}>
+              <Text style={styles.latLngText}>Longitude:</Text>
+              <Text style={styles.latLngText}>{lng}</Text>
+            </View> */}
+            <View style={styles.latLngHeader}>
+              <Text style={styles.latLngText}>Pin at</Text>
+              <Text style={styles.latLngText}>({lat}, {lng})</Text>
+            </View>
             <Pressable style={styles.saveBtn} onPress={() => isEdit ? updatePin() : createPin()}>
               <Text style={styles.saveText}>Save</Text>
             </Pressable>
@@ -411,20 +520,6 @@ export default function MakePin() {
                   scrollRef.current?.scrollToFocusedInput(event.target);
                 }}
               />
-              <TextInput
-                style={[styles.input, styles.inputDisabled]}
-                placeholder="Latitude"
-                placeholderTextColor="#aaaaaa"
-                value={lat}
-                editable={false}
-              />
-              <TextInput
-                style={[styles.input, styles.inputDisabled]}
-                placeholder="Longitude"
-                placeholderTextColor="#aaaaaa"
-                value={lng}
-                editable={false}
-              />
             </View>
           </View>
           <View style={styles.ratingsPrivacyRow}>
@@ -434,20 +529,22 @@ export default function MakePin() {
                 <PressableStars rating={rating} setRating={setRating} />
               </View>
             </View>
+          </View>
             <View>
               <Text style={styles.notesHeading}>Private</Text>
               <View style={styles.privacySwitchBackground}>
                 <Switch
                   trackColor={{ false: Colors.light.text, true: Colors.light.accent }}
-                  thumbColor={Colors.light.accentLight}
-                  ios_backgroundColor="#3e3e3e"
+                  thumbColor="#FFF"
+                  ios_backgroundColor={Colors.light.text}
                   onValueChange={togglePrivacy}
                   value={isPrivate}
-                  style={styles.privacySwitch}
                 />
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.privacyDescription}>{privacyDescription}</Text>
+                </View>
               </View>
             </View>
-          </View>
           <View>
             <Text style={styles.notesHeading}>Notes</Text>
             <TextInput
@@ -456,9 +553,13 @@ export default function MakePin() {
               value={notes}
               onChangeText={setNotes}
               multiline={true}
+              scrollEnabled={false}
               textAlignVertical="top"
               onFocus={(event) => {
                 scrollRef.current?.scrollToFocusedInput(event.target);
+              }}
+              onContentSizeChange={(event) => {
+                setNotesHeight(event.nativeEvent.contentSize.height)
               }}
             />
           </View>
@@ -491,6 +592,24 @@ export default function MakePin() {
             ))}
             <AddTagOrList isVisible={modalVisible} onClose={() => setAddTagVisible(false)} onSave={addTag} newTag={newTag} setNewTag={setNewTag} />
           </View>
+
+          <View style={styles.tagTitle}>
+            <Text style={styles.notesHeading}>Visits</Text>
+            <Pressable onPress={() => setAddVisitVisible(true)}>
+              <MaterialCommunityIcons name="plus-circle-outline" size={24} color="black" style={styles.addTags} />
+            </Pressable>
+          </View>
+          <View style={[styles.tagsContainer, { minHeight: 100 }]}>
+            <ScrollView>
+              {visits.map((visit) => {
+                const [year, month, day] = visit.split("-").map(Number);
+                const displayDate = `${month}/${day}/${year}`;
+                return <Text style={styles.tagLabel} key={visit}>{displayDate}</Text>
+              })}
+            </ScrollView>
+            <AddVisit isVisible={modalVisitVisible} onClose={() => setAddVisitVisible(false)} onSave={addVisit} newVisit={newVisit} setNewVisit={setNewVisit} />
+          </View>
+
           {isEdit && (<View style={{ alignSelf: "center" }}>
             <Pressable style={styles.deleteBtn} onPress={deletePin}>
               <MaterialCommunityIcons name="trash-can-outline" size={24} color="#fff" />
@@ -505,7 +624,6 @@ export default function MakePin() {
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
     padding: 16,
   },
   topBar: {
@@ -557,6 +675,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     overflow: "hidden",
+    borderWidth: 1,
+    borderColor: "#ddd"
   },
   photo: {
     width: "100%",
@@ -592,7 +712,7 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.regular,
   },
   notesInput: {
-    height: 100,
+    minHeight: 100,
     backgroundColor: Colors.light.accentLight,
   },
   tagsContainer: {
@@ -633,6 +753,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: "#333",
     textTransform: "capitalize",
+    fontFamily: Fonts.regular
   },
   starRow: {
     flexDirection: "row",
@@ -693,6 +814,7 @@ const styles = StyleSheet.create({
     gap: 8,
     backgroundColor: Colors.light.accentLight,
     alignSelf: "flex-start",
+    alignItems: "center",
     padding: 9.5,
     borderWidth: 1,
     borderColor: "#ddd",
@@ -703,6 +825,20 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
     elevation: 4,
   },
-  privacySwitch: {
+  latLngHeader: {
+    flexDirection: "column",
+    alignItems: "center",
+    alignSelf: "center",
+    justifyContent: "center",
+  },
+  latLngText: {
+    fontFamily: Fonts.regular,
+    fontSize: 16,
+    flexShrink: 1,
+  },
+  privacyDescription: {
+    flexShrink: 1,
+    fontFamily: Fonts.regular,
+    marginLeft: 8
   }
 });

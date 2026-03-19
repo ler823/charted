@@ -46,14 +46,17 @@ type Pin = {
       link: string | null;
     } | null;
   } | null;
+  private: boolean | null;
 };
 
 
 export default function PinPage() {
-  const { pinid } = useLocalSearchParams();
+  const { pinid, viewMode } = useLocalSearchParams();
 
   const [pin, setPin] = useState<Pin | null>(null);
   const [friends, setFriends] = useState<Friend[] | null>([]);
+  const [isEnabled, setIsEnabled] = useState(false);
+  const toggleSwitch = () => setIsEnabled(previousState => !previousState);
 
   useFocusEffect(
     useCallback(() => {
@@ -106,9 +109,19 @@ export default function PinPage() {
           <Image source={{ uri: pin.pin_photos?.photos?.link!}} style={styles.img} placeholder="blur"/>
         )}
 
-        {/* Title */}
         <View style={{ marginHorizontal: 10 }}>
-          <Text style={[styles.title, { marginTop: 10 }]}>{pin.name ?? "No pin name"}</Text>
+          {/* Title */}
+          <View style={[styles.editRow, {alignItems: "center", alignContent: "center", marginTop: 10, gap: 6}]}>
+            <Text style={styles.title}>{pin.name ?? "No pin name"}</Text>
+            {pin.private === true && (
+              <Ionicons name="lock-closed" size={20} color="#243e36"/>
+            )}
+            {pin.private === false && (
+                <Ionicons name="people" size={20} color="#243e36"/>
+            )}
+          </View>
+
+          {/* Address */}
           <View>
             <Text style={styles.address}>{pin.address ?? "No pin address"}</Text>
           </View>
@@ -127,7 +140,12 @@ export default function PinPage() {
                 <Text style={styles.boxText}>None of your friends share this pin yet</Text>
               )}
               {friends?.map((friend) => (
-                <Pressable key={friend?.user_id} style={styles.cardPartialRow}>
+                <Pressable key={friend?.user_id} style={styles.cardPartialRow} onPress={() => 
+                            router.push({
+                              pathname: "/friend_profiles/[friendpf]",
+                              params: {
+                                friendpf: `${friend?.username}`
+                              }})}>
                   <View style={{ flexDirection: "column", flex: 1, alignItems: "center", justifyContent: "center" }}>
                     <View style={[styles.avatar, { marginBottom: 10 }]}>
                       <Text style={styles.avatarInitial}>{friend?.username?.[0]?.toUpperCase()}</Text>
@@ -150,7 +168,7 @@ export default function PinPage() {
             My Notes
           </Text>
           <View style={styles.cardFullRow}>
-            <Text style={styles.boxText}>{pin.user_note ?? "You have no notes yet"}</Text>
+            <Text style={styles.boxText}>{pin.user_note || "You have no notes yet"}</Text>
           </View>
 
           {/* Friend Notes */}
@@ -211,27 +229,22 @@ export default function PinPage() {
             Visit History
           </Text>
           <View style={[styles.cardFullRow, { height: 200, flexDirection: "column", alignItems: "flex-start" }]}>
-            <Pressable
-              style={[styles.button, { height: 30, marginBottom: 20 }]}
-              onPress={() => {
-                router.back();
-              }}
-            >
-              <Text
-                style={{ fontFamily: Fonts.bold, color: "#d9d9d9", fontSize: 12 }}
-              >
-                Log New Visit
-              </Text>
-            </Pressable>
             <ScrollView>
               {pin.pin_visits?.length === 0 && (
-                <Text style={styles.boxText}>You have no logged visits</Text>
+                <Text style={[styles.boxText, {marginTop: 10}]}>You have no logged visits</Text>
               )}
-              {pin.pin_visits?.map((pin_visit) => (
-                <Text key={pin_visit?.visit_id} style={styles.boxText}>{pin_visit?.visit_timestamp ? new Date(pin_visit.visit_timestamp).toLocaleDateString() : "No timestamp"}</Text>
-              ))}
+              {pin.pin_visits?.map((pin_visit) => {
+                if (!pin_visit.visit_timestamp) return null;
+                const [year, month, day] = pin_visit.visit_timestamp.split("-").map(Number);
+                const displayDate = `${month}/${day}/${year}`;
+                return <Text style={styles.boxText} key={pin_visit.visit_id}>{displayDate}</Text>
+              })}
             </ScrollView>
           </View>
+          <View style={{height: 100}}>
+
+          </View>
+
         </View>
       </ScrollView>
 
@@ -258,7 +271,8 @@ export default function PinPage() {
               router.push({
                 pathname: "/make-pin",
                 params: {
-                  pinId: pin.pin_id
+                  pinId: pin.pin_id,
+                  viewMode: viewMode
                 }
               })
             }}
@@ -352,7 +366,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     marginTop: 5,
     borderRadius: 5,
-    height: 80,
+    minHeight: 80,
     flexDirection: "row",
     alignItems: "center",
     shadowColor: "#000",

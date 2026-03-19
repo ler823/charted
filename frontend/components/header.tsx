@@ -20,11 +20,13 @@ export default function Header({
       {/* Search Bar and Settings*/}
       <View style={styles.row}>
         <Pressable style={styles.searchbar}>
-          <Text
-            style={{ fontFamily: Fonts.bold, color: "#fefbea", fontSize: 16 }}
-          >
-            Find a place
-          </Text>
+          <View style={{flex: 1}}>
+            <Text
+              style={{ fontFamily: Fonts.bold, color: "#fefbea", fontSize: 16 }}
+            >
+              Find a place
+            </Text>
+          </View>
           <Ionicons name="search" size={16} color="#fefbea" />
         </Pressable>
         <View>
@@ -62,15 +64,17 @@ export default function Header({
 
         <View>
           <Pressable style={styles.filter}>
-            <Text
-              style={{
-                fontFamily: Fonts.bold,
-                color: "#d9d9d9",
-                fontSize: 16,
-              }}
-            >
-              Filter
-            </Text>
+            <View style={{flexShrink: 1}}>
+              <Text
+                style={{
+                  fontFamily: Fonts.bold,
+                  color: "#d9d9d9",
+                  fontSize: 16,
+                }}
+              >
+                Filter
+              </Text>
+            </View>
             <Ionicons name="chevron-down" size={20} color="#d9d9d9" />
           </Pressable>
         </View>
@@ -85,11 +89,13 @@ const styles = StyleSheet.create({
     top: 45,
     paddingHorizontal: 15,
     zIndex: 20,
+    width: "100%",
   },
   row: {
     flexDirection: "row",
     alignItems: "center",
     marginTop: 15,
+    width: "100%",
   },
   searchbar: {
     backgroundColor: "#7ca982",
@@ -97,7 +103,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     paddingHorizontal: 15,
-    width: 300,
+    flex: 1,
     height: 40,
     borderRadius: 999,
     zIndex: 20,
@@ -158,8 +164,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 999,
-    gap: 6,
-    width: 105,
+    gap: 8,
+    paddingHorizontal: 10,
+    minWidth: 110,
     height: 40,
     marginLeft: 8,
     shadowColor: "#000",
