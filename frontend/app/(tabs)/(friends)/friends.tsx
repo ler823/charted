@@ -110,6 +110,8 @@ export default function Friends() {
           </Pressable>
         )}
       />
+      <View style={{ height: 80 }}>
+      </View>
     </View>
   );
 }
