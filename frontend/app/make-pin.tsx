@@ -24,12 +24,30 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function MakePin() {
   const router = useRouter();
-  const { pinId, lat: latParam, lng: lngParam, viewMode } = useLocalSearchParams<{ pinId?: string; lat?: string; lng?: string; viewMode: string }>();
-  const [lat, setLat] = useState((Math.round(parseFloat(latParam!) * 1e5) / 1e5).toString() || "");
-  const [lng, setLng] = useState((Math.round(parseFloat(lngParam!) * 1e5) / 1e5).toString() || "");
+  const {
+    pinId,
+    lat: latParam,
+    lng: lngParam,
+    viewMode,
+  } = useLocalSearchParams<{
+    pinId?: string;
+    lat?: string;
+    lng?: string;
+    viewMode: string;
+  }>();
+  const [lat, setLat] = useState(
+    (Math.round(parseFloat(latParam!) * 1e5) / 1e5).toString() || "",
+  );
+  const [lng, setLng] = useState(
+    (Math.round(parseFloat(lngParam!) * 1e5) / 1e5).toString() || "",
+  );
   const isEdit = pinId != undefined;
   const [name, setName] = useState("");
   const [address, setAddress] = useState("");
+  const NAME_MAX = 50;
+  const ADDRESS_MAX = 100;
+  const [nameError, setNameError] = useState("");
+  const [addressError, setAddressError] = useState("");
   const [photo, setPhoto] = useState("");
   const [rating, setRating] = useState(0);
   const [notes, setNotes] = useState("");
@@ -43,22 +61,23 @@ export default function MakePin() {
   const [newTag, setNewTag] = useState("");
   const [dataLoaded, setDataLoaded] = useState(false);
   const [isPrivate, setIsPrivate] = useState(false);
-  const privateDescription = "Only you can view this pin"
-  const publicDescription = "All of your friends can view this pin"
-  const [privacyDescription, setPrivacyDescription] = useState(publicDescription);
+  const privateDescription = "Only you can view this pin";
+  const publicDescription = "All of your friends can view this pin";
+  const [privacyDescription, setPrivacyDescription] =
+    useState(publicDescription);
   const [notesHeight, setNotesHeight] = useState(100);
   const scrollRef = React.useRef<KeyboardAwareScrollView>(null);
 
   let inserted_pin_id = 0;
 
   const togglePrivacy = () => {
-    setIsPrivate(previousState => !previousState);
+    setIsPrivate((previousState) => !previousState);
     if (isPrivate) {
-      setPrivacyDescription(publicDescription)
+      setPrivacyDescription(publicDescription);
     } else {
       setPrivacyDescription(privateDescription);
     }
-  }
+  };
 
   const toggleTag = (tag: string) => {
     setSelectedTags((prev) =>
@@ -76,10 +95,10 @@ export default function MakePin() {
       return;
     }
 
-    const pinTagAssociation = tagIds?.map(tag => ({
+    const pinTagAssociation = tagIds?.map((tag) => ({
       pin_id: inserted_pin_id,
-      tag_id: tag.tag_id
-    }))
+      tag_id: tag.tag_id,
+    }));
 
     const { error: addToPinTagsError } = await supabase
       .from("pin_tags")
@@ -90,28 +109,44 @@ export default function MakePin() {
     }
 
     return;
-  }
+  };
 
   const createPin = async () => {
-    if (!name || !address) {
-      Alert.alert("Missing fields", "Please fill in name and address.");
-      return;
+    // if (!name || !address) {
+    //   Alert.alert("Missing fields", "Please fill in name and address.");
+    //   return;
+    // }
+    // if (name.length > 100) {
+    //   Alert.alert("Invalid name", "Name cannot be more than 100 characters");
+    //   return;
+    // }
+    console.log("this ran");
+
+    const nameInvalid = !name.trim() || name.length > NAME_MAX;
+    const addressInvalid = address.length > ADDRESS_MAX;
+
+    if (nameInvalid) {
+      setNameError(
+        !name.trim()
+          ? "Name is required."
+          : `Name must be ${NAME_MAX} characters or fewer.`,
+      );
     }
-    if (name.length > 100) {
-      Alert.alert("Invalid name", "Name cannot be more than 100 characters")
-      return;
+    if (addressInvalid) {
+      setAddressError(`Address must be ${ADDRESS_MAX} characters or fewer.`);
     }
-    const { data, error } = await supabase
-      .rpc('create_pin', {
-        p_address: address,
-        p_latitude: Math.round(parseFloat(lat!) * 1e5) / 1e5,
-        p_longitude: Math.round(parseFloat(lng!) * 1e5) / 1e5,
-        p_pin_name: name,
-        p_private: isPrivate,
-        p_user_note: notes,
-        p_user_rating: rating,
-        p_username: "TimTimTim"
-      })
+    if (nameInvalid || addressInvalid) return; // block submit
+
+    const { data, error } = await supabase.rpc("create_pin", {
+      p_address: address,
+      p_latitude: Math.round(parseFloat(lat!) * 1e5) / 1e5,
+      p_longitude: Math.round(parseFloat(lng!) * 1e5) / 1e5,
+      p_pin_name: name,
+      p_private: isPrivate,
+      p_user_note: notes,
+      p_user_rating: rating,
+      p_username: "TimTimTim",
+    });
     if (error) {
       Alert.alert("Error", error.message);
       return;
@@ -130,13 +165,15 @@ export default function MakePin() {
   const getUserTags = async () => {
     const { data, error } = await supabase
       .from("tags")
-      .select(`
+      .select(
+        `
       tag_id,
       name,
       users!tags_user_id_fkey (
         username
       )
-    `)
+    `,
+      )
       .eq("users.username", "TimTimTim");
 
     if (error) {
@@ -144,7 +181,7 @@ export default function MakePin() {
       return;
     }
     return data.map((tag: { name: string }) => tag.name);
-  }
+  };
 
   const loadTags = async () => {
     const userTags = await getUserTags();
@@ -159,28 +196,28 @@ export default function MakePin() {
     const { data: userId, error: userIdError } = await supabase
       .from("users")
       .select("user_id")
-      .eq("username", "TimTimTim")
+      .eq("username", "TimTimTim");
     if (userIdError) {
       Alert.alert("Error", userIdError.message);
       return;
     }
     let tagToAdd = {
       user_id: userId[0].user_id,
-      name: newTag
-    }
+      name: newTag,
+    };
 
-    const { error: addTagError } = await supabase
-      .from("tags")
-      .insert(tagToAdd)
+    const { error: addTagError } = await supabase.from("tags").insert(tagToAdd);
     if (addTagError) {
-      Alert.alert("This tag has already been added", "You have added this tag before");
+      Alert.alert(
+        "This tag has already been added",
+        "You have added this tag before",
+      );
       return;
     }
     loadTags();
-    toggleTag(tagToAdd.name)
-    setAddTagVisible(false)
-  }
-
+    toggleTag(tagToAdd.name);
+    setAddTagVisible(false);
+  };
 
   const getUserVisits = async () => {
     const { data, error } = await supabase
@@ -192,8 +229,10 @@ export default function MakePin() {
       Alert.alert("Error", error.message);
       return;
     }
-    return data.map((visit: { visit_timestamp: string }) => visit.visit_timestamp);
-  }
+    return data.map(
+      (visit: { visit_timestamp: string }) => visit.visit_timestamp,
+    );
+  };
 
   const loadVisits = async () => {
     const userVisits = await getUserVisits();
@@ -207,12 +246,13 @@ export default function MakePin() {
     }
     setVisits((prev) => [...prev, visitDate]);
     setNewVisit("");
-    setAddVisitVisible(false)
-  }
+    setAddVisitVisible(false);
+  };
 
   const cleanupUnusedTags = async () => {
-    const { error } = await supabase
-      .rpc("update_tags", { p_username: "TimTimTim" });
+    const { error } = await supabase.rpc("update_tags", {
+      p_username: "TimTimTim",
+    });
 
     if (error) {
       Alert.alert("Error", error.message);
@@ -223,14 +263,16 @@ export default function MakePin() {
   const getPinInfo = async () => {
     const { data: pinData, error: pinDataError } = await supabase
       .from("pins")
-      .select(`
+      .select(
+        `
         name,
         user_rating,
         user_note,
         address,
         location_id,
-        private`)
-      .eq("pin_id", pinId)
+        private`,
+      )
+      .eq("pin_id", pinId);
     if (pinDataError) {
       Alert.alert("Error", pinDataError.message);
       return;
@@ -240,11 +282,13 @@ export default function MakePin() {
     }
     const { data: locData, error: locDataError } = await supabase
       .from("locations")
-      .select(`
+      .select(
+        `
         latitude,
         longitude
-      `)
-      .eq("id", pinData[0].location_id)
+      `,
+      )
+      .eq("id", pinData[0].location_id);
     if (locDataError) {
       Alert.alert("Error", locDataError.message);
       return;
@@ -256,7 +300,7 @@ export default function MakePin() {
     const { data: userData, error: userDataError } = await supabase
       .from("users")
       .select("user_id")
-      .eq("username", "TimTimTim")
+      .eq("username", "TimTimTim");
 
     if (userDataError) {
       Alert.alert("Error", userDataError.message);
@@ -268,12 +312,14 @@ export default function MakePin() {
 
     const { data: tagData, error: tagDataError } = await supabase
       .from("pin_tags")
-      .select(`
+      .select(
+        `
         tags (
           name
         )
-      `)
-      .eq("pin_id", pinId)
+      `,
+      )
+      .eq("pin_id", pinId);
     if (tagDataError) {
       Alert.alert("Error", tagDataError.message);
       return;
@@ -281,29 +327,33 @@ export default function MakePin() {
     if (tagData == null) {
       return;
     }
-    let loadedSelectedTags = tagData.map((data) => (data.tags as unknown as { name: any }).name); // kinda messy but it turns off the warnings lol
+    let loadedSelectedTags = tagData.map(
+      (data) => (data.tags as unknown as { name: any }).name,
+    ); // kinda messy but it turns off the warnings lol
 
     const { data: visitData, error: visitDataError } = await supabase
       .from("pin_visits")
       .select("*")
-      .eq("pin_id", Number(pinId))
+      .eq("pin_id", Number(pinId));
     if (visitDataError) {
       Alert.alert("Error", visitDataError.message);
       return;
     }
-    let loadedVisits = visitData.map((visit: { visit_timestamp: string }) => visit.visit_timestamp);
+    let loadedVisits = visitData.map(
+      (visit: { visit_timestamp: string }) => visit.visit_timestamp,
+    );
 
-    setName(pinData[0].name)
-    setAddress(pinData[0].address)
-    setRating(pinData[0].user_rating)
-    setNotes(pinData[0].user_note)
-    setLat(locData[0].latitude.toString() ?? "")
-    setLng(locData[0].longitude.toString() ?? "")
-    setSelectedTags(loadedSelectedTags)
-    setVisits(loadedVisits)
-    setOriginalVisits(loadedVisits)
-    setIsPrivate(pinData[0].private)
-  }
+    setName(pinData[0].name);
+    setAddress(pinData[0].address);
+    setRating(pinData[0].user_rating);
+    setNotes(pinData[0].user_note);
+    setLat(locData[0].latitude.toString() ?? "");
+    setLng(locData[0].longitude.toString() ?? "");
+    setSelectedTags(loadedSelectedTags);
+    setVisits(loadedVisits);
+    setOriginalVisits(loadedVisits);
+    setIsPrivate(pinData[0].private);
+  };
 
   const updatePinTags = async () => {
     const { data: tagIds, error: getTagIdsError } = await supabase
@@ -317,13 +367,13 @@ export default function MakePin() {
     }
 
     if (tagIds === null) {
-      return
+      return;
     }
 
     const { data: tagData, error: tagDataError } = await supabase
       .from("pin_tags")
       .select("tag_id")
-      .eq("pin_id", pinId)
+      .eq("pin_id", pinId);
 
     if (tagDataError) {
       Alert.alert("Error", tagDataError.message);
@@ -331,19 +381,23 @@ export default function MakePin() {
     }
 
     if (tagData === null) {
-      return
+      return;
     }
 
-    let locallySelectedTags = tagIds.map(tag => tag.tag_id)
-    let databaseSelectedTags = tagData.map(tag => tag.tag_id)
+    let locallySelectedTags = tagIds.map((tag) => tag.tag_id);
+    let databaseSelectedTags = tagData.map((tag) => tag.tag_id);
 
-    let deletedTags = databaseSelectedTags.filter((tag_id) => !locallySelectedTags.includes(tag_id))
-    let addedTags = locallySelectedTags.filter((tag_id) => !databaseSelectedTags.includes(tag_id))
+    let deletedTags = databaseSelectedTags.filter(
+      (tag_id) => !locallySelectedTags.includes(tag_id),
+    );
+    let addedTags = locallySelectedTags.filter(
+      (tag_id) => !databaseSelectedTags.includes(tag_id),
+    );
     if (addedTags.length != 0) {
-      const addPinTagAssociation = addedTags.map(tag => ({
+      const addPinTagAssociation = addedTags.map((tag) => ({
         pin_id: pinId,
-        tag_id: tag
-      }))
+        tag_id: tag,
+      }));
       const { error: addToPinTagsError } = await supabase
         .from("pin_tags")
         .insert(addPinTagAssociation);
@@ -358,7 +412,7 @@ export default function MakePin() {
         .from("pin_tags")
         .delete()
         .eq("pin_id", pinId)
-        .in("tag_id", deletedTags)
+        .in("tag_id", deletedTags);
 
       if (deleteFromPinTagsError) {
         Alert.alert("Error", deleteFromPinTagsError.message);
@@ -367,13 +421,10 @@ export default function MakePin() {
     }
 
     return;
-
-  }
+  };
 
   const saveVisits = async (pinIdToUse: number) => {
-    const newVisits = visits.filter(
-      (visit) => !originalVisits.includes(visit)
-    );
+    const newVisits = visits.filter((visit) => !originalVisits.includes(visit));
 
     if (newVisits.length === 0) return;
 
@@ -382,9 +433,7 @@ export default function MakePin() {
       visit_timestamp: visit,
     }));
 
-    const { error } = await supabase
-      .from("pin_visits")
-      .insert(visitRows);
+    const { error } = await supabase.from("pin_visits").insert(visitRows);
 
     if (error) {
       Alert.alert("Error", error.message);
@@ -399,38 +448,63 @@ export default function MakePin() {
         address: address,
         user_rating: rating,
         user_note: notes,
-        private: isPrivate
+        private: isPrivate,
       })
-      .eq("pin_id", pinId)
+      .eq("pin_id", pinId);
+
     if (error) {
       Alert.alert("Error", error.message);
       return;
     }
-    await updatePinTags()
-    await saveVisits(Number(pinId))
+
+    await updatePinTags();
+    await saveVisits(Number(pinId));
     router.back();
-  }
+  };
 
   const deletePin = async () => {
-    Alert.alert('Are you sure you want to delete this pin?', 'This action cannot be undone', [
-      { text: 'Cancel' },
-      {
-        text: 'Delete',
-        style: 'destructive',
-        onPress: async () => {
-          const { error } = await supabase
-            .rpc("delete_pin", { p_pin_id: pinId })
-          if (error) {
-            console.log(error.message)
-          }
-          router.replace({
-            pathname: "/(tabs)/(home)",
-            params: { viewMode },
-          });
+    Alert.alert(
+      "Are you sure you want to delete this pin?",
+      "This action cannot be undone",
+      [
+        { text: "Cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            const { error } = await supabase.rpc("delete_pin", {
+              p_pin_id: pinId,
+            });
+            if (error) {
+              console.log(error.message);
+            }
+            router.replace({
+              pathname: "/(tabs)/(home)",
+              params: { viewMode },
+            });
+          },
         },
-      },
-    ]);
-  }
+      ],
+    );
+  };
+
+  const handleNameChange = (text: string) => {
+    setName(text);
+    if (text.length > NAME_MAX) {
+      setNameError(`Name must be ${NAME_MAX} characters or fewer`);
+    } else {
+      setNameError("");
+    }
+  };
+
+  const handleAddressChange = (text: string) => {
+    setAddress(text);
+    if (text.length > ADDRESS_MAX) {
+      setAddressError(`Address must be ${ADDRESS_MAX} characters or fewer`);
+    } else {
+      setAddressError("");
+    }
+  };
 
   // This will run on launch
   useEffect(() => {
@@ -444,12 +518,12 @@ export default function MakePin() {
       await cleanupUnusedTags();
       await loadTags();
       setDataLoaded(true);
-    }
-    loadData()
+    };
+    loadData();
   }, []);
 
   if (!dataLoaded) {
-    return <LoadingPage />
+    return <LoadingPage />;
   }
 
   return (
@@ -459,7 +533,10 @@ export default function MakePin() {
           <Text style={styles.cancelText}>Cancel</Text>
         </Pressable>
 
-        <Pressable style={styles.saveBtn} onPress={() => isEdit ? updatePin() : createPin()}>
+        <Pressable
+          style={styles.saveBtn}
+          onPress={() => (isEdit ? updatePin() : createPin())}
+        >
           <Text style={styles.saveText}>Save</Text>
         </Pressable>
       </View>
@@ -470,13 +547,15 @@ export default function MakePin() {
         ref={scrollRef}
       >
         <View style={styles.container}>
-        <Pressable onPress={Keyboard.dismiss} style={{ flex: 1 }}>
-          {/*  SafeAreaView places elements under the phone's status bar */}
-          <SafeAreaView>
-            <Stack.Screen options={{ headerShown: false, animation: "slide_from_right" }} />
+          <Pressable onPress={Keyboard.dismiss} style={{ flex: 1 }}>
+            {/*  SafeAreaView places elements under the phone's status bar */}
+            <SafeAreaView>
+              <Stack.Screen
+                options={{ headerShown: false, animation: "slide_from_right" }}
+              />
 
-            <View>
-              {/* <View style={styles.latLngHeader}>
+              <View>
+                {/* <View style={styles.latLngHeader}>
               <Text style={styles.latLngText}>Latitude:</Text>
               <Text style={styles.latLngText}>{lat}</Text>
             </View>
@@ -484,144 +563,207 @@ export default function MakePin() {
               <Text style={styles.latLngText}>Longitude:</Text>
               <Text style={styles.latLngText}>{lng}</Text>
             </View> */}
-              <View style={styles.latLngHeader}>
-                <Text style={styles.latLngText}>Pin at</Text>
-                <Text style={styles.latLngText}>({lat}, {lng})</Text>
-              </View>
-            </View>
-            <View style={styles.row}>
-              <View style={styles.shadowWrapper}>
-                <Pressable style={styles.photoInput} onPress={handlePickPhoto}>
-                  {photo ? (
-                    <Image source={{ uri: photo }} style={styles.photo} />
-                  ) : (
-                    <MaterialCommunityIcons
-                      name="camera-plus"
-                      size={28}
-                      color="#888"
-                    />
-                  )}
-                </Pressable>
-              </View>
-              <View style={styles.fields}>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Name"
-                  placeholderTextColor="#aaaaaa"
-                  value={name}
-                  onChangeText={setName}
-                  onFocus={(event) => {
-                    scrollRef.current?.scrollToFocusedInput(event.target);
-                  }}
-                />
-                <TextInput
-                  style={styles.input}
-                  placeholder="Address"
-                  placeholderTextColor="#aaaaaa"
-                  value={address}
-                  onChangeText={setAddress}
-                  onFocus={(event) => {
-                    scrollRef.current?.scrollToFocusedInput(event.target);
-                  }}
-                />
-              </View>
-            </View>
-            <View style={styles.ratingsPrivacyRow}>
-              <View>
-                <Text style={styles.notesHeading}>Rating</Text>
-                <View style={styles.starRow}>
-                  <PressableStars rating={rating} setRating={setRating} />
+                <View style={styles.latLngHeader}>
+                  <Text style={styles.latLngText}>Pin at</Text>
+                  <Text style={styles.latLngText}>
+                    ({lat}, {lng})
+                  </Text>
                 </View>
               </View>
-            </View>
-            <View>
-              <Text style={styles.notesHeading}>Private</Text>
-              <View style={styles.privacySwitchBackground}>
-                <Switch
-                  trackColor={{ false: Colors.light.text, true: Colors.light.accent }}
-                  thumbColor="#FFF"
-                  ios_backgroundColor={Colors.light.text}
-                  onValueChange={togglePrivacy}
-                  value={isPrivate}
-                />
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.privacyDescription}>{privacyDescription}</Text>
-                </View>
-              </View>
-            </View>
-            <View>
-              <Text style={styles.notesHeading}>Notes</Text>
-              <TextInput
-                style={[styles.input, styles.notesInput]}
-                placeholder="Enter notes here"
-                value={notes}
-                onChangeText={setNotes}
-                multiline={true}
-                scrollEnabled={false}
-                textAlignVertical="top"
-                onFocus={(event) => {
-                  scrollRef.current?.scrollToFocusedInput(event.target);
-                }}
-                onContentSizeChange={(event) => {
-                  setNotesHeight(event.nativeEvent.contentSize.height)
-                }}
-              />
-            </View>
-            <View style={styles.tagTitle}>
-              <Text style={styles.notesHeading}>Tags</Text>
-              <Pressable onPress={() => setAddTagVisible(true)}>
-                <MaterialCommunityIcons name="plus-circle-outline" size={24} color="black" style={styles.addTags} />
-              </Pressable>
-            </View>
-
-            <View style={styles.tagsContainer}>
-              {tags.map((tag) => (
-                <Pressable
-                  key={tag}
-                  style={styles.tagRow}
-                  onPress={() => toggleTag(tag)}
-                >
-                  <View
-                    style={[
-                      styles.checkbox,
-                      selectedTags.includes(tag) && styles.checkboxChecked,
-                    ]}
+              <View style={styles.row}>
+                <View style={styles.shadowWrapper}>
+                  <Pressable
+                    style={styles.photoInput}
+                    onPress={handlePickPhoto}
                   >
-                    {selectedTags.includes(tag) && (
-                      <MaterialCommunityIcons name="check" size={14} color="#fff" />
+                    {photo ? (
+                      <Image source={{ uri: photo }} style={styles.photo} />
+                    ) : (
+                      <MaterialCommunityIcons
+                        name="camera-plus"
+                        size={28}
+                        color="#888"
+                      />
                     )}
+                  </Pressable>
+                </View>
+                <View style={styles.fields}>
+                  <View style={styles.fields}>
+                    <TextInput
+                      style={[
+                        styles.input,
+                        nameError ? styles.inputError : null,
+                      ]}
+                      placeholder="Name"
+                      placeholderTextColor="#aaaaaa"
+                      value={name}
+                      onChangeText={handleNameChange}
+                      maxLength={NAME_MAX + 1} // allow one extra so they see the error trigger
+                      onFocus={(event) =>
+                        scrollRef.current?.scrollToFocusedInput(event.target)
+                      }
+                    />
+                    {nameError ? (
+                      <Text style={styles.errorText}>{nameError}</Text>
+                    ) : null}
+
+                    <TextInput
+                      style={[
+                        styles.input,
+                        addressError ? styles.inputError : null,
+                      ]}
+                      placeholder="Address"
+                      placeholderTextColor="#aaaaaa"
+                      value={address}
+                      onChangeText={handleAddressChange}
+                      maxLength={ADDRESS_MAX + 1}
+                      onFocus={(event) =>
+                        scrollRef.current?.scrollToFocusedInput(event.target)
+                      }
+                    />
+                    {addressError ? (
+                      <Text style={styles.errorText}>{addressError}</Text>
+                    ) : null}
                   </View>
-                  <Text style={styles.tagLabel}>{tag}</Text>
+                </View>
+              </View>
+              <View style={styles.ratingsPrivacyRow}>
+                <View>
+                  <Text style={styles.notesHeading}>Rating</Text>
+                  <View style={styles.starRow}>
+                    <PressableStars rating={rating} setRating={setRating} />
+                  </View>
+                </View>
+              </View>
+              <View>
+                <Text style={styles.notesHeading}>Private</Text>
+                <View style={styles.privacySwitchBackground}>
+                  <Switch
+                    trackColor={{
+                      false: Colors.light.text,
+                      true: Colors.light.accent,
+                    }}
+                    thumbColor="#FFF"
+                    ios_backgroundColor={Colors.light.text}
+                    onValueChange={togglePrivacy}
+                    value={isPrivate}
+                  />
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.privacyDescription}>
+                      {privacyDescription}
+                    </Text>
+                  </View>
+                </View>
+              </View>
+              <View>
+                <Text style={styles.notesHeading}>Notes</Text>
+                <TextInput
+                  style={[styles.input, styles.notesInput]}
+                  placeholder="Enter notes here"
+                  value={notes}
+                  onChangeText={setNotes}
+                  multiline={true}
+                  scrollEnabled={false}
+                  textAlignVertical="top"
+                  onFocus={(event) => {
+                    scrollRef.current?.scrollToFocusedInput(event.target);
+                  }}
+                  onContentSizeChange={(event) => {
+                    setNotesHeight(event.nativeEvent.contentSize.height);
+                  }}
+                />
+              </View>
+              <View style={styles.tagTitle}>
+                <Text style={styles.notesHeading}>Tags</Text>
+                <Pressable onPress={() => setAddTagVisible(true)}>
+                  <MaterialCommunityIcons
+                    name="plus-circle-outline"
+                    size={24}
+                    color="black"
+                    style={styles.addTags}
+                  />
                 </Pressable>
-              ))}
-              <AddTagOrList isVisible={modalVisible} onClose={() => setAddTagVisible(false)} onSave={addTag} newTag={newTag} setNewTag={setNewTag} />
-            </View>
+              </View>
 
-            <View style={styles.tagTitle}>
-              <Text style={styles.notesHeading}>Visits</Text>
-              <Pressable onPress={() => setAddVisitVisible(true)}>
-                <MaterialCommunityIcons name="plus-circle-outline" size={24} color="black" style={styles.addTags} />
-              </Pressable>
-            </View>
-            <View style={[styles.tagsContainer, { minHeight: 100 }]}>
-              <ScrollView>
-                {visits.map((visit) => {
-                  const [year, month, day] = visit.split("-").map(Number);
-                  const displayDate = `${month}/${day}/${year}`;
-                  return <Text style={styles.tagLabel} key={visit}>{displayDate}</Text>
-                })}
-              </ScrollView>
-              <AddVisit isVisible={modalVisitVisible} onClose={() => setAddVisitVisible(false)} onSave={addVisit} newVisit={newVisit} setNewVisit={setNewVisit} />
-            </View>
+              <View style={styles.tagsContainer}>
+                {tags.map((tag) => (
+                  <Pressable
+                    key={tag}
+                    style={styles.tagRow}
+                    onPress={() => toggleTag(tag)}
+                  >
+                    <View
+                      style={[
+                        styles.checkbox,
+                        selectedTags.includes(tag) && styles.checkboxChecked,
+                      ]}
+                    >
+                      {selectedTags.includes(tag) && (
+                        <MaterialCommunityIcons
+                          name="check"
+                          size={14}
+                          color="#fff"
+                        />
+                      )}
+                    </View>
+                    <Text style={styles.tagLabel}>{tag}</Text>
+                  </Pressable>
+                ))}
+                <AddTagOrList
+                  isVisible={modalVisible}
+                  onClose={() => setAddTagVisible(false)}
+                  onSave={addTag}
+                  newTag={newTag}
+                  setNewTag={setNewTag}
+                />
+              </View>
 
-            {isEdit && (<View style={{ alignSelf: "center" }}>
-              <Pressable style={styles.deleteBtn} onPress={deletePin}>
-                <MaterialCommunityIcons name="trash-can-outline" size={24} color="#fff" />
-                <Text style={styles.cancelText}>Delete</Text>
-              </Pressable>
-            </View>)}
-          </SafeAreaView>
-        </Pressable>
+              <View style={styles.tagTitle}>
+                <Text style={styles.notesHeading}>Visits</Text>
+                <Pressable onPress={() => setAddVisitVisible(true)}>
+                  <MaterialCommunityIcons
+                    name="plus-circle-outline"
+                    size={24}
+                    color="black"
+                    style={styles.addTags}
+                  />
+                </Pressable>
+              </View>
+              <View style={[styles.tagsContainer, { minHeight: 100 }]}>
+                <ScrollView>
+                  {visits.map((visit) => {
+                    const [year, month, day] = visit.split("-").map(Number);
+                    const displayDate = `${month}/${day}/${year}`;
+                    return (
+                      <Text style={styles.tagLabel} key={visit}>
+                        {displayDate}
+                      </Text>
+                    );
+                  })}
+                </ScrollView>
+                <AddVisit
+                  isVisible={modalVisitVisible}
+                  onClose={() => setAddVisitVisible(false)}
+                  onSave={addVisit}
+                  newVisit={newVisit}
+                  setNewVisit={setNewVisit}
+                />
+              </View>
+
+              {isEdit && (
+                <View style={{ alignSelf: "center" }}>
+                  <Pressable style={styles.deleteBtn} onPress={deletePin}>
+                    <MaterialCommunityIcons
+                      name="trash-can-outline"
+                      size={24}
+                      color="#fff"
+                    />
+                    <Text style={styles.cancelText}>Delete</Text>
+                  </Pressable>
+                </View>
+              )}
+            </SafeAreaView>
+          </Pressable>
         </View>
       </KeyboardAwareScrollView>
     </View>
@@ -631,7 +773,7 @@ export default function MakePin() {
 const styles = StyleSheet.create({
   container: {
     paddingLeft: 16,
-    paddingRight: 16
+    paddingRight: 16,
   },
   topBar: {
     flexDirection: "row",
@@ -642,7 +784,7 @@ const styles = StyleSheet.create({
     top: 50,
     right: 16,
     left: 16,
-    zIndex: 10
+    zIndex: 10,
   },
   cancelBtn: {
     padding: 16,
@@ -678,7 +820,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
-    marginTop: 25
+    marginTop: 25,
   },
   photoInput: {
     width: 80,
@@ -689,7 +831,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     overflow: "hidden",
     borderWidth: 1,
-    borderColor: "#ddd"
+    borderColor: "#ddd",
   },
   photo: {
     width: "100%",
@@ -766,7 +908,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: "#333",
     textTransform: "capitalize",
-    fontFamily: Fonts.regular
+    fontFamily: Fonts.regular,
   },
   starRow: {
     flexDirection: "row",
@@ -782,12 +924,11 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 2,
     elevation: 4,
-
   },
   tagTitle: {
     flexDirection: "row",
     justifyContent: "flex-start",
-    alignItems: "center"
+    alignItems: "center",
   },
   addTags: {
     marginTop: 24,
@@ -815,12 +956,12 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 2,
     elevation: 4,
-    marginTop: 24
+    marginTop: 24,
   },
   ratingsPrivacyRow: {
     flexDirection: "row",
     gap: 16,
-    justifyContent: "flex-start"
+    justifyContent: "flex-start",
   },
   privacySwitchBackground: {
     flexDirection: "row",
@@ -852,6 +993,15 @@ const styles = StyleSheet.create({
   privacyDescription: {
     flexShrink: 1,
     fontFamily: Fonts.regular,
-    marginLeft: 8
-  }
+    marginLeft: 8,
+  },
+  errorText: {
+    color: Colors.light.error,
+    fontSize: 12,
+    marginTop: 2,
+    marginLeft: 4,
+  },
+  inputError: {
+    borderColor: Colors.light.error, // optional: highlight the border too
+  },
 });
