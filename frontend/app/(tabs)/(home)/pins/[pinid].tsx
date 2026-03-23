@@ -144,7 +144,7 @@ export default function PinPage() {
               {friends?.map((friend) => (
                 <Pressable key={friend?.user_id} style={styles.cardPartialRow} onPress={() =>
                   router.push({
-                    pathname: "/friend_profiles/[friendpf]",
+                    pathname: "/(tabs)/(home)/friend_profiles/[friendpf]",
                     params: {
                       friendpf: `${friend?.username}`
                     }
