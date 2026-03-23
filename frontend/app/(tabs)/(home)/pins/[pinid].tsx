@@ -112,7 +112,7 @@ export default function PinPage() {
 
         <View style={{ marginHorizontal: 16 }}>
           {/* Title */}
-          <View style={[styles.editRow, { alignItems: "center", alignContent: "center", marginTop: 10, gap: 6 }]}>
+          <View style={[styles.editRow, { alignItems: "center", alignContent: "center", marginTop: 10, marginRight: 25, gap: 6 }]}>
             <Text style={styles.title}>{pin.name ?? "No pin name"}</Text>
             {pin.private === true && (
               <Ionicons name="lock-closed" size={20} color="#243e36" />
@@ -284,7 +284,7 @@ export default function PinPage() {
             <Text
               style={{ fontFamily: Fonts.bold, color: "#d9d9d9", fontSize: 16 }}
             >
-              Edit Pin
+              Edit
             </Text>
           </Pressable>
         </View>
