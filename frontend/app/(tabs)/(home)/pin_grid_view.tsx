@@ -77,7 +77,7 @@ const styles = StyleSheet.create({
     paddingLeft: 5,
     paddingRight: 5,
     paddingTop: 170,
-    paddingBottom: 5,
+    paddingBottom: 95,
   },
 
   row: {

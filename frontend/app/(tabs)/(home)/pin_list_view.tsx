@@ -47,9 +47,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   spacer: {
-    marginTop: 170,
+    marginTop: 165,
   },
   listContent: {
-    paddingBottom: 180,
+    paddingBottom: 265,
   },
 });
