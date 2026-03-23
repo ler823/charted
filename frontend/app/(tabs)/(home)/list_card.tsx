@@ -1,19 +1,36 @@
 import { Fonts } from "@/constants/theme";
+import { Image } from "expo-image";
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
-import { Image } from "expo-image";
 
-export default function ListCard() {
+type Props = {
+  name?: string;
+  loc?: string;
+};
+
+export default function ListCard({ name, loc }: Props) {
   return (
     <View style={styles.card}>
       <Image
-        source={require("@/assets/images/test_ss_creamery.png")}
+        source={require("@/assets/images/no_image_default.png")}
         style={styles.img}
         placeholder="blur"
       />
-      <View>
-        <Text style={styles.cardTitle}>Seaside Creamery</Text>
-        <Text style={styles.cardLoc}>0.2 miles away</Text>
+      <View style={styles.textContainer}>
+        <Text
+          style={styles.cardTitle}
+          numberOfLines={1}
+          ellipsizeMode="tail"
+        >
+          {name || "Unnamed Pin"}
+        </Text>
+        <Text
+          style={styles.cardLoc}
+          numberOfLines={1}
+          ellipsizeMode="tail"
+        >
+          {loc || "No address available"}
+        </Text>
       </View>
     </View>
   );
@@ -25,11 +42,19 @@ export default function ListCard({ photo, name, loc }) {
     return (
         <View style={styles.card}>
               <Image source={photo} style={styles.img} />
-              <View>
-                <Text style={styles.cardTitle}>
+              <View style={styles.textContainer}>
+                <Text
+                  style={styles.cardTitle}
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
+                >
                     {name}
                 </Text>
-                <Text style={styles.cardLoc}>
+                <Text
+                  style={styles.cardLoc}
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
+                >
                     // will need to add location information if the user has their location on
                     {loc} miles away
                 </Text>
@@ -45,7 +70,7 @@ const styles = StyleSheet.create({
     height: 65,
     resizeMode: "cover",
     aspectRatio: 1,
-    borderRadius: 9
+    borderRadius: 9,
   },
 
   card: {
@@ -64,16 +89,22 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
 
+  textContainer: {
+    flex: 1,
+    marginLeft: 15,
+    justifyContent: "center",
+  },
+
   cardTitle: {
     fontFamily: Fonts.bold,
     fontSize: 17,
-    paddingLeft: 15,
     paddingBottom: 1,
+    flexShrink: 1,
   },
 
   cardLoc: {
     fontFamily: Fonts.regular,
     fontSize: 12,
-    paddingLeft: 15,
+    flexShrink: 1,
   },
 });
