@@ -5,6 +5,8 @@ import { PressableStars } from "@/components/pressable-stars";
 import { Colors, Fonts } from "@/constants/theme";
 import { supabase } from "@/lib/supabase";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import * as ImageManipulator from 'expo-image-manipulator';
+import * as ImagePicker from 'expo-image-picker';
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
@@ -158,8 +160,39 @@ export default function MakePin() {
     return;
   };
 
-  const handlePickPhoto = () => {
-    return;
+  const processImage = async (uri: string) => {
+    const result = await ImageManipulator.manipulateAsync(
+      uri,
+      [{ resize: { width: 1080 } }], // keeps aspect ratio
+      {
+        compress: 0.7,
+        format: ImageManipulator.SaveFormat.JPEG,
+      }
+    );
+
+    return result;
+  };
+
+  const pickImageAsync = async () => {
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      quality: 1,
+    });
+
+    if (!result.canceled) {
+      return result;
+    } else {
+      alert('You did not select any image.');
+    }
+  };
+
+  const handlePickPhoto = async () => {
+    const result = await pickImageAsync();
+    if (!result) return;
+    const uri = result!.assets[0].uri;
+    const processedImage = await processImage(uri);
+    setPhoto(processedImage.uri)
   };
 
   const getUserTags = async () => {
@@ -555,14 +588,6 @@ export default function MakePin() {
               />
 
               <View>
-                {/* <View style={styles.latLngHeader}>
-              <Text style={styles.latLngText}>Latitude:</Text>
-              <Text style={styles.latLngText}>{lat}</Text>
-            </View>
-            <View style={styles.latLngHeader}>
-              <Text style={styles.latLngText}>Longitude:</Text>
-              <Text style={styles.latLngText}>{lng}</Text>
-            </View> */}
                 <View style={styles.latLngHeader}>
                   <Text style={styles.latLngText}>Pin at</Text>
                   <Text style={styles.latLngText}>
@@ -823,8 +848,8 @@ const styles = StyleSheet.create({
     marginTop: 25,
   },
   photoInput: {
-    width: 80,
-    height: 80,
+    width: 90,
+    height: 90,
     borderRadius: 12,
     backgroundColor: "#eee",
     justifyContent: "center",
