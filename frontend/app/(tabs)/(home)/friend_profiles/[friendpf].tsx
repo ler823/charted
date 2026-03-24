@@ -1,1 +1,1 @@
-export { default } from "@/app/(tabs)/(friends)/friend_profiles/[friendid]";
+export { default } from "@/app/(tabs)/(friends)/user_profiles/[userid]";
