@@ -86,9 +86,9 @@ export default function Friends() {
         renderItem={({ item }) => (
           <Pressable style={styles.card} onPress={() => 
             router.push({
-              pathname: "/friend_profiles/[friendpf]",
+              pathname: "/friend_profiles/[friendid]",
               params: {
-                friendpf: `${item.username}`
+                friendid: `${item.user_id}`
               }})}>
             {/* 
             Placeholder cirlce for now. 
