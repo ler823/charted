@@ -3,6 +3,8 @@ import {
   Raleway_200ExtraLight,
   Raleway_400Regular,
   Raleway_700Bold,
+  Raleway_400Regular_Italic,
+  Raleway_700Bold_Italic,
 } from "@expo-google-fonts/raleway";
 import { useFonts } from "expo-font";
 import * as Location from "expo-location";
@@ -18,6 +20,8 @@ export default function RootLayout() {
     Raleway_200ExtraLight,
     Raleway_400Regular,
     Raleway_700Bold,
+    Raleway_400Regular_Italic,
+    Raleway_700Bold_Italic,
   });
 
   useEffect(() => {

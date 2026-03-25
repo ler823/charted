@@ -83,11 +83,60 @@ export default function FriendProfilePage() {
             </Text>
         </View>
         <Text style={styles.bio}>{friend?.bio ?? "No bio"}</Text>
+
+        {/* Map */}
         <View style={styles.infoBox}>
+          <Text style={styles.header}>Map</Text>
+          <View style={styles.infoWindow}>
+            <View style={styles.mapExpand}>
+              <Ionicons name="expand-outline" size={21} color="#fefbea" />
+            </View>
+          </View>
         </View>
+
+        {/* Stats */}
         <View style={styles.infoBox}>
+          <Text style={styles.header}>Statistics</Text>
+          <View style={[styles.statsRow, {gap: 20}]}>
+            <View style={[styles.infoWindow, {width: "42%", alignItems: "center"}]}>
+              <Text style={styles.subHeader}>Favorite</Text>
+              <View style={styles.statsWindows}></View>
+              <View style={styles.statsBar}></View>
+            </View>
+            <View style={[styles.infoWindow, {width: "42%", alignItems: "center"}]}>
+              <Text style={styles.subHeader}>Top Visited</Text>
+              <View style={styles.statsWindows}></View>
+              <View style={styles.statsBar}></View>
+            </View>
+          </View>
         </View>
+
+        {/* Activity */}
         <View style={styles.infoBox}>
+          <Text style={styles.header}>Recent Activity</Text>
+          <View style={styles.infoWindow}>
+            <View style={styles.activityRow}>
+              <View style={styles.locAvatar} />
+            </View>
+            <View
+              style={{
+                borderBottomColor: "#243e36",
+                borderBottomWidth: StyleSheet.hairlineWidth,
+              }}
+            />
+            <View style={styles.activityRow}>
+              <View style={styles.locAvatar} />
+            </View>
+            <View
+              style={{
+                borderBottomColor: "#243e36",
+                borderBottomWidth: StyleSheet.hairlineWidth,
+              }}
+            />
+            <View style={styles.activityRow}>
+              <View style={styles.locAvatar} />
+            </View>
+          </View>
         </View>
       </View>
       <View style={{height: 100}}/>
@@ -107,17 +156,17 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.bold,
   },
   location: {
-    fontFamily: Fonts.bold,
+    fontFamily: Fonts.bold_i,
     fontSize: 15,
   },
   bio: {
     fontSize: 15,
     marginHorizontal: 50,
-    marginTop: 4,
+    marginTop: 3,
     marginBottom: 10,
     color: "#333",
     textAlign: "center",
-    fontFamily: Fonts.regular,
+    fontFamily: Fonts.regular_i,
   },
   backButton: {
     backgroundColor: "#243e36",
@@ -144,22 +193,7 @@ const styles = StyleSheet.create({
     gap: 6,
     width: 105,
     height: 40,
-    marginLeft: 8,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 2,
-    elevation: 4,
-  },
-  requestButton: {
-    backgroundColor: "#243e36",
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 999,
-    width: 250,
-    height: 50,
-    marginLeft: 8,
+    marginRight: 8,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
@@ -176,6 +210,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  locAvatar: {
+    width: 32,
+    height: 32,
+    borderRadius: 999,
+    backgroundColor: "#d8d8d8",
+    alignItems: "center",
+    justifyContent: "center",
+  },
   avatarInitial: {
     fontSize: 75,
     fontFamily: Fonts.regular,
@@ -185,17 +227,81 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
   },
+  statsRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+  activityRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    height: "33.3%",
+    width: "90%",
+  },
   infoBox: {
     alignItems: "center",
     borderRadius: 20,
     backgroundColor: "#DEE9E0",
     marginVertical: 12,
-    height: 200,
+    height: 225,
     width: "90%",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 2,
     elevation: 4,
-  }
+  },
+  header: {
+    fontFamily: Fonts.regular,
+    fontSize: 35,
+    color: "#333",
+    marginTop: 10,
+  },
+  subHeader: {
+    fontFamily: Fonts.regular_i,
+    fontSize: 23,
+    color: "#333",
+    marginVertical: 5,
+  },
+  infoWindow: {
+    height: 145,
+    width: "90%",
+    backgroundColor: "#fff",
+    borderStyle: "solid",
+    borderWidth: 2,
+    borderColor: "#7CA982",
+    marginVertical: 10,
+    alignItems: "center",
+  },
+  mapExpand: {
+    backgroundColor: "#7ca982",
+    width: 25,
+    height: 25,
+    borderRadius: 6,
+    alignItems: "center",
+    justifyContent: "center",
+    position: "absolute",
+    top: 111,
+    right: 5,
+    alignSelf: "flex-end",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
+    elevation: 4,
+  },
+  statsWindows: {
+    height: 96,
+    width: "88%",
+    backgroundColor: "#d9d9d9",
+  },
+  statsBar: {
+    backgroundColor: "#243e36",
+    width: "65%",
+    height: 25,
+    position: "absolute",
+    alignSelf: "flex-start",
+    marginTop: 118,
+    marginLeft: -2,
+    borderTopRightRadius: 12,
+  },
 });

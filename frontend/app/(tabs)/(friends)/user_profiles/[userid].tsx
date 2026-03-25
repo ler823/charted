@@ -177,7 +177,7 @@ const styles = StyleSheet.create({
     marginVertical: 4,
     color: "#333",
     textAlign: "center",
-    fontFamily: Fonts.regular,
+    fontFamily: Fonts.regular_i,
   },
   backButton: {
     backgroundColor: "#243e36",
