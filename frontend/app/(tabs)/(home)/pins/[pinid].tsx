@@ -43,7 +43,7 @@ type Pin = {
   pin_photos: {
     photos: {
       photo_id: number | null;
-      link: string | null;
+      key: string | null;
     } | null;
   } | null;
   private: boolean | null;
@@ -67,7 +67,7 @@ export default function PinPage() {
             pin_tags(tags( tag_id, name )),
             pin_lists(lists( list_id, name )),
             pin_visits( visit_id, visit_timestamp ),
-            pin_photos(photos( photo_id, link ))` )
+            pin_photos(photos( photo_id, key ))` )
           .eq('pin_id', Number(pinid))
           .single();
         if (error) {
@@ -103,11 +103,11 @@ export default function PinPage() {
       <ScrollView>
         {/* Image */}
 
-        {!pin.pin_photos?.photos?.link && (
+        {!pin.pin_photos?.photos?.key && (
           <Image source={require("@/assets/images/no_image_default.png")} style={styles.img} placeholder="blur" />
         )}
-        {pin.pin_photos?.photos?.link && (
-          <Image source={{ uri: pin.pin_photos?.photos?.link! }} style={styles.img} placeholder="blur" />
+        {pin.pin_photos?.photos?.key && (
+          <Image source={{ uri: pin.pin_photos?.photos?.key! }} style={styles.img} placeholder="blur" />
         )}
 
         <View style={{ marginHorizontal: 16 }}>
