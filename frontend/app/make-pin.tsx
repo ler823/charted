@@ -50,7 +50,7 @@ export default function MakePin() {
   const ADDRESS_MAX = 100;
   const [nameError, setNameError] = useState("");
   const [addressError, setAddressError] = useState("");
-  const [photo, setPhoto] = useState("");
+  const [coverPhoto, setCoverPhoto] = useState("");
   const [rating, setRating] = useState(0);
   const [notes, setNotes] = useState("");
   const [tags, setTags] = useState<string[]>([]);
@@ -156,6 +156,7 @@ export default function MakePin() {
     inserted_pin_id = data;
     await savePinTags();
     await saveVisits(inserted_pin_id);
+    await uploadPhoto();
     router.back();
     return;
   };
@@ -192,8 +193,52 @@ export default function MakePin() {
     if (!result) return;
     const uri = result!.assets[0].uri;
     const processedImage = await processImage(uri);
-    setPhoto(processedImage.uri)
+    setCoverPhoto(processedImage.uri)
   };
+
+  const uploadPhoto = async () => {
+    const imageFile = await fetch(coverPhoto)
+    const imageFileBlob = await imageFile.blob();
+    const res = await fetch('https://4nm4iifq65.execute-api.us-east-2.amazonaws.com/uploadphotourl', {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contentType: "image/jpeg",
+      }),
+    });
+    const { uploadUrl, key } = await res.json();
+
+    const response = await fetch(uploadUrl, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "image/jpeg",
+      },
+      body: imageFileBlob,
+    })
+    const { data, error: addPhotoError } = await supabase
+      .from("photos")
+      .insert({
+        key: key
+      })
+      .select("photo_id")
+      .single()
+
+    if (addPhotoError) {
+      Alert.alert("Error", addPhotoError.message);
+    }
+
+    const { error: pinPhotoError } = await supabase
+      .from("pin_photos")
+      .insert({
+        pin_id: inserted_pin_id,
+        photo_id: data!.photo_id,
+        cover: true,
+      })
+
+    if (pinPhotoError) {
+      Alert.alert("Error", pinPhotoError.message);
+    }
+  }
 
   const getUserTags = async () => {
     const { data, error } = await supabase
@@ -601,8 +646,8 @@ export default function MakePin() {
                     style={styles.photoInput}
                     onPress={handlePickPhoto}
                   >
-                    {photo ? (
-                      <Image source={{ uri: photo }} style={styles.photo} />
+                    {coverPhoto ? (
+                      <Image source={{ uri: coverPhoto }} style={styles.photo} />
                     ) : (
                       <MaterialCommunityIcons
                         name="camera-plus"

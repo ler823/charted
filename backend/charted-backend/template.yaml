@@ -3,61 +3,46 @@ Transform: AWS::Serverless-2016-10-31
 Description: >
   charted-backend
 
-  Sample SAM Template for charted-backend
+  Backend for Charted
 
-Parameters:
-  SupabaseUrl:
-    Type: String
-
-  SupabaseKey:
-    Type: String
-
-# More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
 Globals:
   Function:
-    Timeout: 3
+    Timeout: 10
     Environment:
       Variables:
-        SUPABASE_URL: !Ref SupabaseUrl
-        SUPABASE_KEY: !Ref SupabaseKey
+        BUCKET_NAME: !Ref ChartedPhotoBucket
 
 Resources:
-  GetUserTest:
-    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+  ChartedPhotoBucket:
+    Type: AWS::S3::Bucket
     Properties:
-      CodeUri: get_user_test/
+      CorsConfiguration:
+        CorsRules:
+          - AllowedOrigins:
+              - "*"
+            AllowedMethods:
+              - PUT
+            AllowedHeaders:
+              - "*"
+  UploadPhotoUrl:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: upload_photo_url/
       Handler: app.lambda_handler
       Runtime: python3.14
       Architectures:
         - arm64
+      Policies:
+        - S3WritePolicy:
+            BucketName: !Ref ChartedPhotoBucket
       Events:
-        HelloWorld:
-          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+        GenerateUploadPhotoUrl:
+          Type: HttpApi
           Properties:
-            Path: /getusertest
-            Method: get
-  CreatePinFunction:
-    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
-    Properties:
-      CodeUri: create_pin/
-      Handler: app.lambda_handler
-      Runtime: python3.14
-      Architectures:
-        - arm64
-      Events:
-        Createpin:
-          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
-          Properties:
-            Path: /createpin
+            Path: /uploadphotourl
             Method: post
 
 Outputs:
-  # ServerlessRestApi is an implicit API created out of Events key under Serverless::Function
-  # Find out more about other implicit resources you can reference within SAM
-  # https://github.com/awslabs/serverless-application-model/blob/master/docs/internals/generated_resources.rst#api
-  CreatePinApi:
-    Description: "API Gateway endpoint URL for Prod stage for Create Pin function"
-    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/Prod/createpin/"
-  GetUserTestApi:
+  UploadPhotoUrlApi:
     Description: "API Gateway endpoint URL for Prod stage for Get Pin function"
-    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/Prod/getusertest/"
+    Value: !Sub "https://${ServerlessHttpApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/uploadphotourl"
