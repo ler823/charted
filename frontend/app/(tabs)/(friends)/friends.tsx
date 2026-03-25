@@ -2,7 +2,7 @@ import { supabase } from "@/lib/supabase";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter, Stack } from "expo-router";
 import React, { useEffect, useState } from "react";
-import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
+import { FlatList, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { Colors, Fonts } from "../../../constants/theme";
 import LoadingPage from "@/components/loading-page";
 
@@ -14,8 +14,14 @@ type Friend = {
 
 export default function Friends() {
   const [friends, setFriends] = useState<Friend[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const router = useRouter()
+
+  // Searching Implementation
+  const filteredFriends = friends.filter((f) =>
+    f.username.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   /*
   This chunk queries the database for 'users' table in Supabase
@@ -64,10 +70,16 @@ export default function Friends() {
       Deals with the serach row and sort button 
       */}
       <View style={styles.searchRow}>
-        <Pressable style={styles.searchBar}>
-          <Text style={styles.searchText}>Search</Text>
+        <View style={styles.searchBar}>
+          <TextInput
+            style={styles.searchText}
+            placeholder="Search"
+            placeholderTextColor="#fefbea"
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
           <Ionicons name="search" size={16} color={"#fefbea"} />
-        </Pressable>
+        </View>
         <Pressable style={styles.sortBtn}>
           <Text style={styles.sortText}>Sort</Text>
           <Ionicons name="chevron-down" size={14} color={"#fefbea"} />
@@ -78,7 +90,7 @@ export default function Friends() {
       Deals with the friends cards and the list of the friends cards
       */}
       <FlatList
-        data={friends}
+        data={filteredFriends}
         keyExtractor={(item) => String(item.user_id)}
         contentContainerStyle={styles.list}
         // Handling if user has no friends/if not data fetched from DB
