@@ -11,18 +11,23 @@ import {
   Alert,
   Image,
   Keyboard,
+  NativeSyntheticEvent,
   Pressable,
   ScrollView,
   StyleSheet,
   Switch,
+  TargetedEvent,
   Text,
   TextInput,
   View,
 } from "react-native";
+import { GooglePlacesAutocomplete } from "react-native-google-places-autocomplete";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function MakePin() {
+  console.log(process.env.EXPO_PUBLIC_GOOGLE_PLACES_KEY);
+
   const router = useRouter();
   const {
     pinId,
@@ -607,20 +612,32 @@ export default function MakePin() {
                       <Text style={styles.errorText}>{nameError}</Text>
                     ) : null}
 
-                    <TextInput
-                      style={[
-                        styles.input,
-                        addressError ? styles.inputError : null,
-                      ]}
+                    <GooglePlacesAutocomplete
                       placeholder="Address"
-                      placeholderTextColor="#aaaaaa"
-                      value={address}
-                      onChangeText={handleAddressChange}
-                      maxLength={ADDRESS_MAX + 1}
-                      onFocus={(event) =>
-                        scrollRef.current?.scrollToFocusedInput(event.target)
-                      }
+                      fetchDetails={true}
+                      onPress={(data, details = null) => {
+                        const address = data.description;
+                        handleAddressChange(address);
+                      }}
+                      query={{
+                        key: process.env.EXPO_PUBLIC_GOOGLE_PLACES_KEY,
+                        language: "en",
+                      }}
+                      textInputProps={{
+                        placeholderTextColor: "#aaaaaa",
+                        value: address,
+                        onChangeText: handleAddressChange,
+                        maxLength: ADDRESS_MAX + 1,
+                        onFocus: (event: NativeSyntheticEvent<TargetedEvent>) =>
+                          scrollRef.current?.scrollToFocusedInput(event.target),
+                        style: [
+                          styles.input,
+                          addressError ? styles.inputError : null,
+                        ],
+                      }}
+                      styles={addressInputStyles}
                     />
+
                     {addressError ? (
                       <Text style={styles.errorText}>{addressError}</Text>
                     ) : null}
@@ -769,6 +786,40 @@ export default function MakePin() {
     </View>
   );
 }
+
+const addressInputStyles = {
+  container: {
+    flex: 0,
+  },
+  textInputContainer: {
+    backgroundColor: "transparent",
+    borderWidth: 0,
+    padding: 0,
+    margin: 0,
+    width: "100%",
+  },
+  textInput: {
+    flex: 1,
+    height: undefined,
+    borderRadius: 0,
+    paddingVertical: 0,
+    paddingHorizontal: 0,
+    fontSize: undefined,
+    backgroundColor: "transparent",
+    margin: 0,
+    width: "100%",
+  },
+  listView: {
+    borderWidth: 1,
+    borderColor: "#dddddd",
+    borderRadius: 8,
+    marginTop: 4,
+  },
+  row: {
+    backgroundColor: "#ffffff",
+    padding: 13,
+  },
+};
 
 const styles = StyleSheet.create({
   container: {
