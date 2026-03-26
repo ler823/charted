@@ -5,6 +5,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Stars } from "@/components/light-stars";
 
 type Friend = {
   user_id: number;
@@ -101,12 +102,22 @@ export default function FriendProfilePage() {
             <View style={[styles.infoWindow, {width: "42%", alignItems: "center"}]}>
               <Text style={styles.subHeader}>Favorite</Text>
               <View style={styles.statsWindows}></View>
-              <View style={styles.statsBar}></View>
+              <View style={styles.statsBar}>
+                <View style={{flexDirection: "row", gap: 1, justifyContent: "center"}}>
+                  <Stars starnum={4}/>
+                </View>
+              </View>
             </View>
             <View style={[styles.infoWindow, {width: "42%", alignItems: "center"}]}>
               <Text style={styles.subHeader}>Top Visited</Text>
               <View style={styles.statsWindows}></View>
-              <View style={styles.statsBar}></View>
+              <View style={styles.statsBar}>
+                <Text style={{ fontFamily: Fonts.regular, fontSize: 16, color: "#fefbea", marginHorizontal: 7, flexShrink: 1 }}
+                      numberOfLines={1}
+                      ellipsizeMode="tail">
+                  15 Visits
+                </Text>
+              </View>
             </View>
           </View>
         </View>
@@ -114,27 +125,51 @@ export default function FriendProfilePage() {
         {/* Activity */}
         <View style={styles.infoBox}>
           <Text style={styles.header}>Recent Activity</Text>
-          <View style={styles.infoWindow}>
+          <View style={[styles.infoWindow, {justifyContent: "center"}]}>
             <View style={styles.activityRow}>
               <View style={styles.locAvatar} />
+              <Text style={{ fontFamily: Fonts.bold, fontSize: 14, marginLeft: 13 }} >Visited: </Text>
+                <Text style={{ fontFamily: Fonts.regular, fontSize: 14, flexShrink: 1, marginRight: 13 }}
+                      numberOfLines={1}
+                      ellipsizeMode="tail">
+                  University Student Union
+                </Text>
             </View>
             <View
               style={{
-                borderBottomColor: "#243e36",
-                borderBottomWidth: StyleSheet.hairlineWidth,
+                height: 1,
+                width: "75%",
+                marginLeft: 30,
+                backgroundColor: "#7ca982",
+                marginVertical: 5,
               }}
             />
             <View style={styles.activityRow}>
               <View style={styles.locAvatar} />
+              <Text style={{ fontFamily: Fonts.bold, fontSize: 14, marginLeft: 13 }} >Friend Added: </Text>
+              <Text style={{ fontFamily: Fonts.regular, fontSize: 14, flexShrink: 1, marginRight: 13 }}
+                    numberOfLines={1}
+                    ellipsizeMode="tail">
+                OliverCJ
+              </Text>
             </View>
             <View
               style={{
-                borderBottomColor: "#243e36",
-                borderBottomWidth: StyleSheet.hairlineWidth,
+                height: 1,
+                width: "75%",
+                marginLeft: 30,
+                backgroundColor: "#7ca982",
+                marginVertical: 5,
               }}
             />
             <View style={styles.activityRow}>
               <View style={styles.locAvatar} />
+              <Text style={{ fontFamily: Fonts.bold, fontSize: 14, marginLeft: 13 }} >New Pin: </Text>
+              <Text style={{ fontFamily: Fonts.regular, fontSize: 14, flexShrink: 1, marginRight: 13 }}
+                    numberOfLines={1}
+                    ellipsizeMode="tail">
+                DoLy's Delectables
+              </Text>
             </View>
           </View>
         </View>
@@ -234,8 +269,7 @@ const styles = StyleSheet.create({
   activityRow: {
     flexDirection: "row",
     alignItems: "center",
-    height: "33.3%",
-    width: "90%",
+    width: "93%",
   },
   infoBox: {
     alignItems: "center",
@@ -303,5 +337,6 @@ const styles = StyleSheet.create({
     marginTop: 118,
     marginLeft: -2,
     borderTopRightRadius: 12,
+    justifyContent: "center"
   },
 });
