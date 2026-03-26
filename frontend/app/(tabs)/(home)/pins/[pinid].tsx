@@ -7,6 +7,7 @@ import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 //import { AutoSkeletonView } from "react-native-auto-skeleton";
+import { getPhotoUrl } from "@/app/make-pin";
 import LoadingPage from "@/components/loading-page";
 
 
@@ -56,6 +57,7 @@ export default function PinPage() {
   const [pin, setPin] = useState<Pin | null>(null);
   const [friends, setFriends] = useState<Friend[] | null>([]);
   const [isEnabled, setIsEnabled] = useState(false);
+  const [coverPhoto, setCoverPhoto] = useState("")
   const toggleSwitch = () => setIsEnabled(previousState => !previousState);
 
   useFocusEffect(
@@ -75,8 +77,25 @@ export default function PinPage() {
           return;
         }
         setPin(data as Pin);
+        getUrl(data as Pin);
+      }
+
+      async function getUrl(myPin: Pin) {
+        if (myPin == null) {
+          console.log("nulled out")
+          return;
+        }
+        if (myPin.pin_photos[0] == null) {
+          return;
+        }
+        if (myPin.pin_photos[0].photos.key == "") {
+          return;
+        }
+        let uri = await getPhotoUrl(myPin.pin_photos[0].photos.key)
+        setCoverPhoto(uri)
       }
       fetchPin();
+      console.log("Got here between fxns")
     }, [pinid])
   );
 
@@ -91,7 +110,9 @@ export default function PinPage() {
         return;
       }
     }
+
     fetchUsers();
+
   }, []);
 
   if (!pin || !friends) {
@@ -103,11 +124,11 @@ export default function PinPage() {
       <ScrollView>
         {/* Image */}
 
-        {!pin.pin_photos?.photos?.key && (
+        {coverPhoto == "" && (
           <Image source={require("@/assets/images/no_image_default.png")} style={styles.img} placeholder="blur" />
         )}
-        {pin.pin_photos?.photos?.key && (
-          <Image source={{ uri: pin.pin_photos?.photos?.key! }} style={styles.img} placeholder="blur" />
+        {coverPhoto != "" && (
+          <Image source={{ uri: coverPhoto }} style={styles.img} placeholder="blur" cachePolicy={"disk"} />
         )}
 
         <View style={{ marginHorizontal: 16 }}>

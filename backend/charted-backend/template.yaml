@@ -41,8 +41,28 @@ Resources:
           Properties:
             Path: /uploadphotourl
             Method: post
+  DownloadPhotoUrl:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: download_photo_url/
+      Handler: app.lambda_handler
+      Runtime: python3.14
+      Architectures:
+        - arm64
+      Policies:
+        - S3ReadPolicy:
+            BucketName: !Ref ChartedPhotoBucket
+      Events:
+        GenerateUploadPhotoUrl:
+          Type: HttpApi
+          Properties:
+            Path: /downloadphotourl
+            Method: post
 
 Outputs:
   UploadPhotoUrlApi:
-    Description: "API Gateway endpoint URL for Prod stage for Get Pin function"
+    Description: "API Gateway endpoint URL for Upload Photo URL function"
     Value: !Sub "https://${ServerlessHttpApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/uploadphotourl"
+  DownloadPhotoUrlApi:
+    Description: "API Gateway endpoint URL for Download Photo URL function"
+    Value: !Sub "https://${ServerlessHttpApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/downloadphotourl"

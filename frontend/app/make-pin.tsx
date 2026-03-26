@@ -24,6 +24,22 @@ import {
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+export async function getPhotoUrl(key: string) {
+  const res = await fetch(
+    "https://4nm4iifq65.execute-api.us-east-2.amazonaws.com/downloadphotourl",
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ key }),
+    }
+  );
+
+  const { url } = await res.json();
+  return url;
+}
+
 export default function MakePin() {
   const router = useRouter();
   const {
@@ -68,8 +84,13 @@ export default function MakePin() {
   const [privacyDescription, setPrivacyDescription] =
     useState(publicDescription);
   const [notesHeight, setNotesHeight] = useState(100);
+  const [photoChanged, setPhotoChanged] = useState(false)
   const scrollRef = React.useRef<KeyboardAwareScrollView>(null);
-
+  let originalName = ""
+  let originalAddress = ""
+  let originalRating = 0
+  let originalNotes = ""
+  let originalPrivacy = false
   let inserted_pin_id = 0;
 
   const togglePrivacy = () => {
@@ -114,16 +135,6 @@ export default function MakePin() {
   };
 
   const createPin = async () => {
-    // if (!name || !address) {
-    //   Alert.alert("Missing fields", "Please fill in name and address.");
-    //   return;
-    // }
-    // if (name.length > 100) {
-    //   Alert.alert("Invalid name", "Name cannot be more than 100 characters");
-    //   return;
-    // }
-    console.log("this ran");
-
     const nameInvalid = !name.trim() || name.length > NAME_MAX;
     const addressInvalid = address.length > ADDRESS_MAX;
 
@@ -156,7 +167,9 @@ export default function MakePin() {
     inserted_pin_id = data;
     await savePinTags();
     await saveVisits(inserted_pin_id);
-    await uploadPhoto();
+    if (photoChanged) {
+      await uploadPhoto();
+    }
     router.back();
     return;
   };
@@ -183,8 +196,6 @@ export default function MakePin() {
 
     if (!result.canceled) {
       return result;
-    } else {
-      alert('You did not select any image.');
     }
   };
 
@@ -193,7 +204,8 @@ export default function MakePin() {
     if (!result) return;
     const uri = result!.assets[0].uri;
     const processedImage = await processImage(uri);
-    setCoverPhoto(processedImage.uri)
+    setCoverPhoto(processedImage.uri);
+    setPhotoChanged(true);
   };
 
   const uploadPhoto = async () => {
@@ -239,6 +251,11 @@ export default function MakePin() {
       Alert.alert("Error", pinPhotoError.message);
     }
   }
+
+  const loadPhoto = async (key: string) => {
+    const signedUrl = await getPhotoUrl(key);
+    setCoverPhoto(signedUrl);
+  };
 
   const getUserTags = async () => {
     const { data, error } = await supabase
@@ -421,16 +438,41 @@ export default function MakePin() {
       (visit: { visit_timestamp: string }) => visit.visit_timestamp,
     );
 
+    const { data: coverPhotoData, error: coverPhotoError } = await supabase
+      .from("pin_photos")
+      .select(`
+      photos (
+      key
+    )`)
+      .eq("pin_id", Number(pinId))
+      .eq("cover", true)
+      .maybeSingle()
+
+    if (coverPhotoError) {
+      Alert.alert("Error", coverPhotoError.message);
+      return;
+    }
+    if (coverPhotoData == null) {
+      console.log("Got here")
+    }
+    else {
+      await loadPhoto(coverPhotoData!.photos.key)
+    }
     setName(pinData[0].name);
+    originalName = pinData[0].name;
     setAddress(pinData[0].address);
+    originalAddress = pinData[0].address
     setRating(pinData[0].user_rating);
+    originalRating = pinData[0].user_rating;
     setNotes(pinData[0].user_note);
+    originalNotes = pinData[0].user_note
+    setIsPrivate(pinData[0].private);
+    originalPrivacy = pinData[0].private;
     setLat(locData[0].latitude.toString() ?? "");
     setLng(locData[0].longitude.toString() ?? "");
     setSelectedTags(loadedSelectedTags);
     setVisits(loadedVisits);
     setOriginalVisits(loadedVisits);
-    setIsPrivate(pinData[0].private);
   };
 
   const updatePinTags = async () => {
@@ -519,6 +561,22 @@ export default function MakePin() {
   };
 
   const updatePin = async () => {
+    var updateObject = {}
+    if (name != originalName) {
+      updateObject = {...updateObject, name: name}
+    }
+    if (address != originalAddress) {
+      updateObject = {...updateObject, address: address}
+    }
+    if (rating != originalRating) {
+      updateObject = {...updateObject, rating: rating}
+    }
+    if (notes != originalNotes) {
+      updateObject = {...updateObject, notes: notes}
+    }
+    if (isPrivate != originalPrivacy) {
+      updateObject = {...updateObject, private: isPrivate}
+    }
     const { error } = await supabase
       .from("pins")
       .update({
@@ -537,6 +595,9 @@ export default function MakePin() {
 
     await updatePinTags();
     await saveVisits(Number(pinId));
+    if (photoChanged) {
+      uploadPhoto()
+    }
     router.back();
   };
 
