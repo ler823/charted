@@ -57,7 +57,7 @@ export default function PinPage() {
   const [pin, setPin] = useState<Pin | null>(null);
   const [friends, setFriends] = useState<Friend[] | null>([]);
   const [isEnabled, setIsEnabled] = useState(false);
-  const [coverPhoto, setCoverPhoto] = useState("")
+  const [coverPhoto, setCoverPhoto] = useState<string | null>(null);
   const toggleSwitch = () => setIsEnabled(previousState => !previousState);
 
   useFocusEffect(
@@ -82,20 +82,21 @@ export default function PinPage() {
 
       async function getUrl(myPin: Pin) {
         if (myPin == null) {
-          console.log("nulled out")
+          setCoverPhoto("")
           return;
         }
         if (myPin.pin_photos[0] == null) {
+          setCoverPhoto("")
           return;
         }
         if (myPin.pin_photos[0].photos.key == "") {
+          setCoverPhoto("")
           return;
         }
         let uri = await getPhotoUrl(myPin.pin_photos[0].photos.key)
         setCoverPhoto(uri)
       }
       fetchPin();
-      console.log("Got here between fxns")
     }, [pinid])
   );
 
@@ -115,7 +116,7 @@ export default function PinPage() {
 
   }, []);
 
-  if (!pin || !friends) {
+  if (!pin || !friends || coverPhoto == null) {
     return <LoadingPage />
   }
 
@@ -124,12 +125,17 @@ export default function PinPage() {
       <ScrollView>
         {/* Image */}
 
-        {coverPhoto == "" && (
-          <Image source={require("@/assets/images/no_image_default.png")} style={styles.img} placeholder="blur" />
-        )}
-        {coverPhoto != "" && (
-          <Image source={{ uri: coverPhoto }} style={styles.img} placeholder="blur" cachePolicy={"disk"} />
-        )}
+        <Image
+          source={
+            coverPhoto
+              ? { uri: coverPhoto }
+              : require("@/assets/images/no_image_default.png")
+          }
+          style={styles.img}
+          transition={500}
+          placeholder={require("@/assets/images/no_image_default.png")}
+          placeholderContentFit="cover"
+        />
 
         <View style={{ marginHorizontal: 16 }}>
           {/* Title */}
