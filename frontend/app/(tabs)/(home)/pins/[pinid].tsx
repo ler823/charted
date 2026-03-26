@@ -133,7 +133,7 @@ export default function PinPage() {
           }
           style={styles.img}
           transition={500}
-          placeholder={require("@/assets/images/no_image_default.png")}
+          placeholder={"blur"}
           placeholderContentFit="cover"
         />
 

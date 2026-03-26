@@ -5,13 +5,13 @@ import { PressableStars } from "@/components/pressable-stars";
 import { Colors, Fonts } from "@/constants/theme";
 import { supabase } from "@/lib/supabase";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { Image } from "expo-image";
 import * as ImageManipulator from 'expo-image-manipulator';
 import * as ImagePicker from 'expo-image-picker';
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
   Alert,
-  Image,
   Keyboard,
   Pressable,
   ScrollView,
@@ -708,7 +708,7 @@ export default function MakePin() {
                     onPress={handlePickPhoto}
                   >
                     {coverPhoto ? (
-                      <Image source={{ uri: coverPhoto }} style={styles.photo} />
+                      <Image source={{ uri: coverPhoto }} style={styles.photo} transition={500} />
                     ) : (
                       <MaterialCommunityIcons
                         name="camera-plus"
