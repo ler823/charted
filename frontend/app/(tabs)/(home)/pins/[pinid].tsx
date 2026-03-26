@@ -52,7 +52,7 @@ type Pin = {
 
 
 export default function PinPage() {
-  const { pinid, viewMode } = useLocalSearchParams();
+  const { pinid, viewMode, refresh } = useLocalSearchParams();
 
   const [pin, setPin] = useState<Pin | null>(null);
   const [friends, setFriends] = useState<Friend[] | null>([]);
@@ -62,7 +62,9 @@ export default function PinPage() {
 
   useFocusEffect(
     useCallback(() => {
+      const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
       async function fetchPin() {
+        sleep(500);
         const { data, error } = await supabase
           .from("pins")
           .select(`*,
@@ -97,7 +99,7 @@ export default function PinPage() {
         setCoverPhoto(uri)
       }
       fetchPin();
-    }, [pinid])
+    }, [pinid, refresh])
   );
 
   useEffect(() => {

@@ -1,6 +1,7 @@
 import AddTagOrList from "@/components/add-tag";
 import AddVisit from "@/components/add-visit";
 import LoadingPage from "@/components/loading-page";
+import PhotoModal from "@/components/photo-modal";
 import { PressableStars } from "@/components/pressable-stars";
 import { Colors, Fonts } from "@/constants/theme";
 import { supabase } from "@/lib/supabase";
@@ -66,13 +67,14 @@ export default function MakePin() {
   const ADDRESS_MAX = 100;
   const [nameError, setNameError] = useState("");
   const [addressError, setAddressError] = useState("");
-  const [coverPhoto, setCoverPhoto] = useState("");
+  const [coverPhotoUrl, setCoverPhotoUrl] = useState("");
+  const [coverPhotoKey, setCoverPhotoKey] = useState("");
   const [rating, setRating] = useState(0);
   const [notes, setNotes] = useState("");
   const [tags, setTags] = useState<string[]>([]);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const [modalVisible, setAddTagVisible] = useState(false);
-  const [modalVisitVisible, setAddVisitVisible] = useState(false);
+  const [addTagVisible, setAddTagVisible] = useState(false);
+  const [addVisitVisible, setAddVisitVisible] = useState(false);
   const [visits, setVisits] = useState<string[]>([]);
   const [newVisit, setNewVisit] = useState("");
   const [originalVisits, setOriginalVisits] = useState<string[]>([]);
@@ -84,7 +86,9 @@ export default function MakePin() {
   const [privacyDescription, setPrivacyDescription] =
     useState(publicDescription);
   const [notesHeight, setNotesHeight] = useState(100);
-  const [photoChanged, setPhotoChanged] = useState(false)
+  const [photoChanged, setPhotoChanged] = useState(false);
+  const [photoModalVisible, setPhotoModalVisible] = useState(false)
+  const [saveUpdateInitiated, setSaveUpdateInitiated] = useState(false)
   const scrollRef = React.useRef<KeyboardAwareScrollView>(null);
   let originalName = ""
   let originalAddress = ""
@@ -135,6 +139,10 @@ export default function MakePin() {
   };
 
   const createPin = async () => {
+    if (saveUpdateInitiated) {
+      return;
+    }
+    setSaveUpdateInitiated(true)
     const nameInvalid = !name.trim() || name.length > NAME_MAX;
     const addressInvalid = address.length > ADDRESS_MAX;
 
@@ -199,17 +207,61 @@ export default function MakePin() {
     }
   };
 
-  const handlePickPhoto = async () => {
+  const handleChooseFromLibrary = async () => {
     const result = await pickImageAsync();
+    setPhotoModalVisible(false)
     if (!result) return;
     const uri = result!.assets[0].uri;
     const processedImage = await processImage(uri);
-    setCoverPhoto(processedImage.uri);
+    setCoverPhotoUrl(processedImage.uri);
     setPhotoChanged(true);
   };
 
+  const handleDeletePhoto = async () => {
+    setPhotoModalVisible(false);
+    if (coverPhotoUrl == "") {
+      return;
+    }
+
+    const { data, error: deletePhotoError } = await supabase
+      .from("photos")
+      .delete()
+      .eq("key", coverPhotoKey)
+      .select("photo_id")
+      .single();
+
+    if (deletePhotoError) {
+      Alert.alert("Error", deletePhotoError.message);
+    }
+
+    const res = await fetch(
+      "https://4nm4iifq65.execute-api.us-east-2.amazonaws.com/deletephotourl",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ key: coverPhotoKey }),
+      }
+    );
+
+    const { url } = await res.json();
+    if (!url) {
+      console.log("No URL returned");
+      return;
+    }
+    const deleteRes = await fetch(url, {
+      method: "DELETE"
+    })
+    if (!deleteRes.ok) {
+      console.log("S3 delete failed")
+    }
+    setCoverPhotoUrl("")
+    setCoverPhotoKey("")
+  }
+
   const uploadPhoto = async () => {
-    const imageFile = await fetch(coverPhoto)
+    const imageFile = await fetch(coverPhotoUrl)
     const imageFileBlob = await imageFile.blob();
     const res = await fetch('https://4nm4iifq65.execute-api.us-east-2.amazonaws.com/uploadphotourl', {
       method: "POST",
@@ -242,7 +294,7 @@ export default function MakePin() {
     const { error: pinPhotoError } = await supabase
       .from("pin_photos")
       .insert({
-        pin_id: inserted_pin_id,
+        pin_id: (inserted_pin_id == 0) ? pinId : inserted_pin_id,
         photo_id: data!.photo_id,
         cover: true,
       })
@@ -254,7 +306,8 @@ export default function MakePin() {
 
   const loadPhoto = async (key: string) => {
     const signedUrl = await getPhotoUrl(key);
-    setCoverPhoto(signedUrl);
+    setCoverPhotoUrl(signedUrl);
+    setCoverPhotoKey(key)
   };
 
   const getUserTags = async () => {
@@ -561,21 +614,25 @@ export default function MakePin() {
   };
 
   const updatePin = async () => {
+    if (saveUpdateInitiated) {
+      return;
+    }
+    setSaveUpdateInitiated(true)
     var updateObject = {}
     if (name != originalName) {
-      updateObject = {...updateObject, name: name}
+      updateObject = { ...updateObject, name: name }
     }
     if (address != originalAddress) {
-      updateObject = {...updateObject, address: address}
+      updateObject = { ...updateObject, address: address }
     }
     if (rating != originalRating) {
-      updateObject = {...updateObject, rating: rating}
+      updateObject = { ...updateObject, rating: rating }
     }
     if (notes != originalNotes) {
-      updateObject = {...updateObject, notes: notes}
+      updateObject = { ...updateObject, notes: notes }
     }
     if (isPrivate != originalPrivacy) {
-      updateObject = {...updateObject, private: isPrivate}
+      updateObject = { ...updateObject, private: isPrivate }
     }
     const { error } = await supabase
       .from("pins")
@@ -596,7 +653,7 @@ export default function MakePin() {
     await updatePinTags();
     await saveVisits(Number(pinId));
     if (photoChanged) {
-      uploadPhoto()
+      await uploadPhoto()
     }
     router.back();
   };
@@ -705,10 +762,10 @@ export default function MakePin() {
                 <View style={styles.shadowWrapper}>
                   <Pressable
                     style={styles.photoInput}
-                    onPress={handlePickPhoto}
+                    onPress={() => setPhotoModalVisible(true)}
                   >
-                    {coverPhoto ? (
-                      <Image source={{ uri: coverPhoto }} style={styles.photo} transition={500} />
+                    {coverPhotoUrl ? (
+                      <Image source={{ uri: coverPhotoUrl }} style={styles.photo} transition={500} />
                     ) : (
                       <MaterialCommunityIcons
                         name="camera-plus"
@@ -718,6 +775,12 @@ export default function MakePin() {
                     )}
                   </Pressable>
                 </View>
+                <PhotoModal
+                  isVisible={photoModalVisible}
+                  onClose={() => setPhotoModalVisible(false)}
+                  onChooseFromLibrary={handleChooseFromLibrary}
+                  onDelete={handleDeletePhoto}
+                />
                 <View style={styles.fields}>
                   <View style={styles.fields}>
                     <TextInput
@@ -841,7 +904,7 @@ export default function MakePin() {
                   </Pressable>
                 ))}
                 <AddTagOrList
-                  isVisible={modalVisible}
+                  isVisible={addTagVisible}
                   onClose={() => setAddTagVisible(false)}
                   onSave={addTag}
                   newTag={newTag}
@@ -873,7 +936,7 @@ export default function MakePin() {
                   })}
                 </ScrollView>
                 <AddVisit
-                  isVisible={modalVisitVisible}
+                  isVisible={addVisitVisible}
                   onClose={() => setAddVisitVisible(false)}
                   onSave={addVisit}
                   newVisit={newVisit}

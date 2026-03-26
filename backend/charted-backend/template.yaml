@@ -53,10 +53,27 @@ Resources:
         - S3ReadPolicy:
             BucketName: !Ref ChartedPhotoBucket
       Events:
-        GenerateUploadPhotoUrl:
+        GenerateDownloadPhotoUrl:
           Type: HttpApi
           Properties:
             Path: /downloadphotourl
+            Method: post
+  DeletePhotoUrl:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: delete_photo_url/
+      Handler: app.lambda_handler
+      Runtime: python3.14
+      Architectures:
+        - arm64
+      Policies:
+        - S3CrudPolicy:
+            BucketName: !Ref ChartedPhotoBucket
+      Events:
+        GenerateDeletePhotoUrl:
+          Type: HttpApi
+          Properties:
+            Path: /deletephotourl
             Method: post
 
 Outputs:
@@ -66,3 +83,6 @@ Outputs:
   DownloadPhotoUrlApi:
     Description: "API Gateway endpoint URL for Download Photo URL function"
     Value: !Sub "https://${ServerlessHttpApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/downloadphotourl"
+  DeletePhotoUrlApi:
+    Description: "API Gateway endpoint URL for Delete Photo URL function"
+    Value: !Sub "https://${ServerlessHttpApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/deletephotourl"
