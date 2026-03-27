@@ -52,7 +52,7 @@ type Pin = {
 
 
 export default function PinPage() {
-  const { pinid, viewMode, refresh } = useLocalSearchParams();
+  const { pinid, viewMode } = useLocalSearchParams();
 
   const [pin, setPin] = useState<Pin | null>(null);
   const [friends, setFriends] = useState<Friend[] | null>([]);
@@ -95,11 +95,12 @@ export default function PinPage() {
           setCoverPhoto("")
           return;
         }
-        let uri = await getPhotoUrl(myPin.pin_photos[0].photos.key)
+        let uri = await getPhotoUrl([myPin.pin_photos[0].photos.key])
+        uri = uri[0].url
         setCoverPhoto(uri)
       }
       fetchPin();
-    }, [pinid, refresh])
+    }, [pinid])
   );
 
   useEffect(() => {

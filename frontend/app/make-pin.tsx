@@ -25,7 +25,8 @@ import {
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-export async function getPhotoUrl(key: string) {
+export async function getPhotoUrl(keys: string[]) {
+  console.log(keys)
   const res = await fetch(
     "https://4nm4iifq65.execute-api.us-east-2.amazonaws.com/downloadphotourl",
     {
@@ -33,12 +34,13 @@ export async function getPhotoUrl(key: string) {
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ key }),
+      body: JSON.stringify({ keys }),
     }
   );
 
-  const { url } = await res.json();
-  return url;
+  const { urls } = await res.json();
+  console.log(urls)
+  return urls;
 }
 
 export default function MakePin() {
@@ -86,9 +88,10 @@ export default function MakePin() {
   const [privacyDescription, setPrivacyDescription] =
     useState(publicDescription);
   const [notesHeight, setNotesHeight] = useState(100);
-  const [photoChanged, setPhotoChanged] = useState(false);
+  const [coverPhotoChanged, setCoverPhotoChanged] = useState(false);
   const [photoModalVisible, setPhotoModalVisible] = useState(false)
   const [saveUpdateInitiated, setSaveUpdateInitiated] = useState(false)
+  const [photoList, setPhotoList] = useState<string[]>([]);
   const scrollRef = React.useRef<KeyboardAwareScrollView>(null);
   let originalName = ""
   let originalAddress = ""
@@ -175,8 +178,8 @@ export default function MakePin() {
     inserted_pin_id = data;
     await savePinTags();
     await saveVisits(inserted_pin_id);
-    if (photoChanged) {
-      await uploadPhoto();
+    if (coverPhotoChanged) {
+      await uploadPhoto(true);
     }
     router.back();
     return;
@@ -214,19 +217,26 @@ export default function MakePin() {
     const uri = result!.assets[0].uri;
     const processedImage = await processImage(uri);
     setCoverPhotoUrl(processedImage.uri);
-    setPhotoChanged(true);
+    setCoverPhotoChanged(true);
   };
 
-  const handleDeletePhoto = async () => {
+  const handleDeletePhoto = async (key: string, cover: boolean) => {
+    deletePhoto(coverPhotoKey);
+    if (cover) {
+      setCoverPhotoUrl("")
+      setCoverPhotoKey("")
+    }
+  }
+
+  const deletePhoto = async (key: string) => {
     setPhotoModalVisible(false);
     if (coverPhotoUrl == "") {
       return;
     }
-
     const { data, error: deletePhotoError } = await supabase
       .from("photos")
       .delete()
-      .eq("key", coverPhotoKey)
+      .eq("key", key)
       .select("photo_id")
       .single();
 
@@ -241,7 +251,7 @@ export default function MakePin() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ key: coverPhotoKey }),
+        body: JSON.stringify({ key: key }),
       }
     );
 
@@ -256,11 +266,9 @@ export default function MakePin() {
     if (!deleteRes.ok) {
       console.log("S3 delete failed")
     }
-    setCoverPhotoUrl("")
-    setCoverPhotoKey("")
   }
 
-  const uploadPhoto = async () => {
+  const uploadPhoto = async (cover: boolean) => {
     const imageFile = await fetch(coverPhotoUrl)
     const imageFileBlob = await imageFile.blob();
     const res = await fetch('https://4nm4iifq65.execute-api.us-east-2.amazonaws.com/uploadphotourl', {
@@ -279,6 +287,10 @@ export default function MakePin() {
       },
       body: imageFileBlob,
     })
+
+    if (!response.ok) {
+      console.log("Something went wrong when uploading")
+    }
     const { data, error: addPhotoError } = await supabase
       .from("photos")
       .insert({
@@ -296,7 +308,7 @@ export default function MakePin() {
       .insert({
         pin_id: (inserted_pin_id == 0) ? pinId : inserted_pin_id,
         photo_id: data!.photo_id,
-        cover: true,
+        cover: cover,
       })
 
     if (pinPhotoError) {
@@ -304,10 +316,14 @@ export default function MakePin() {
     }
   }
 
-  const loadPhoto = async (key: string) => {
-    const signedUrl = await getPhotoUrl(key);
-    setCoverPhotoUrl(signedUrl);
-    setCoverPhotoKey(key)
+  const loadPhoto = async (key: string, cover: boolean) => {
+    console.log([key])
+    let signedUrl = await getPhotoUrl([key]);
+    signedUrl = signedUrl[0].url;
+    if (cover) {
+      setCoverPhotoUrl(signedUrl);
+      setCoverPhotoKey(key)
+    }
   };
 
   const getUserTags = async () => {
@@ -509,7 +525,7 @@ export default function MakePin() {
       console.log("Got here")
     }
     else {
-      await loadPhoto(coverPhotoData!.photos.key)
+      await loadPhoto(coverPhotoData!.photos.key, true)
     }
     setName(pinData[0].name);
     originalName = pinData[0].name;
@@ -652,8 +668,8 @@ export default function MakePin() {
 
     await updatePinTags();
     await saveVisits(Number(pinId));
-    if (photoChanged) {
-      await uploadPhoto()
+    if (coverPhotoChanged) {
+      await uploadPhoto(true);
     }
     router.back();
   };
@@ -779,7 +795,7 @@ export default function MakePin() {
                   isVisible={photoModalVisible}
                   onClose={() => setPhotoModalVisible(false)}
                   onChooseFromLibrary={handleChooseFromLibrary}
-                  onDelete={handleDeletePhoto}
+                  onDelete={() => handleDeletePhoto(coverPhotoKey, true)}
                 />
                 <View style={styles.fields}>
                   <View style={styles.fields}>
@@ -942,6 +958,22 @@ export default function MakePin() {
                   newVisit={newVisit}
                   setNewVisit={setNewVisit}
                 />
+              </View>
+
+              <View style={styles.tagTitle}>
+                <Text style={styles.notesHeading}>Photos</Text>
+                <Pressable>
+                  <MaterialCommunityIcons
+                    name="plus-circle-outline"
+                    size={24}
+                    color="black"
+                    style={styles.addTags}
+                  />
+                </Pressable>
+              </View>
+              <View style={[styles.tagsContainer, { minHeight: 100 }]}>
+                <ScrollView horizontal>
+                </ScrollView>
               </View>
 
               {isEdit && (
