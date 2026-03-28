@@ -1020,14 +1020,14 @@ export default function MakePin() {
                   keyExtractor={(photo) => photo.key || photo.url}
                   renderItem={({ item }) => (
                     <Pressable onPress={() => setPhotoToDelete(item)}>
-                      <Image source={{ uri: item.url }} style={styles.photoCarousel} />
+                      <Image source={{ uri: item.url }} style={styles.photoCarousel} transition={500} />
                     </Pressable>
                   )}
                   ItemSeparatorComponent={() => <View style={{ width: 10 }} />}
                 />
               </View>
               <AddPhotoModal isVisible={addPhotoModalVisible} onClose={() => setAddPhotoModalVisible(false)} onChooseFromLibrary={() => handleChooseFromLibrary(false)} />
-              <DeletePhotoModal isVisible={!!photoToDelete} onClose={() => setDeletePhotoModalVisible(false)} onDelete={() => { if (photoToDelete) handleDeletePhoto(photoToDelete.key, photoToDelete.url, false); setPhotoToDelete(null) }} />
+              <DeletePhotoModal isVisible={!!photoToDelete} onClose={() => setPhotoToDelete(null)} onDelete={() => { if (photoToDelete) handleDeletePhoto(photoToDelete.key, photoToDelete.url, false); setPhotoToDelete(null) }} />
 
               {isEdit && (
                 <View style={{ alignSelf: "center" }}>

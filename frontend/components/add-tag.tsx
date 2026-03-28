@@ -72,6 +72,7 @@ const styles = StyleSheet.create({
   title: {
     color: '#000000',
     fontSize: 16,
+    fontFamily: Fonts.regular
   },
   modalOverlay: {
     flex: 1,
@@ -123,6 +124,7 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontWeight: "bold",
     fontSize: 16,
+    fontFamily: Fonts.bold
   },
   saveBtn: {
     padding: 16,
@@ -138,5 +140,6 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontWeight: "bold",
     fontSize: 16,
+    fontFamily: Fonts.bold
   },
 });

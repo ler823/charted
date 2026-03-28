@@ -1,4 +1,4 @@
-import { Colors } from "@/constants/theme";
+import { Colors, Fonts } from "@/constants/theme";
 import React, { PropsWithChildren } from 'react';
 import { Keyboard, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 
@@ -38,8 +38,8 @@ export default function AddPhotoModal({ isVisible, onClose, onChooseFromLibrary 
 
 const styles = StyleSheet.create({
   modalContent: {
-    height: '20%',
-    width: '90%',
+    height: 150,
+    width: 400,
     backgroundColor: '#ffffff',
     borderRadius: 18,
     paddingTop: 10,
@@ -50,7 +50,7 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
   },
   titleContainer: {
-    height: '16%',
+    height: 50,
     backgroundColor: '#ffffff',
     borderRadius: 10,
     paddingHorizontal: 20,
@@ -61,6 +61,7 @@ const styles = StyleSheet.create({
   title: {
     color: '#000000',
     fontSize: 16,
+    fontFamily: Fonts.regular
   },
   modalOverlay: {
     flex: 1,
@@ -100,6 +101,7 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontWeight: "bold",
     fontSize: 16,
+    fontFamily: Fonts.bold,
   },
   saveBtn: {
     padding: 16,
@@ -117,5 +119,6 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontWeight: "bold",
     fontSize: 16,
+    fontFamily: Fonts.bold,
   },
 });
