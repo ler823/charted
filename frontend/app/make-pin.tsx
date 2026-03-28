@@ -1,7 +1,9 @@
+import AddPhotoModal from "@/components/add-photo";
 import AddTagOrList from "@/components/add-tag";
 import AddVisit from "@/components/add-visit";
+import CoverPhotoModal from "@/components/cover-photo-modal";
+import DeletePhotoModal from "@/components/delete-photo";
 import LoadingPage from "@/components/loading-page";
-import PhotoModal from "@/components/photo-modal";
 import { PressableStars } from "@/components/pressable-stars";
 import { Colors, Fonts } from "@/constants/theme";
 import { supabase } from "@/lib/supabase";
@@ -13,6 +15,7 @@ import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
   Alert,
+  FlatList,
   Keyboard,
   Pressable,
   ScrollView,
@@ -25,8 +28,13 @@ import {
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+type PhotoItem = {
+  key: string,
+  url: string,
+  changed: boolean,
+};
+
 export async function getPhotoUrl(keys: string[]) {
-  console.log(keys)
   const res = await fetch(
     "https://4nm4iifq65.execute-api.us-east-2.amazonaws.com/downloadphotourl",
     {
@@ -39,7 +47,6 @@ export async function getPhotoUrl(keys: string[]) {
   );
 
   const { urls } = await res.json();
-  console.log(urls)
   return urls;
 }
 
@@ -89,9 +96,12 @@ export default function MakePin() {
     useState(publicDescription);
   const [notesHeight, setNotesHeight] = useState(100);
   const [coverPhotoChanged, setCoverPhotoChanged] = useState(false);
-  const [photoModalVisible, setPhotoModalVisible] = useState(false)
+  const [coverPhotoModalVisible, setCoverPhotoModalVisible] = useState(false)
+  const [addPhotoModalVisible, setAddPhotoModalVisible] = useState(false)
+  const [deletePhotoModalVisible, setDeletePhotoModalVisible] = useState(false)
   const [saveUpdateInitiated, setSaveUpdateInitiated] = useState(false)
-  const [photoList, setPhotoList] = useState<string[]>([]);
+  const [photoList, setPhotoList] = useState<PhotoItem[]>([]);
+  const [photoToDelete, setPhotoToDelete] = useState<PhotoItem | null>(null);
   const scrollRef = React.useRef<KeyboardAwareScrollView>(null);
   let originalName = ""
   let originalAddress = ""
@@ -179,7 +189,12 @@ export default function MakePin() {
     await savePinTags();
     await saveVisits(inserted_pin_id);
     if (coverPhotoChanged) {
-      await uploadPhoto(true);
+      await uploadPhoto(coverPhotoUrl, true);
+    }
+    for (const photo of photoList) {
+      if (photo.changed) {
+        await uploadPhoto(photo.url, false)
+      }
     }
     router.back();
     return;
@@ -210,18 +225,31 @@ export default function MakePin() {
     }
   };
 
-  const handleChooseFromLibrary = async () => {
+  const handleChooseFromLibrary = async (cover: boolean) => {
     const result = await pickImageAsync();
-    setPhotoModalVisible(false)
+    setCoverPhotoModalVisible(false);
+    setAddPhotoModalVisible(false);
     if (!result) return;
     const uri = result!.assets[0].uri;
     const processedImage = await processImage(uri);
-    setCoverPhotoUrl(processedImage.uri);
-    setCoverPhotoChanged(true);
+    if (cover) {
+      setCoverPhotoUrl(processedImage.uri);
+      setCoverPhotoChanged(true);
+    } else {
+      setPhotoList((prev) => [...prev, { key: "", url: processedImage.uri, changed: true }]);
+    }
   };
 
-  const handleDeletePhoto = async (key: string, cover: boolean) => {
-    deletePhoto(coverPhotoKey);
+  const handleDeletePhoto = async (key: string, url: string, cover: boolean) => {
+    if (key == "") {
+      //remove from the list
+      setPhotoList(photoList.filter((photo) => photo.url != url))
+    } else {
+      //remove from db
+      setPhotoList(photoList.filter((photo) => photo.url != url))
+      deletePhoto(key);
+    }
+
     if (cover) {
       setCoverPhotoUrl("")
       setCoverPhotoKey("")
@@ -229,7 +257,7 @@ export default function MakePin() {
   }
 
   const deletePhoto = async (key: string) => {
-    setPhotoModalVisible(false);
+    setCoverPhotoModalVisible(false);
     if (coverPhotoUrl == "") {
       return;
     }
@@ -268,8 +296,8 @@ export default function MakePin() {
     }
   }
 
-  const uploadPhoto = async (cover: boolean) => {
-    const imageFile = await fetch(coverPhotoUrl)
+  const uploadPhoto = async (photoUrl: string, cover: boolean) => {
+    const imageFile = await fetch(photoUrl)
     const imageFileBlob = await imageFile.blob();
     const res = await fetch('https://4nm4iifq65.execute-api.us-east-2.amazonaws.com/uploadphotourl', {
       method: "POST",
@@ -316,13 +344,15 @@ export default function MakePin() {
     }
   }
 
-  const loadPhoto = async (key: string, cover: boolean) => {
-    console.log([key])
-    let signedUrl = await getPhotoUrl([key]);
-    signedUrl = signedUrl[0].url;
+  const loadPhotos = async (keys: string[], cover: boolean) => {
+    let signedUrls = await getPhotoUrl(keys);
     if (cover) {
-      setCoverPhotoUrl(signedUrl);
-      setCoverPhotoKey(key)
+      let signedCoverPhotoUrl = signedUrls[0].url;
+      let coverPhotoKey = keys[0]
+      setCoverPhotoUrl(signedCoverPhotoUrl);
+      setCoverPhotoKey(coverPhotoKey)
+    } else {
+      setPhotoList(signedUrls)
     }
   };
 
@@ -507,25 +537,32 @@ export default function MakePin() {
       (visit: { visit_timestamp: string }) => visit.visit_timestamp,
     );
 
-    const { data: coverPhotoData, error: coverPhotoError } = await supabase
+    const { data: photoData, error: photoError } = await supabase
       .from("pin_photos")
       .select(`
       photos (
       key
-    )`)
+      ),
+      cover`)
       .eq("pin_id", Number(pinId))
-      .eq("cover", true)
-      .maybeSingle()
-
-    if (coverPhotoError) {
-      Alert.alert("Error", coverPhotoError.message);
-      return;
+    const coverPhoto = photoData?.find((photo) => photo.cover);
+    const otherPhotosTemp = photoData?.filter((photo) => !photo.cover);
+    const otherPhotos: PhotoItem[] = [];
+    otherPhotosTemp?.forEach((photo) => {
+      otherPhotos.push({
+        key: photo.photos.key,
+        url: "",
+        changed: false
+      })
+    });
+    if (coverPhoto) {
+      const coverKey = coverPhoto.photos.key;
+      setCoverPhotoKey(coverKey);
+      await loadPhotos([coverKey], true);
     }
-    if (coverPhotoData == null) {
-      console.log("Got here")
-    }
-    else {
-      await loadPhoto(coverPhotoData!.photos.key, true)
+    if (otherPhotos) {
+      const otherKeys = otherPhotos.flatMap((photo) => photo.key)
+      await loadPhotos(otherKeys, false)
     }
     setName(pinData[0].name);
     originalName = pinData[0].name;
@@ -669,7 +706,12 @@ export default function MakePin() {
     await updatePinTags();
     await saveVisits(Number(pinId));
     if (coverPhotoChanged) {
-      await uploadPhoto(true);
+      await uploadPhoto(coverPhotoUrl, true);
+    }
+    for (const photo of photoList) {
+      if (photo.changed) {
+        await uploadPhoto(photo.url, false)
+      }
     }
     router.back();
   };
@@ -778,7 +820,7 @@ export default function MakePin() {
                 <View style={styles.shadowWrapper}>
                   <Pressable
                     style={styles.photoInput}
-                    onPress={() => setPhotoModalVisible(true)}
+                    onPress={() => setCoverPhotoModalVisible(true)}
                   >
                     {coverPhotoUrl ? (
                       <Image source={{ uri: coverPhotoUrl }} style={styles.photo} transition={500} />
@@ -791,11 +833,11 @@ export default function MakePin() {
                     )}
                   </Pressable>
                 </View>
-                <PhotoModal
-                  isVisible={photoModalVisible}
-                  onClose={() => setPhotoModalVisible(false)}
-                  onChooseFromLibrary={handleChooseFromLibrary}
-                  onDelete={() => handleDeletePhoto(coverPhotoKey, true)}
+                <CoverPhotoModal
+                  isVisible={coverPhotoModalVisible}
+                  onClose={() => setCoverPhotoModalVisible(false)}
+                  onChooseFromLibrary={() => handleChooseFromLibrary(true)}
+                  onDelete={() => handleDeletePhoto(coverPhotoKey, "", true)}
                 />
                 <View style={styles.fields}>
                   <View style={styles.fields}>
@@ -962,7 +1004,7 @@ export default function MakePin() {
 
               <View style={styles.tagTitle}>
                 <Text style={styles.notesHeading}>Photos</Text>
-                <Pressable>
+                <Pressable onPress={() => setAddPhotoModalVisible(true)}>
                   <MaterialCommunityIcons
                     name="plus-circle-outline"
                     size={24}
@@ -972,9 +1014,20 @@ export default function MakePin() {
                 </Pressable>
               </View>
               <View style={[styles.tagsContainer, { minHeight: 100 }]}>
-                <ScrollView horizontal>
-                </ScrollView>
+                <FlatList
+                  horizontal
+                  data={photoList}
+                  keyExtractor={(photo) => photo.key || photo.url}
+                  renderItem={({ item }) => (
+                    <Pressable onPress={() => setPhotoToDelete(item)}>
+                      <Image source={{ uri: item.url }} style={styles.photoCarousel} />
+                    </Pressable>
+                  )}
+                  ItemSeparatorComponent={() => <View style={{ width: 10 }} />}
+                />
               </View>
+              <AddPhotoModal isVisible={addPhotoModalVisible} onClose={() => setAddPhotoModalVisible(false)} onChooseFromLibrary={() => handleChooseFromLibrary(false)} />
+              <DeletePhotoModal isVisible={!!photoToDelete} onClose={() => setDeletePhotoModalVisible(false)} onDelete={() => { if (photoToDelete) handleDeletePhoto(photoToDelete.key, photoToDelete.url, false); setPhotoToDelete(null) }} />
 
               {isEdit && (
                 <View style={{ alignSelf: "center" }}>
@@ -1230,4 +1283,9 @@ const styles = StyleSheet.create({
   inputError: {
     borderColor: Colors.light.error, // optional: highlight the border too
   },
+  photoCarousel: {
+    width: 90,
+    height: 90,
+    borderRadius: 12
+  }
 });

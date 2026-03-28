@@ -6,11 +6,10 @@ import { Keyboard, Modal, Pressable, StyleSheet, Text, View } from 'react-native
 type Props = PropsWithChildren<{
   isVisible: boolean;
   onClose: () => void;
-  onChooseFromLibrary: () => void;
   onDelete: () => void;
 }>;
 
-export default function PhotoModal({ isVisible, onClose, onChooseFromLibrary, onDelete }: Props) {
+export default function DeletePhotoModal({ isVisible, onClose, onDelete }: Props) {
   return (
     <View>
       <Modal animationType="fade" transparent={true} visible={isVisible}>
@@ -18,18 +17,15 @@ export default function PhotoModal({ isVisible, onClose, onChooseFromLibrary, on
           <Pressable onPress={Keyboard.dismiss} style={styles.dismissArea}>
             <View style={styles.modalContent}>
               <View style={styles.titleContainer}>
-                <Text style={styles.title}>Add a new photo</Text>
+                <Text style={styles.title}>Delete photo</Text>
               </View>
               
               <View style={styles.bottomButtons}>
-                <Pressable onPress={onDelete} style={styles.cancelBtn}>
-                  <Text style={styles.saveText}>Delete Photo</Text>
-                </Pressable>
-                <Pressable onPress={onChooseFromLibrary} style={styles.saveBtn}>
-                  <Text style={styles.saveText}>Choose from Library</Text>
-                </Pressable>
                 <Pressable onPress={onClose} style={styles.cancelBtn}>
                   <Text style={styles.cancelText}>Cancel</Text>
+                </Pressable>
+                <Pressable onPress={onDelete} style={styles.saveBtn}>
+                  <Text style={styles.saveText}>Delete</Text>
                 </Pressable>
               </View>
             </View>

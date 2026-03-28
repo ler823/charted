@@ -23,7 +23,8 @@ def lambda_handler(event, context):
             )
             urls.append({
                 "key": key,
-                "url": url
+                "url": url,
+                "changed": False
             })
 
         return {
