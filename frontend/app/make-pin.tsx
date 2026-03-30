@@ -27,6 +27,7 @@ import {
 } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { setPinChanged } from "./(tabs)/(home)/pins/pin_refresh_data";
 
 type PhotoItem = {
   key: string,
@@ -674,18 +675,23 @@ export default function MakePin() {
     var updateObject = {}
     if (name != originalName) {
       updateObject = { ...updateObject, name: name }
+      setPinChanged(true);
     }
     if (address != originalAddress) {
       updateObject = { ...updateObject, address: address }
+      setPinChanged(true);
     }
     if (rating != originalRating) {
       updateObject = { ...updateObject, rating: rating }
+      setPinChanged(true);
     }
     if (notes != originalNotes) {
       updateObject = { ...updateObject, notes: notes }
+      setPinChanged(true);
     }
     if (isPrivate != originalPrivacy) {
       updateObject = { ...updateObject, private: isPrivate }
+      setPinChanged(true);
     }
     const { error } = await supabase
       .from("pins")
@@ -707,10 +713,12 @@ export default function MakePin() {
     await saveVisits(Number(pinId));
     if (coverPhotoChanged) {
       await uploadPhoto(coverPhotoUrl, true);
+      setPinChanged(true);
     }
     for (const photo of photoList) {
       if (photo.changed) {
         await uploadPhoto(photo.url, false)
+        setPinChanged(true);
       }
     }
     router.back();

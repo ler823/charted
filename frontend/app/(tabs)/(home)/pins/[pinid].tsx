@@ -9,7 +9,7 @@ import { Alert, FlatList, Pressable, ScrollView, StyleSheet, Text, View } from "
 //import { AutoSkeletonView } from "react-native-auto-skeleton";
 import { getPhotoUrl } from "@/app/make-pin";
 import LoadingPage from "@/components/loading-page";
-
+import { getPinChanged, setPinChanged } from "./pin_refresh_data";
 
 type Friend = {
   user_id: number;
@@ -50,7 +50,6 @@ type Pin = {
   }[] | null;
   private: boolean | null;
 };
-
 
 export default function PinPage() {
   const { pinid, viewMode } = useLocalSearchParams();
@@ -94,7 +93,10 @@ export default function PinPage() {
         setCoverPhoto(coverPhotoUri);
         setPhotoList(otherPhotoUris);
       }
-      fetchPin();
+      if (getPinChanged()) {
+        setPinChanged(false);
+        fetchPin();
+      }
     }, [pinid])
   );
 
@@ -109,7 +111,6 @@ export default function PinPage() {
         return;
       }
     }
-
     fetchUsers();
 
   }, []);
