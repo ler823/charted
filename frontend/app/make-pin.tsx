@@ -103,6 +103,7 @@ export default function MakePin() {
   const [saveUpdateInitiated, setSaveUpdateInitiated] = useState(false)
   const [photoList, setPhotoList] = useState<PhotoItem[]>([]);
   const [photoToDelete, setPhotoToDelete] = useState<PhotoItem | null>(null);
+  const [photosToDelete, setPhotosToDelete] = useState<PhotoItem []>([]);
   const scrollRef = React.useRef<KeyboardAwareScrollView>(null);
   let originalName = ""
   let originalAddress = ""
@@ -248,20 +249,22 @@ export default function MakePin() {
     } else {
       //remove from db
       setPhotoList(photoList.filter((photo) => photo.url != url))
-      deletePhoto(key);
+      setPhotosToDelete((prev) => [...prev, { key: key, url: url, changed: true}])
+      //deletePhoto(key);
     }
 
     if (cover) {
       setCoverPhotoUrl("")
       setCoverPhotoKey("")
     }
+    setCoverPhotoModalVisible(false)
   }
 
   const deletePhoto = async (key: string) => {
     setCoverPhotoModalVisible(false);
-    if (coverPhotoUrl == "") {
-      return;
-    }
+    // if (coverPhotoUrl == "") {
+    //   return;
+    // }
     const { data, error: deletePhotoError } = await supabase
       .from("photos")
       .delete()
@@ -720,6 +723,12 @@ export default function MakePin() {
         await uploadPhoto(photo.url, false)
         setPinChanged(true);
       }
+    }
+    if (photosToDelete.length > 0) {
+      for (const photo of photosToDelete) {
+        deletePhoto(photo.key)
+      }
+      setPinChanged(true)
     }
     router.back();
   };
