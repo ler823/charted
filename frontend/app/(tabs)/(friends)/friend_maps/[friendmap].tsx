@@ -22,7 +22,6 @@ type Friend = {
   bio: string | null;
 };
 
-// CSULB is default region if user does not share location
 const CSULB = {
   latitude: 33.7838,
   longitude: -118.1141,
@@ -37,7 +36,7 @@ const VIEW_OPTIONS: ViewOption[] = [
 ];
 
 export default function FriendMap() {
-  const { friendid } = useLocalSearchParams();
+  const { friendmap } = useLocalSearchParams();
   const [friend, setFriend] = useState<Friend | null>(null);
   const [loading, setLoading] = useState(true);
   const [pins, setPins] = useState<Pin[]>([]);
@@ -50,56 +49,51 @@ export default function FriendMap() {
     useFocusEffect(
       useCallback(() => {
         async function fetchLocations() {
-          if (!friendid) return;
-          const userIdNum = Number(friendid);
-          if (isNaN(userIdNum)) {
-            console.error("Invalid friendid:", friendid);
-            return;
-          }
           const { data, error } = await supabase
             .from("pins")
             .select(
               `pin_id, location_id, user_id, name, address, private,
              locations:location_id( id, latitude, longitude )`,
             )
-            .eq("user_id", userIdNum)
+            .eq("user_id", Number(friendmap))
             .eq("private", false);
           if (error) {
             console.error("Failed to fetch locations:", error.message);
             return;
           }
   
-          const typedData = (data ?? []) as {
-            pin_id: number;
-            name: string;
-            address: string;
-            location_id: number;
-            user_id: number;
-            locations?: {
-              id: number;
-              latitude: number;
-              longitude: number;
-            }[] | null;
-          }[];
-  
-          setPins(
-            typedData.map((row) => ({
-              id: String(row.pin_id),
-              name: row.name,
-              address: row.address,
-              latitude: row.locations?.[0].latitude ?? 0,
-              longitude: row.locations?.[0].longitude ?? 0,
-            })),
-          );
-        }
-        fetchLocations();
-      }, [friendid]),
+        const typedData = data as unknown as {
+          pin_id: number;
+          name: string;
+          address: string;
+          location_id: number;
+          user_id: number;
+          private: boolean;
+          locations?: {
+            id: number;
+            latitude: number;
+            longitude: number;
+          } | null;
+        }[];
+
+        setPins(
+          typedData.map((row) => ({
+            id: String(row.pin_id),
+            name: row.name,
+            address: row.address,
+            latitude: row.locations?.latitude ?? 0,
+            longitude: row.locations?.longitude ?? 0,
+          })),
+        );
+      }
+      fetchLocations();
+    }, [friendmap]),
     );
 
     const initial_region = pins.length > 0
     ? {
-      latitude: pins[0].latitude,
-      longitude: pins[0].longitude,
+      latitude: pins[0].latitude ?? CSULB.latitude,
+      longitude: pins[0].longitude ?? CSULB.longitude,
       latitudeDelta: 0.015,
       longitudeDelta: 0.015,
     }
@@ -111,7 +105,7 @@ export default function FriendMap() {
         const { data } = await supabase
           .from("users")
           .select("user_id, username, location, bio")
-          .eq("user_id", Number(friendid))
+          .eq("user_id", Number(friendmap))
           .single();
         setFriend(data);
         setLoading(false);
