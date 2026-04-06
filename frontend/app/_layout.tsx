@@ -11,6 +11,7 @@ import * as Location from "expo-location";
 import { Stack, router } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
+import { StatusBar } from "react-native";
 
 // Hold the splash screen until we're ready
 SplashScreen.preventAutoHideAsync();
@@ -40,12 +41,15 @@ export default function RootLayout() {
   }, [fontsLoaded]);
 
   return (
-    <DroppingPinProvider>
-      <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="(tabs)" options={{animation: "slide_from_left"}}/>
-        <Stack.Screen name="onboarding/enable-location" options={{animation: "none"}}/>
-        <Stack.Screen name="make-pin" />
-      </Stack>
-    </DroppingPinProvider>
+    <>
+      <StatusBar barStyle="default" />
+      <DroppingPinProvider>
+        <Stack screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="(tabs)" options={{animation: "slide_from_left"}}/>
+          <Stack.Screen name="onboarding/enable-location" options={{animation: "none"}}/>
+          <Stack.Screen name="make-pin" />
+        </Stack>
+      </DroppingPinProvider>
+    </>
   );
 }
