@@ -1,68 +1,67 @@
+import { getPhotoUrl } from "@/app/make-pin";
 import { Fonts } from "@/constants/theme";
+import { supabase } from "@/lib/supabase";
 import { Image } from "expo-image";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 
 type Props = {
+  pinId: string;
   name?: string;
   loc?: string;
 };
 
-export default function ListCard({ name, loc }: Props) {
+export default function ListCard({ pinId, name, loc }: Props) {
+  const [coverPhoto, setCoverPhoto] = useState<string | null>(null);
+
+  useEffect(() => {
+    setCoverPhoto(null);
+    if (!pinId) return;
+
+    async function fetchCoverPhoto() {
+      const { data } = await supabase
+        .from("pins")
+        .select("pin_photos(photos(key), cover)")
+        .eq("pin_id", pinId)
+        .single();
+
+      if (!data?.pin_photos?.length) return;
+
+      const coverEntry = data.pin_photos.find((p: any) => p.cover);
+      const key = coverEntry?.photos?.key;
+      if (!key) return;
+
+      const urls = await getPhotoUrl([key]);
+      if (urls?.[0]?.url) setCoverPhoto(urls[0].url);
+    }
+
+    fetchCoverPhoto();
+  }, [pinId]);
+
   return (
     <View style={styles.card}>
       <Image
-        source={require("@/assets/images/no_image_default.png")}
+        source={
+          coverPhoto
+            ? { uri: coverPhoto }
+            : require("@/assets/images/no_image_default.png")
+        }
         style={styles.img}
+        contentFit="cover"
+        transition={300}
         placeholder="blur"
       />
       <View style={styles.textContainer}>
-        <Text
-          style={styles.cardTitle}
-          numberOfLines={1}
-          ellipsizeMode="tail"
-        >
+        <Text style={styles.cardTitle} numberOfLines={1} ellipsizeMode="tail">
           {name || "Unnamed Pin"}
         </Text>
-        <Text
-          style={styles.cardLoc}
-          numberOfLines={1}
-          ellipsizeMode="tail"
-        >
+        <Text style={styles.cardLoc} numberOfLines={1} ellipsizeMode="tail">
           {loc || "No address available"}
         </Text>
       </View>
     </View>
   );
 }
-
-/*
-// dynamic return, for once database is set up
-export default function ListCard({ photo, name, loc }) {
-    return (
-        <View style={styles.card}>
-              <Image source={photo} style={styles.img} />
-              <View style={styles.textContainer}>
-                <Text
-                  style={styles.cardTitle}
-                  numberOfLines={1}
-                  ellipsizeMode="tail"
-                >
-                    {name}
-                </Text>
-                <Text
-                  style={styles.cardLoc}
-                  numberOfLines={1}
-                  ellipsizeMode="tail"
-                >
-                    // will need to add location information if the user has their location on
-                    {loc} miles away
-                </Text>
-              </View>
-          </View>
-    );
-}
-*/
 
 const styles = StyleSheet.create({
   img: {
