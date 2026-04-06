@@ -1,11 +1,16 @@
 import LoadingPage from "@/components/loading-page";
+import PinMarker from "@/components/pin-marker";
 import { Fonts } from "@/constants/theme";
 import { supabase } from "@/lib/supabase";
 import { Ionicons } from "@expo/vector-icons";
-import { router, useLocalSearchParams } from "expo-router";
-import { useEffect, useState } from "react";
+import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Stars } from "@/components/light-stars";
+import ClusteredMapView from "react-native-map-clustering";
+import { Pin } from "@/types/types";
+import { Marker } from "react-native-maps";
+
 
 type Friend = {
   user_id: number;
@@ -14,10 +19,73 @@ type Friend = {
   bio: string | null;
 };
 
+// CSULB is default region if user does not share location
+const CSULB = {
+  latitude: 33.7838,
+  longitude: -118.1141,
+  latitudeDelta: 0.015,
+  longitudeDelta: 0.015,
+};
+
 export default function FriendProfilePage() {
   const { friendid } = useLocalSearchParams();
   const [friend, setFriend] = useState<Friend | null>(null);
   const [loading, setLoading] = useState(true);
+  const [pins, setPins] = useState<Pin[]>([]);
+  const mapRef = useRef<any>(null);
+
+  // This fetches data from the 'pins' table in Supabase. Also has error handling if unable to fetch
+    useFocusEffect(
+      useCallback(() => {
+        async function fetchLocations() {
+          const { data, error } = await supabase
+            .from("pins")
+            .select(
+              `pin_id, location_id, user_id, name, address, private,
+             locations:location_id( id, latitude, longitude )`,
+            )
+            .eq("user_id", Number(friendid))
+            .eq("private", false);
+          if (error) {
+            console.error("Failed to fetch locations:", error.message);
+            return;
+          }
+  
+          const typedData = data as unknown as {
+            pin_id: number;
+            name: string;
+            address: string;
+            location_id: number;
+            user_id: number;
+            locations?: {
+              id: number;
+              latitude: number;
+              longitude: number;
+            } | null;
+          }[];
+  
+          setPins(
+            typedData.map((row) => ({
+              id: String(row.pin_id),
+              name: row.name,
+              address: row.address,
+              latitude: row.locations?.latitude ?? 0,
+              longitude: row.locations?.longitude ?? 0,
+            })),
+          );
+        }
+        fetchLocations();
+      }, []),
+    );
+
+    const initial_region = pins.length > 0
+    ? {
+      latitude: pins[0].latitude,
+      longitude: pins[0].longitude,
+      latitudeDelta: 0.015,
+      longitudeDelta: 0.015,
+    }
+    : CSULB;
 
   useEffect(() => {
       async function fetchUsers() {
@@ -37,9 +105,7 @@ export default function FriendProfilePage() {
   return (
     <ScrollView>
       <View style={{ marginTop: 45, marginHorizontal: 10, flexDirection: "row", justifyContent: "space-between" }}>
-        <Pressable
-          style={styles.backButton}
-          onPress={() => {
+        <Pressable style={styles.backButton} onPress={() => {
             router.back();
           }}
         >
@@ -89,9 +155,39 @@ export default function FriendProfilePage() {
         <View style={styles.infoBox}>
           <Text style={styles.header}>Map</Text>
           <View style={styles.infoWindow}>
-            <View style={styles.mapExpand}>
+            <ClusteredMapView
+              initialRegion={initial_region}
+              style={{width: "100%", flex: 1}}
+              scrollEnabled={false}
+              zoomEnabled={false}
+              ref={mapRef}
+              clusterColor="#243e36"
+              clusterTextColor="#fefbea"
+              clusterFontFamily="System"
+            >
+              {pins
+                .filter((pin) => pin.latitude !== 0 && pin.longitude !== 0)
+                .map((pin) => (
+                  <Marker
+                    key={pin.id}
+                    coordinate={{
+                      latitude: pin.latitude,
+                      longitude: pin.longitude,
+                    }}
+                    tracksViewChanges={false}
+                  >
+                    <PinMarker />
+                  </Marker>
+                ))}
+            </ClusteredMapView>
+            <Pressable style={styles.mapExpand} onPress={() => 
+              router.push({
+                pathname: "../friend_maps/[friendmap]",
+                params: {
+                  friendmap: `${friendid}`
+            }})}>
               <Ionicons name="expand-outline" size={21} color="#fefbea" />
-            </View>
+            </Pressable>
           </View>
         </View>
 
