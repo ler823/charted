@@ -26,4 +26,6 @@ export const Fonts = {
   extralight: "Raleway_200ExtraLight",
   regular: "Raleway_400Regular",
   bold: "Raleway_700Bold",
+  regular_i: "Raleway_400Regular_Italic",
+  bold_i: "Raleway_700Bold_Italic",
 };
