@@ -1,11 +1,11 @@
 import { Stack } from "expo-router";
 import { StyleSheet, Text, View } from "react-native";
 
-export default function Account() {
+export default function EditAccount() {
   return (
     <View style={styles.container}>
-      <Stack.Screen options={{ title: "Account" }} />
-      <Text style={styles.text}>Account</Text>
+      <Stack.Screen options={{ title: "Edit Account" }} />
+      <Text style={styles.text}>Edit Account</Text>
     </View>
   );
 }
