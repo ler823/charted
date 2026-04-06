@@ -11,7 +11,7 @@ export default function Account() {
         <Pressable
           style={styles.editAccountButton}
           onPress={() => {
-            router.push("/edit-account");
+            router.push("/edit_account");
           }}
         >
           <Text style={{ fontFamily: Fonts.bold, color: "#d9d9d9", fontSize: 16 }}>
