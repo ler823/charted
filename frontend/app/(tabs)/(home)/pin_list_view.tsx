@@ -1,7 +1,8 @@
+import { Fonts } from "@/constants/theme";
 import { Pin } from "@/types/types";
 import { useRouter } from "expo-router";
 import React from "react";
-import { FlatList, Pressable, StyleSheet, View } from "react-native";
+import { FlatList, Pressable, StyleSheet, View, Text } from "react-native";
 import ListCard from "./list_card";
 
 type Props = {
@@ -36,6 +37,11 @@ export default function PinListView({ pins }: Props) {
             <ListCard name={item.name} loc={item.address} />
           </Pressable>
         )}
+        ListEmptyComponent={
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyText}>No pins to display yet.</Text>
+          </View>
+        }
       />
     </View>
   );
@@ -52,4 +58,13 @@ const styles = StyleSheet.create({
   listContent: {
     paddingBottom: 265,
   },
+  emptyContainer: {
+      marginTop: 45,
+      alignItems: "center",
+    },
+    emptyText: {
+      fontFamily: Fonts.regular,
+      fontSize: 14,
+      color: "#243e36",
+    },
 });

@@ -72,7 +72,7 @@ export default function Header({
                   fontSize: 16,
                 }}
               >
-                Filter
+                Filter <Text style={{color: "#243e36"}}>.</Text>
               </Text>
             </View>
             <Ionicons name="chevron-down" size={20} color="#d9d9d9" />
@@ -164,7 +164,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 999,
-    gap: 8,
+    gap: 2,
     paddingHorizontal: 10,
     minWidth: 110,
     height: 40,

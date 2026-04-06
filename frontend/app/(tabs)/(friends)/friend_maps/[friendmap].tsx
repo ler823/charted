@@ -1,4 +1,4 @@
-import Header from "@/components/header";
+import FriendHeader from "@/components/friend-header";
 import LoadingPage from "@/components/loading-page";
 import PinMarker from "@/components/pin-marker";
 import PinOverlay from "@/components/pin-overlay";
@@ -50,20 +50,26 @@ export default function FriendMap() {
     useFocusEffect(
       useCallback(() => {
         async function fetchLocations() {
+          if (!friendid) return;
+          const userIdNum = Number(friendid);
+          if (isNaN(userIdNum)) {
+            console.error("Invalid friendid:", friendid);
+            return;
+          }
           const { data, error } = await supabase
             .from("pins")
             .select(
               `pin_id, location_id, user_id, name, address, private,
              locations:location_id( id, latitude, longitude )`,
             )
-            .eq("user_id", 4)
+            .eq("user_id", userIdNum)
             .eq("private", false);
           if (error) {
             console.error("Failed to fetch locations:", error.message);
             return;
           }
   
-          const typedData = data as unknown as {
+          const typedData = (data ?? []) as {
             pin_id: number;
             name: string;
             address: string;
@@ -73,7 +79,7 @@ export default function FriendMap() {
               id: number;
               latitude: number;
               longitude: number;
-            } | null;
+            }[] | null;
           }[];
   
           setPins(
@@ -81,13 +87,13 @@ export default function FriendMap() {
               id: String(row.pin_id),
               name: row.name,
               address: row.address,
-              latitude: row.locations?.latitude ?? 0,
-              longitude: row.locations?.longitude ?? 0,
+              latitude: row.locations?.[0].latitude ?? 0,
+              longitude: row.locations?.[0].longitude ?? 0,
             })),
           );
         }
         fetchLocations();
-      }, []),
+      }, [friendid]),
     );
 
     const initial_region = pins.length > 0
@@ -117,22 +123,7 @@ export default function FriendMap() {
 
   return (
     <>
-    <View style={{ marginTop: 45, marginHorizontal: 10, flexDirection: "row", justifyContent: "space-between" }}>
-        <Pressable
-          style={styles.backButton}
-          onPress={() => {
-            router.back();
-          }}
-        >
-          <Ionicons name="chevron-back" size={20} color="#d9d9d9" />
-          <Text
-            style={{ fontFamily: Fonts.bold, color: "#d9d9d9", fontSize: 16 }}
-          >
-            Back
-          </Text>
-        </Pressable>
-    </View>
-    <Header
+    <FriendHeader
         viewMode={viewMode}
         setViewMode={setViewMode}
         viewOptions={VIEW_OPTIONS}
@@ -140,7 +131,7 @@ export default function FriendMap() {
     {viewMode === "map" && (
         <ClusteredMapView
             initialRegion={initial_region}
-            style={{width: "100%", flex: 1}}
+            style={{width: "100%", height: "100%"}}
             ref={mapRef}
             clusterColor="#243e36"
             clusterTextColor="#fefbea"
@@ -165,12 +156,12 @@ export default function FriendMap() {
     )}
 
     {viewMode === "list" && (
-        <View style={{flex: 1}}>
+        <View style={{flex: 1, marginTop: 55}}>
             <PinListView pins={pins}/>
         </View>
     )}
     {viewMode === "grid" && (
-        <View>
+        <View style={{marginTop: 55}}>
             <PinGridView pins={pins} />
         </View>
     )}
@@ -186,47 +177,5 @@ export default function FriendMap() {
 
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    alignItems: "center",
-  },
-  backButton: {
-    backgroundColor: "#243e36",
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 999,
-    gap: 6,
-    width: 105,
-    height: 40,
-    marginLeft: 8,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 2,
-    elevation: 4,
-  },
-  infoBox: {
-    alignItems: "center",
-    borderRadius: 20,
-    backgroundColor: "#DEE9E0",
-    marginVertical: 12,
-    height: 225,
-    width: "90%",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 2,
-    elevation: 4,
-  },
-  infoWindow: {
-    height: 145,
-    width: "90%",
-    backgroundColor: "#fff",
-    borderStyle: "solid",
-    borderWidth: 2,
-    borderColor: "#7CA982",
-    marginVertical: 10,
-    alignItems: "center",
-  },
+  
 });
