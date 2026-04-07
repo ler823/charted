@@ -275,6 +275,9 @@ export default function PinPage() {
             Photos
           </Text>
           <View style={[styles.cardFullRow]}>
+            {(photoList == null || photoList.length == 0) && (
+              <Text style={styles.boxText}>You have added no photos</Text>
+            )}
             <FlatList
               horizontal
               data={photoList}

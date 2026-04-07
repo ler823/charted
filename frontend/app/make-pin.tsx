@@ -984,6 +984,7 @@ export default function MakePin() {
       // These two are loaded for both adding and editing
       await cleanupUnusedTags();
       await loadTags();
+      await cleanupUnusedLists();
       await loadLists();
       setDataLoaded(true);
     };
@@ -1153,6 +1154,9 @@ export default function MakePin() {
               </View>
 
               <View style={styles.tagsContainer}>
+                {tags.length == 0 && (
+                <Text style={styles.emptyTagLabel}>You have not created any tags</Text>
+              )}
                 {tags.map((tag) => (
                   <Pressable
                     key={tag}
@@ -1201,6 +1205,9 @@ export default function MakePin() {
               </View>
 
               <View style={styles.tagsContainer}>
+              {lists.length == 0 && (
+                <Text style={styles.emptyTagLabel}>You have not created any lists</Text>
+              )}
                 {lists.map((list) => (
                   <Pressable
                     key={list}
@@ -1246,6 +1253,9 @@ export default function MakePin() {
                 </Pressable>
               </View>
               <View style={[styles.tagsContainer, { minHeight: 100 }]}>
+                {visits.length == 0 && (
+                  <Text style={styles.emptyTagLabel}>You have no visits entered</Text>
+                )}
                 <ScrollView>
                   {visits.map((visit) => {
                     const [year, month, day] = visit.split("-").map(Number);
@@ -1278,6 +1288,9 @@ export default function MakePin() {
                 </Pressable>
               </View>
               <View style={[styles.tagsContainer, { minHeight: 100 }]}>
+                {photoList.length == 0 && (
+                  <Text style={styles.emptyTagLabel}>You have no photos yet</Text>
+                )}
                 <FlatList
                   horizontal
                   data={photoList}
@@ -1551,5 +1564,9 @@ const styles = StyleSheet.create({
     width: 90,
     height: 90,
     borderRadius: 12
+  },
+  emptyTagLabel: {
+    fontFamily: Fonts.regular,
+    paddingVertical: 10,
   }
 });
