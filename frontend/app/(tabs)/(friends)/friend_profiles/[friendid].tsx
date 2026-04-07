@@ -27,12 +27,32 @@ const CSULB = {
   longitudeDelta: 0.015,
 };
 
+type FavPin = {
+  user_id: number;
+  pin_id: number;
+  user_rating: number;
+  name: string;
+  last_visited: string | null;
+}
+
+type VisPin = {
+  user_id: number;
+  pin_id: number;
+  visit_count: number;
+  name: string;
+  last_visited: string | null;
+}
+
 export default function FriendProfilePage() {
   const { friendid } = useLocalSearchParams();
   const [friend, setFriend] = useState<Friend | null>(null);
   const [pinLoading, setPinLoading] = useState(true);
   const [userLoading, setUserLoading] = useState(true);
-  const loading = pinLoading || userLoading;
+  const [favLoading, setFavLoading] = useState(true);
+  const [visitLoading, setVisitLoading] = useState(true);
+  const loading = pinLoading || userLoading || favLoading || visitLoading;
+  const [favorite, setFavorite] = useState<FavPin | null>(null);
+  const [visited, setVisited] = useState<VisPin | null>(null);
   const [pins, setPins] = useState<Pin[]>([]);
   const mapRef = useRef<any>(null);
 
@@ -88,16 +108,64 @@ export default function FriendProfilePage() {
 
   useEffect(() => {
       async function fetchUsers() {
-        const { data } = await supabase
+        const { data, error } = await supabase
           .from("users")
           .select("user_id, username, location, bio")
           .eq("user_id", Number(friendid))
           .single();
+        if (error) {
+            console.error("Failed to fetch user:", error.message);
+            return;
+          }
         setFriend(data);
         setUserLoading(false);
       }
       fetchUsers();
     }, []);
+  
+  useEffect(() => {
+    async function fetchFavorite() {
+      const { data, error } = await supabase
+        .from("pins_with_last_visit")
+        .select("*")
+        .eq("user_id", Number(friendid))
+        .eq("private", false)
+        .order("user_rating", { ascending: false })
+        .order("last_visited", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (error) {
+        console.error("Failed to fetch favorite pin:", error.message);
+        return;
+      }
+      
+      setFavorite(data);    
+      setFavLoading(false);
+    }
+    fetchFavorite();
+  }, []);
+
+  useEffect(() => {
+    async function fetchTopVisited() {
+      const { data, error } = await supabase
+        .from("pins_with_visit_count")
+        .select("*")
+        .eq("user_id", Number(friendid))
+        .eq("private", false)
+        .order("visit_count", { ascending: false })
+        .order("last_visited", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (error) {
+        console.error("Failed to fetch most visited pin:", error.message);
+        return;
+      }
+      
+      setVisited(data);    
+      setVisitLoading(false);
+    }
+    fetchTopVisited();
+  }, []);
 
   if (loading) return <LoadingPage />;
 
@@ -203,21 +271,29 @@ export default function FriendProfilePage() {
           <View style={[styles.statsRow, {gap: 20}]}>
             <View style={[styles.infoWindow, {width: "42%", alignItems: "center"}]}>
               <Text style={styles.subHeader}>Favorite</Text>
-              <View style={styles.statsWindows}></View>
+              <View style={styles.statsWindows}>
+                <Text style={{fontFamily: Fonts.regular, fontSize: 13, textAlign: "center", marginTop: 15}}>
+                  {favorite?.name ?? "This user has no pins yet."}
+                </Text>
+              </View>
               <View style={styles.statsBar}>
                 <View style={{flexDirection: "row", gap: 1, justifyContent: "center"}}>
-                  <Stars starnum={4}/>
+                  <Stars starnum={favorite?.user_rating ?? 0}/>
                 </View>
               </View>
             </View>
             <View style={[styles.infoWindow, {width: "42%", alignItems: "center"}]}>
               <Text style={styles.subHeader}>Top Visited</Text>
-              <View style={styles.statsWindows}></View>
+              <View style={styles.statsWindows}>
+                <Text style={{fontFamily: Fonts.regular, fontSize: 13, textAlign: "center", marginTop: 15}}>
+                  {visited?.name ?? "This user has no pins yet."}
+                </Text>
+              </View>
               <View style={styles.statsBar}>
                 <Text style={{ fontFamily: Fonts.regular, fontSize: 16, color: "#fefbea", marginHorizontal: 7, flexShrink: 1 }}
                       numberOfLines={1}
                       ellipsizeMode="tail">
-                  15 Visits
+                  {visited?.visit_count ?? "0"} Visits
                 </Text>
               </View>
             </View>
