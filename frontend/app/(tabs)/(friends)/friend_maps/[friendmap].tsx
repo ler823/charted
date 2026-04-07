@@ -86,26 +86,16 @@ export default function FriendMap() {
             longitude: row.locations?.longitude ?? 0,
           })),
         );
+
+        setLoading(false);
       }
       fetchLocations();
-      setLoading(false);
     }, [friendmap]),
     );
 
     const validPins = pins.filter(
         (p) => p.latitude !== 0 && p.longitude !== 0
     );
-
-    const isMapReady = validPins.length > 0;
-
-    const initial_region = validPins.length > 0
-    ? {
-      latitude: validPins[0].latitude ?? CSULB.latitude,
-      longitude: validPins[0].longitude ?? CSULB.longitude,
-      latitudeDelta: 0.015,
-      longitudeDelta: 0.015,
-    }
-    : CSULB;
 
     {/* Will later change to just pull their pfp to display on the pins */}
     useEffect(() => {
@@ -130,11 +120,16 @@ export default function FriendMap() {
         setViewMode={setViewMode}
         viewOptions={VIEW_OPTIONS}
     />
-    {viewMode === "map" && !isMapReady && <LoadingPage />}
-
-    {viewMode === "map" && isMapReady && (
+    {viewMode === "map" && (
         <ClusteredMapView
-            initialRegion={initial_region}
+            initialRegion={validPins.length > 0
+                ? {
+                    latitude: validPins[0].latitude,
+                    longitude: validPins[0].longitude,
+                    latitudeDelta: 0.015,
+                    longitudeDelta: 0.015,
+                }
+                : CSULB}
             style={{width: "100%", height: "100%"}}
             ref={mapRef}
             clusterColor="#243e36"

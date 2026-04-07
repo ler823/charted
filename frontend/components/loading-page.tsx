@@ -18,8 +18,9 @@ const styles = StyleSheet.create({
         justifyContent: "center",
     },
     loadText: {
-      fontSize: 30,
-      marginBottom: 15,
+      fontSize: 20,
+      fontFamily: Fonts.regular_i,
       color: "#243e36",
+      marginBottom: 15,
     }
 });

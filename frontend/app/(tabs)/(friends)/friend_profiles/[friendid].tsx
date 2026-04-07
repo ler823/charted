@@ -74,6 +74,7 @@ export default function FriendProfilePage() {
               longitude: row.locations?.longitude ?? 0,
             })),
           );
+          setLoading(false);
         }
         fetchLocations();
       }, []),
@@ -82,17 +83,6 @@ export default function FriendProfilePage() {
     const validPins = pins.filter(
         (p) => p.latitude !== 0 && p.longitude !== 0
     );
-
-    const isMapReady = validPins.length > 0;
-
-    const initial_region = validPins.length > 0
-      ? {
-        latitude: validPins[0].latitude ?? CSULB.latitude,
-        longitude: validPins[0].longitude ?? CSULB.longitude,
-        latitudeDelta: 0.015,
-        longitudeDelta: 0.015,
-      }
-      : CSULB;
 
   useEffect(() => {
       async function fetchUsers() {
@@ -162,35 +152,38 @@ export default function FriendProfilePage() {
         <View style={styles.infoBox}>
           <Text style={styles.header}>Map</Text>
           <View style={styles.infoWindow}>
-            {!isMapReady && <LoadingPage />}
-            {isMapReady && (
-              <ClusteredMapView
-                initialRegion={initial_region}
-                style={{width: "100%", flex: 1}}
-                scrollEnabled={false}
-                zoomEnabled={false}
-                ref={mapRef}
-                clusterColor="#243e36"
-                clusterTextColor="#fefbea"
-                clusterFontFamily="System"
-              >
-                {pins
-                  .filter((pin) => pin.latitude !== 0 && pin.longitude !== 0)
-                  .map((pin) => (
-                    <Marker
-                      key={pin.id}
-                      coordinate={{
-                        latitude: pin.latitude,
-                        longitude: pin.longitude,
-                      }}
-                      tracksViewChanges={false}
-                    >
-                      <PinMarker />
-                    </Marker>
-                  ))}
-              </ClusteredMapView>
-
-            )}
+            <ClusteredMapView
+              initialRegion={validPins.length > 0
+              ? {
+                  latitude: validPins[0].latitude,
+                  longitude: validPins[0].longitude,
+                  latitudeDelta: 0.015,
+                  longitudeDelta: 0.015,
+              }
+              : CSULB}
+              style={{width: "100%", flex: 1}}
+              scrollEnabled={false}
+              zoomEnabled={false}
+              ref={mapRef}
+              clusterColor="#243e36"
+              clusterTextColor="#fefbea"
+              clusterFontFamily="System"
+            >
+              {pins
+                .filter((pin) => pin.latitude !== 0 && pin.longitude !== 0)
+                .map((pin) => (
+                  <Marker
+                    key={pin.id}
+                    coordinate={{
+                      latitude: pin.latitude,
+                      longitude: pin.longitude,
+                    }}
+                    tracksViewChanges={false}
+                  >
+                    <PinMarker />
+                  </Marker>
+                ))}
+            </ClusteredMapView>
             <Pressable style={styles.mapExpand} onPress={() => 
               router.push({
                 pathname: "../friend_maps/[friendmap]",
