@@ -4,14 +4,15 @@ import { Keyboard, Modal, Pressable, StyleSheet, Text, TextInput, View } from 'r
 
 
 type Props = PropsWithChildren<{
+  name: string;
   isVisible: boolean;
   onClose: () => void;
   onSave: () => void;
-  newTag: string;
-  setNewTag: (value: string) => void;
+  newEntry: string;
+  setNewEntry: (value: string) => void;
 }>;
 
-export default function AddTagOrList({ isVisible, onClose, onSave, newTag, setNewTag }: Props) {
+export default function AddTagOrList({ name, isVisible, onClose, onSave, newEntry, setNewEntry }: Props) {
   return (
     <View>
       <Modal animationType="fade" transparent={true} visible={isVisible}>
@@ -19,14 +20,14 @@ export default function AddTagOrList({ isVisible, onClose, onSave, newTag, setNe
           <Pressable onPress={Keyboard.dismiss} style={styles.dismissArea}>
             <View style={styles.modalContent}>
               <View style={styles.titleContainer}>
-                <Text style={styles.title}>Add a new tag</Text>
+                <Text style={styles.title}>{"Add a new " + name.toLowerCase()}</Text>
               </View>
               <View style={styles.inputContainer}>
                 <TextInput
-                  placeholder="New Tag Name"
+                  placeholder={"New " + name.charAt(0).toUpperCase() + name.slice(1).toLowerCase() + " Name"}
                   placeholderTextColor="#aaaaaa"
-                  value={newTag}
-                  onChangeText={setNewTag}
+                  value={newEntry}
+                  onChangeText={setNewEntry}
                   style={styles.input} />
               </View>
               <View style={styles.bottomButtons}>

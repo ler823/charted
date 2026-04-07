@@ -82,19 +82,23 @@ export default function MakePin() {
   const [rating, setRating] = useState(0);
   const [notes, setNotes] = useState("");
   const [tags, setTags] = useState<string[]>([]);
+  const [lists, setLists] = useState<string[]>([]);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [selectedLists, setSelectedLists] = useState<string[]>([]);
   const [addTagVisible, setAddTagVisible] = useState(false);
+  const [addListVisible, setAddListVisible] = useState(false);
   const [addVisitVisible, setAddVisitVisible] = useState(false);
   const [visits, setVisits] = useState<string[]>([]);
   const [newVisit, setNewVisit] = useState("");
   const [originalVisits, setOriginalVisits] = useState<string[]>([]);
   const [newTag, setNewTag] = useState("");
+  const [newList, setNewList] = useState("");
+  const [newListPrivacy, setNewListPrivacy] = useState(0);
   const [dataLoaded, setDataLoaded] = useState(false);
   const [isPrivate, setIsPrivate] = useState(false);
   const privateDescription = "Only you can view this pin";
   const publicDescription = "All of your friends can view this pin";
-  const [privacyDescription, setPrivacyDescription] =
-    useState(publicDescription);
+  const [privacyDescription, setPrivacyDescription] = useState(publicDescription);
   const [notesHeight, setNotesHeight] = useState(100);
   const [coverPhotoChanged, setCoverPhotoChanged] = useState(false);
   const [coverPhotoModalVisible, setCoverPhotoModalVisible] = useState(false)
@@ -127,6 +131,12 @@ export default function MakePin() {
     );
   };
 
+  const toggleList = (list: string) => {
+    setSelectedLists((prev) =>
+      prev.includes(list) ? prev.filter((t) => t !== list) : [...prev, list],
+    );
+  };
+
   const savePinTags = async () => {
     const { data: tagIds, error: getTagIdsError } = await supabase
       .from("tags")
@@ -145,6 +155,32 @@ export default function MakePin() {
     const { error: addToPinTagsError } = await supabase
       .from("pin_tags")
       .insert(pinTagAssociation);
+
+    if (addToPinTagsError) {
+      return;
+    }
+
+    return;
+  };
+
+  const savePinLists = async () => {
+    const { data: listIds, error: getListIdsError } = await supabase
+      .from("lists")
+      .select(`"list_id"`)
+      .in("name", selectedLists);
+
+    if (listIds === null || getListIdsError) {
+      return;
+    }
+
+    const pinListAssociation = listIds?.map((list) => ({
+      pin_id: inserted_pin_id,
+      list_id: list.list_id,
+    }));
+
+    const { error: addToPinTagsError } = await supabase
+      .from("pin_lists")
+      .insert(pinListAssociation);
 
     if (addToPinTagsError) {
       return;
@@ -189,6 +225,7 @@ export default function MakePin() {
     }
     inserted_pin_id = data;
     await savePinTags();
+    await savePinLists();
     await saveVisits(inserted_pin_id);
     if (coverPhotoChanged) {
       await uploadPhoto(coverPhotoUrl, true);
@@ -381,9 +418,35 @@ export default function MakePin() {
     return data.map((tag: { name: string }) => tag.name);
   };
 
+   const getUserLists = async () => {
+    const { data, error } = await supabase
+      .from("lists")
+      .select(
+        `
+      list_id,
+      name,
+      users!lists_user_id_fkey (
+        username
+      )
+    `,
+      )
+      .eq("users.username", "TimTimTim");
+
+    if (error) {
+      Alert.alert("Error", error.message);
+      return;
+    }
+    return data.map((list: { name: string }) => list.name);
+  };
+
   const loadTags = async () => {
     const userTags = await getUserTags();
     if (userTags) setTags(userTags);
+  };
+
+  const loadLists = async () => {
+    const userLists = await getUserLists();
+    if (userLists) setLists(userLists);
   };
 
   const addTag = async () => {
@@ -415,6 +478,37 @@ export default function MakePin() {
     loadTags();
     toggleTag(tagToAdd.name);
     setAddTagVisible(false);
+  };
+
+  const addList = async () => {
+    if (!newList) {
+      Alert.alert("Missing field", "Please enter a name for the new list");
+      return;
+    }
+    const { data: userId, error: userIdError } = await supabase
+      .from("users")
+      .select("user_id")
+      .eq("username", "TimTimTim");
+    if (userIdError) {
+      Alert.alert("Error", userIdError.message);
+      return;
+    }
+    let listToAdd = {
+      user_id: userId[0].user_id,
+      name: newList,
+    };
+
+    const { error: addListError } = await supabase.from("lists").insert(listToAdd);
+    if (addListError) {
+      Alert.alert(
+        "This list has already been added",
+        "You have added a list with this name before",
+      );
+      return;
+    }
+    loadLists();
+    toggleList(listToAdd.name);
+    setAddListVisible(false);
   };
 
   const getUserVisits = async () => {
@@ -449,6 +543,17 @@ export default function MakePin() {
 
   const cleanupUnusedTags = async () => {
     const { error } = await supabase.rpc("update_tags", {
+      p_username: "TimTimTim",
+    });
+
+    if (error) {
+      Alert.alert("Error", error.message);
+      return;
+    }
+  };
+
+  const cleanupUnusedLists = async () => {
+    const { error } = await supabase.rpc("update_lists", {
       p_username: "TimTimTim",
     });
 
@@ -529,6 +634,27 @@ export default function MakePin() {
       (data) => (data.tags as unknown as { name: any }).name,
     ); // kinda messy but it turns off the warnings lol
 
+    const { data: listData, error: listDataError } = await supabase
+      .from("pin_lists")
+      .select(
+        `
+        lists (
+          name
+        )
+      `,
+      )
+      .eq("pin_id", pinId);
+    if (listDataError) {
+      Alert.alert("Error", listDataError.message);
+      return;
+    }
+    if (listData == null) {
+      return;
+    }
+    let loadedSelectedLists = listData.map(
+      (data) => (data.lists as unknown as { name: any }).name,
+    );
+
     const { data: visitData, error: visitDataError } = await supabase
       .from("pin_visits")
       .select("*")
@@ -581,6 +707,7 @@ export default function MakePin() {
     setLat(locData[0].latitude.toString() ?? "");
     setLng(locData[0].longitude.toString() ?? "");
     setSelectedTags(loadedSelectedTags);
+    setSelectedLists(loadedSelectedLists);
     setVisits(loadedVisits);
     setOriginalVisits(loadedVisits);
   };
@@ -653,6 +780,74 @@ export default function MakePin() {
     return;
   };
 
+  const updatePinLists = async () => {
+    const { data: listIds, error: getListIdsError } = await supabase
+      .from("lists")
+      .select(`"list_id"`)
+      .in("name", selectedLists);
+
+    if (getListIdsError) {
+      Alert.alert("Error", getListIdsError.message);
+      return;
+    }
+
+    if (listIds === null) {
+      return;
+    }
+
+    const { data: listData, error: listDataError } = await supabase
+      .from("pin_lists")
+      .select("list_id")
+      .eq("pin_id", pinId);
+
+    if (listDataError) {
+      Alert.alert("Error", listDataError.message);
+      return;
+    }
+
+    if (listData === null) {
+      return;
+    }
+
+    let locallySelectedLists = listIds.map((list) => list.list_id);
+    let databaseSelectedLists = listData.map((list) => list.list_id);
+
+    let deletedLists = databaseSelectedLists.filter(
+      (list_id) => !locallySelectedLists.includes(list_id),
+    );
+    let addedLists = locallySelectedLists.filter(
+      (tag_id) => !databaseSelectedLists.includes(tag_id),
+    );
+    if (addedLists.length != 0) {
+      const addPinListAssociation = addedLists.map((list) => ({
+        pin_id: pinId,
+        list_id: list,
+      }));
+      const { error: addToPinListsError } = await supabase
+        .from("pin_lists")
+        .insert(addPinListAssociation);
+
+      if (addToPinListsError) {
+        Alert.alert("Error", addToPinListsError.message);
+        return;
+      }
+    }
+    if (deletedLists.length != 0) {
+      const { error: deleteFromPinTagsError } = await supabase
+        .from("pin_lists")
+        .delete()
+        .eq("pin_id", pinId)
+        .in("list_id", deletedLists);
+
+      if (deleteFromPinTagsError) {
+        Alert.alert("Error", deleteFromPinTagsError.message);
+        return;
+      }
+    }
+
+    return;
+  };
+
   const saveVisits = async (pinIdToUse: number) => {
     const newVisits = visits.filter((visit) => !originalVisits.includes(visit));
 
@@ -713,6 +908,7 @@ export default function MakePin() {
     }
 
     await updatePinTags();
+    await updatePinLists();
     await saveVisits(Number(pinId));
     if (coverPhotoChanged) {
       await uploadPhoto(coverPhotoUrl, true);
@@ -788,6 +984,7 @@ export default function MakePin() {
       // These two are loaded for both adding and editing
       await cleanupUnusedTags();
       await loadTags();
+      await loadLists();
       setDataLoaded(true);
     };
     loadData();
@@ -942,6 +1139,7 @@ export default function MakePin() {
                   }}
                 />
               </View>
+              {/* Tags */}
               <View style={styles.tagTitle}>
                 <Text style={styles.notesHeading}>Tags</Text>
                 <Pressable onPress={() => setAddTagVisible(true)}>
@@ -979,11 +1177,60 @@ export default function MakePin() {
                   </Pressable>
                 ))}
                 <AddTagOrList
+                  name="tag"
                   isVisible={addTagVisible}
                   onClose={() => setAddTagVisible(false)}
                   onSave={addTag}
-                  newTag={newTag}
-                  setNewTag={setNewTag}
+                  newEntry={newTag}
+                  setNewEntry={setNewTag}
+                />
+              </View>
+
+              {/* Lists */}
+
+              <View style={styles.tagTitle}>
+                <Text style={styles.notesHeading}>Lists</Text>
+                <Pressable onPress={() => setAddListVisible(true)}>
+                  <MaterialCommunityIcons
+                    name="plus-circle-outline"
+                    size={24}
+                    color="black"
+                    style={styles.addTags}
+                  />
+                </Pressable>
+              </View>
+
+              <View style={styles.tagsContainer}>
+                {lists.map((list) => (
+                  <Pressable
+                    key={list}
+                    style={styles.tagRow}
+                    onPress={() => toggleList(list)}
+                  >
+                    <View
+                      style={[
+                        styles.checkbox,
+                        selectedLists.includes(list) && styles.checkboxChecked,
+                      ]}
+                    >
+                      {selectedLists.includes(list) && (
+                        <MaterialCommunityIcons
+                          name="check"
+                          size={14}
+                          color="#fff"
+                        />
+                      )}
+                    </View>
+                    <Text style={styles.tagLabel}>{list}</Text>
+                  </Pressable>
+                ))}
+                <AddTagOrList
+                  name="list"
+                  isVisible={addListVisible}
+                  onClose={() => setAddListVisible(false)}
+                  onSave={addList}
+                  newEntry={newList}
+                  setNewEntry={setNewList}
                 />
               </View>
 
