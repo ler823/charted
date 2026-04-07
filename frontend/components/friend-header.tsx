@@ -28,10 +28,8 @@ export default function FriendHeader({
             }}
             >
             <Ionicons name="chevron-back" size={20} color="#d9d9d9" />
-            <Text
-                style={{ fontFamily: Fonts.bold, color: "#d9d9d9", fontSize: 16 }}
-            >
-                Back
+            <Text style={{ fontFamily: Fonts.bold, color: "#d9d9d9", fontSize: 16 }}>
+              Back
             </Text>
             </Pressable>
         </View>

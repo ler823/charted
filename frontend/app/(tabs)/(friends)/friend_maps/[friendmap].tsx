@@ -56,6 +56,7 @@ export default function FriendMap() {
              locations:location_id( id, latitude, longitude )`,
             )
             .eq("user_id", Number(friendmap))
+            .order("pin_id", { ascending: true })
             .eq("private", false);
           if (error) {
             console.error("Failed to fetch locations:", error.message);
@@ -87,20 +88,27 @@ export default function FriendMap() {
         );
       }
       fetchLocations();
+      setLoading(false);
     }, [friendmap]),
     );
 
-    const initial_region = pins.length > 0
+    const validPins = pins.filter(
+        (p) => p.latitude !== 0 && p.longitude !== 0
+    );
+
+    const isMapReady = validPins.length > 0;
+
+    const initial_region = validPins.length > 0
     ? {
-      latitude: pins[0].latitude ?? CSULB.latitude,
-      longitude: pins[0].longitude ?? CSULB.longitude,
+      latitude: validPins[0].latitude ?? CSULB.latitude,
+      longitude: validPins[0].longitude ?? CSULB.longitude,
       latitudeDelta: 0.015,
       longitudeDelta: 0.015,
     }
     : CSULB;
 
     {/* Will later change to just pull their pfp to display on the pins */}
-  useEffect(() => {
+    useEffect(() => {
       async function fetchUsers() {
         const { data } = await supabase
           .from("users")
@@ -122,7 +130,9 @@ export default function FriendMap() {
         setViewMode={setViewMode}
         viewOptions={VIEW_OPTIONS}
     />
-    {viewMode === "map" && (
+    {viewMode === "map" && !isMapReady && <LoadingPage />}
+
+    {viewMode === "map" && isMapReady && (
         <ClusteredMapView
             initialRegion={initial_region}
             style={{width: "100%", height: "100%"}}
@@ -131,8 +141,7 @@ export default function FriendMap() {
             clusterTextColor="#fefbea"
             clusterFontFamily="System"
         >
-            {pins
-            .filter((pin) => pin.latitude !== 0 && pin.longitude !== 0)
+            {validPins
             .map((pin) => (
                 <Marker
                 key={pin.id}
