@@ -38,7 +38,9 @@ const VIEW_OPTIONS: ViewOption[] = [
 export default function FriendMap() {
   const { friendmap } = useLocalSearchParams();
   const [friend, setFriend] = useState<Friend | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [pinLoading, setPinLoading] = useState(true);
+  const [userLoading, setUserLoading] = useState(true);
+  const loading = pinLoading || userLoading;
   const [pins, setPins] = useState<Pin[]>([]);
   const mapRef = useRef<any>(null);
   const { viewMode: incomingViewMode } = useLocalSearchParams<{ viewMode?: ViewMode }>();
@@ -87,7 +89,7 @@ export default function FriendMap() {
           })),
         );
 
-        setLoading(false);
+        setPinLoading(false);
       }
       fetchLocations();
     }, [friendmap]),
@@ -106,7 +108,7 @@ export default function FriendMap() {
           .eq("user_id", Number(friendmap))
           .single();
         setFriend(data);
-        setLoading(false);
+        setUserLoading(false);
       }
       fetchUsers();
     }, []);

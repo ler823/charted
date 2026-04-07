@@ -30,7 +30,9 @@ const CSULB = {
 export default function FriendProfilePage() {
   const { friendid } = useLocalSearchParams();
   const [friend, setFriend] = useState<Friend | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [pinLoading, setPinLoading] = useState(true);
+  const [userLoading, setUserLoading] = useState(true);
+  const loading = pinLoading || userLoading;
   const [pins, setPins] = useState<Pin[]>([]);
   const mapRef = useRef<any>(null);
 
@@ -74,7 +76,7 @@ export default function FriendProfilePage() {
               longitude: row.locations?.longitude ?? 0,
             })),
           );
-          setLoading(false);
+          setPinLoading(false);
         }
         fetchLocations();
       }, []),
@@ -92,7 +94,7 @@ export default function FriendProfilePage() {
           .eq("user_id", Number(friendid))
           .single();
         setFriend(data);
-        setLoading(false);
+        setUserLoading(false);
       }
       fetchUsers();
     }, []);
