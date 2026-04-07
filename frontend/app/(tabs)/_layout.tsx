@@ -31,6 +31,9 @@ export default function Layout() {
         <TabTrigger name="home" href="/" asChild>
           <TabButton icon="home" />
         </TabTrigger>
+        <TabTrigger name="lists" href="/lists" asChild>
+          <TabButton icon="list" />
+        </TabTrigger>
         <TabTrigger name="friends" href="/friends" asChild>
           <TabButton icon="people" />
         </TabTrigger>
