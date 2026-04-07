@@ -1,13 +1,89 @@
+import { getPhotoUrl } from "@/app/make-pin";
 import { Fonts } from "@/constants/theme";
+import { supabase } from "@/lib/supabase";
 import { Pin } from "@/types/types";
 import { Image } from "expo-image";
 import { router } from "expo-router";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
 
 type Props = {
   pins: Pin[];
 };
+
+function GridCard({ item }: { item: Pin }) {
+  const [coverPhoto, setCoverPhoto] = useState<string | null>(null);
+
+  useEffect(() => {
+    setCoverPhoto(null);
+    if (!item.id) return;
+
+    async function fetchCoverPhoto() {
+      const { data } = await supabase
+        .from("pins")
+        .select("pin_photos(photos(key), cover)")
+        .eq("pin_id", item.id)
+        .single();
+
+      if (!data?.pin_photos?.length) return;
+
+      const coverEntry = data.pin_photos.find((p: any) => p.cover);
+      const key = coverEntry?.photos?.key;
+      if (!key) return;
+
+      const urls = await getPhotoUrl([key]);
+      if (urls?.[0]?.url) setCoverPhoto(urls[0].url);
+    }
+
+    fetchCoverPhoto();
+  }, [item.id]);
+
+  return (
+    <View style={styles.shadowWrapper}>
+      <View style={styles.card}>
+        <Pressable
+          onPress={() =>
+            router.push({
+              pathname: "/pins/[pinid]",
+              params: { pinid: item.id },
+            })
+          }
+        >
+          <View style={styles.imgPlaceholder}>
+            <Image
+              source={
+                coverPhoto
+                  ? { uri: coverPhoto }
+                  : require("@/assets/images/no_image_default.png")
+              }
+              style={styles.image}
+              contentFit="cover"
+              transition={300}
+              placeholder="blur"
+            />
+          </View>
+
+          <View style={styles.textContainer}>
+            <Text
+              style={styles.cardTitle}
+              numberOfLines={1}
+              ellipsizeMode="tail"
+            >
+              {item.name || "Unnamed Pin"}
+            </Text>
+            <Text
+              style={styles.cardLoc}
+              numberOfLines={1}
+              ellipsizeMode="tail"
+            >
+              {item.address || "No address available"}
+            </Text>
+          </View>
+        </Pressable>
+      </View>
+    </View>
+  );
+}
 
 export default function PinGridView({ pins }: Props) {
   return (
@@ -18,51 +94,7 @@ export default function PinGridView({ pins }: Props) {
       contentContainerStyle={styles.listContainer}
       columnWrapperStyle={styles.row}
       showsVerticalScrollIndicator={false}
-      renderItem={({ item }) => {
-        return (
-          <View style={styles.shadowWrapper}>
-            <View style={styles.card}>
-              <Pressable
-                onPress={() =>
-                  router.push({
-                    pathname: "/pins/[pinid]",
-                    params: {
-                      pinid: item.id,
-                    },
-                  })
-                }
-              >
-                <View style={styles.imgPlaceholder}>
-                  <Image
-                    source={require("@/assets/images/no_image_default.png")}
-                    style={styles.image}
-                    contentFit="cover"
-                    placeholder="blur"
-                  />
-                </View>
-
-                <View style={styles.textContainer}>
-                  <Text
-                    style={styles.cardTitle}
-                    numberOfLines={1}
-                    ellipsizeMode="tail"
-                  >
-                    {item.name || "Unnamed Pin"}
-                  </Text>
-
-                  <Text
-                    style={styles.cardLoc}
-                    numberOfLines={1}
-                    ellipsizeMode="tail"
-                  >
-                    {item.address || "No address available"}
-                  </Text>
-                </View>
-              </Pressable>
-            </View>
-          </View>
-        );
-      }}
+      renderItem={({ item }) => <GridCard item={item} />}
       ListEmptyComponent={
         <View style={styles.emptyContainer}>
           <Text style={styles.emptyText}>No pins to display yet.</Text>
