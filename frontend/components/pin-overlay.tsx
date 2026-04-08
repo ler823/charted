@@ -8,6 +8,11 @@ import { Dispatch, SetStateAction, useEffect, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 
+type FriendAvatar = {
+  user_id: number;
+  username: string;
+};
+
 type PinOverlayProps = {
   selectedPin: Pin | null;
   setSelectedPin: Dispatch<SetStateAction<Pin | null>>;
@@ -19,6 +24,7 @@ export default function PinOverlay({
 }: PinOverlayProps) {
   const router = useRouter();
   const [coverPhoto, setCoverPhoto] = useState<string | null>(null);
+  const [friendAvatars, setFriendAvatars] = useState<FriendAvatar[]>([]);
 
   useEffect(() => {
     setCoverPhoto(null);
@@ -44,21 +50,61 @@ export default function PinOverlay({
     fetchCoverPhoto();
   }, [selectedPin?.id]);
 
+  // fetch some users to preview what the friend circles look like
+  // later data implementation needed when auth is set up
+  // should fetch profiles based on the user's friends and what pins they share
+  useEffect(() => {
+    async function fetchFriendAvatars() {
+      const { data } = await supabase
+        .from("users")
+        .select("user_id, username")
+        .limit(5);
+      setFriendAvatars(data ?? []);
+    }
+    fetchFriendAvatars();
+  }, []);
+
+  const AVATAR_SIZE = 23;
+
   return (
     <Pressable style={styles.backdrop} onPress={() => setSelectedPin(null)}>
       <Pressable style={styles.overlayCard} onPress={() => {}}>
-        {coverPhoto ? (
-          <Image
-            source={{ uri: coverPhoto }}
-            style={styles.coverImage}
-            contentFit="cover"
-            transition={300}
-          />
-        ) : (
-          <View style={styles.picturePlaceholder}>
-            <Ionicons name="image-outline" size={48} />
-          </View>
-        )}
+        <View style={styles.imageWrapper}>
+          {coverPhoto ? (
+            <Image
+              source={{ uri: coverPhoto }}
+              style={styles.coverImage}
+              contentFit="cover"
+              transition={300}
+            />
+          ) : (
+            <View style={styles.picturePlaceholder}>
+              <Ionicons name="image-outline" size={48} />
+            </View>
+          )}
+
+          {friendAvatars.length > 0 && (
+            <View style={styles.friendsRow}>
+              {friendAvatars.map((friend, index) => (
+                <View
+                  key={friend.user_id}
+                  style={[
+                    styles.friendAvatar,
+                    {
+                      width: AVATAR_SIZE,
+                      height: AVATAR_SIZE,
+                      borderRadius: AVATAR_SIZE / 2,
+                    },
+                  ]}
+                >
+                  <Text style={styles.friendInitial}>
+                    {friend.username?.[0]?.toUpperCase()}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          )}
+        </View>
 
         <View style={styles.infoContainer}>
           <View style={styles.infoText}>
@@ -108,6 +154,10 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 6 },
     elevation: 10,
   },
+  imageWrapper: {
+    flex: 1,
+    position: "relative",
+  },
   coverImage: {
     width: "100%",
     flex: 1,
@@ -118,6 +168,26 @@ const styles = StyleSheet.create({
     backgroundColor: "#d8d8d8",
     alignItems: "center",
     justifyContent: "center",
+  },
+  friendsRow: {
+    position: "absolute",
+    bottom: 5,
+    right: 5,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 1,
+  },
+  friendAvatar: {
+    backgroundColor: "#d8d8d8",
+    borderWidth: 1.5,
+    borderColor: "#fff",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  friendInitial: {
+    fontSize: 10,
+    fontFamily: Fonts.regular,
+    color: "#000",
   },
   infoContainer: {
     flexDirection: "row",
