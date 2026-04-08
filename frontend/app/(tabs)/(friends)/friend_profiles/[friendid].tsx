@@ -10,6 +10,7 @@ import { Stars } from "@/components/light-stars";
 import ClusteredMapView from "react-native-map-clustering";
 import { Pin } from "@/types/types";
 import { Marker } from "react-native-maps";
+import PinMarkers from "@/components/pin-markers";
 
 
 type Friend = {
@@ -250,7 +251,7 @@ export default function FriendProfilePage() {
                     }}
                     tracksViewChanges={false}
                   >
-                    <PinMarker />
+                    <PinMarkers users_id={Number(friendid)}/>
                   </Marker>
                 ))}
             </ClusteredMapView>

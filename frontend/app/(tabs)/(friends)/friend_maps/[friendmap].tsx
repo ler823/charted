@@ -13,6 +13,7 @@ import ClusteredMapView from "react-native-map-clustering";
 import { Marker } from "react-native-maps";
 import PinGridView from "../../(home)/pin_grid_view";
 import PinListView from "../../(home)/pin_list_view";
+import PinMarkers from "@/components/pin-markers";
 
 
 type Friend = {
@@ -149,7 +150,7 @@ export default function FriendMap() {
                 tracksViewChanges={false}
                 onPress={() => setSelectedPin(pin)}
                 >
-                <PinMarker />
+                <PinMarkers users_id={Number(friendmap)}/>
                 </Marker>
             ))}
         </ClusteredMapView>
