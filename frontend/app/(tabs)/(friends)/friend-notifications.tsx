@@ -4,7 +4,8 @@ import { useRouter } from "expo-router";
 import { useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
-// Skeleton mock data — replace with real Supabase queries once auth + friend requests are implemented
+// temp data just like Figma design
+// impement real data once auth is set up
 const MOCK_RECEIVED = [
   { id: 1, username: "Preston" },
   { id: 2, username: "TimTimTim" },
@@ -46,7 +47,9 @@ export default function FriendNotifications() {
 
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         <Text style={styles.sectionTitle}>Received Friend Requests</Text>
-
+        {/* 
+        Received Friend Requests Section with Temp Data
+        */}
         {MOCK_RECEIVED.map((user) => (
           <View key={user.id} style={styles.card}>
             <Avatar username={user.username} />
@@ -76,6 +79,9 @@ export default function FriendNotifications() {
 
         <Text style={styles.sectionTitle}>Sent Friend Requests</Text>
 
+        {/* 
+        Sent Friend Requests Section with Temp Data
+        */}
         {MOCK_SENT.map((user) => (
           <View key={user.id} style={styles.card}>
             <Avatar username={user.username} />
