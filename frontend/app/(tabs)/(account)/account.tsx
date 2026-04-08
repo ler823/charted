@@ -1,10 +1,21 @@
+import LoadingPage from "@/components/loading-page";
 import { Fonts } from "@/constants/theme";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
+import { useEffect, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Stars } from "@/components/light-stars";
 
 export default function Account() {
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // placeholder for future data fetching
+    setLoading(false);
+  }, []);
+
+  if (loading) return <LoadingPage />;
+
   return (
     <ScrollView>
       <View style={{ marginTop: 45, marginHorizontal: 10, flexDirection: "row", justifyContent: "flex-end" }}>
