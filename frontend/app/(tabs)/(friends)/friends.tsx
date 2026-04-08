@@ -54,7 +54,7 @@ export default function Friends() {
           <Text style={styles.addFriendText}>Add Friend</Text>
         </Pressable>
         {/* CHECK: This bell looks a little off when loaded*/}
-        <Pressable style={styles.notifBtn}>
+        <Pressable style={styles.notifBtn} onPress={() => router.push("/friend-notifications")}>
           <Ionicons
             name="notifications-outline"
             size={33}
