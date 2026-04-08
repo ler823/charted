@@ -1,3 +1,4 @@
+import { Colors, Fonts } from "@/constants/theme";
 import { supabase } from "@/lib/supabase";
 import { router } from "expo-router";
 import { useState } from "react";
@@ -126,7 +127,7 @@ export default function SignupScreen() {
     <View style={styles.container}>
       <Text style={styles.title}>Create account</Text>
 
-      {errors.form ? <Text style={styles.error}>{errors.form}</Text> : null}
+      {errors.form ? <Text style={styles.formError}>{errors.form}</Text> : null}
 
       <TextInput
         style={styles.input}
@@ -202,39 +203,115 @@ export default function SignupScreen() {
       </TouchableOpacity>
 
       <TouchableOpacity onPress={() => router.back()}>
-        <Text style={styles.link}>Already have an account? Log in</Text>
+        <Text style={styles.link}>
+          Already have an account?{" "}
+          <Text style={styles.linkUnderline}>Log in</Text>
+        </Text>
       </TouchableOpacity>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: "center", padding: 24 },
-  title: { fontSize: 24, fontFamily: "Raleway_700Bold", marginBottom: 24 },
+  container: {
+    flex: 1,
+    backgroundColor: "#fff",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 28,
+  },
+  title: {
+    fontSize: 24,
+    fontFamily: Fonts.bold,
+    color: Colors.light.background,
+    marginBottom: 24,
+    width: "100%",
+    textAlign: "left",
+  },
+  logoContainer: {
+    alignItems: "center",
+    marginBottom: 48,
+  },
+  logo: {
+    width: 80,
+    height: 80,
+    resizeMode: "contain",
+    marginBottom: 8,
+  },
+  appName: {
+    fontSize: 28,
+    fontFamily: Fonts.bold,
+    color: Colors.light.background,
+    letterSpacing: 3,
+  },
+  form: {
+    width: "100%",
+  },
   input: {
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 4,
+    backgroundColor: "#e4ede4",
+    borderRadius: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
     fontSize: 16,
+    color: Colors.light.background,
+    marginBottom: 4,
+    width: "100%",
   },
   button: {
-    backgroundColor: "#000",
-    borderRadius: 8,
-    padding: 14,
+    backgroundColor: Colors.light.background,
+    borderRadius: 30,
+    paddingVertical: 18,
     alignItems: "center",
-    marginTop: 16,
+    width: "100%",
+    marginTop: 24,
   },
-  buttonText: { color: "#fff", fontSize: 16, fontFamily: "Raleway_700Bold" },
-  error: { color: "red", marginBottom: 12, fontSize: 14 },
-  fieldError: { color: "red", fontSize: 12, marginBottom: 8, marginLeft: 4 },
-  available: { color: "green", fontSize: 12, marginBottom: 8, marginLeft: 4 },
-  hint: { color: "#999", fontSize: 12, marginBottom: 8, marginLeft: 4 },
+  buttonText: {
+    color: "#fff",
+    fontSize: 17,
+    fontFamily: Fonts.bold,
+    letterSpacing: 0.5,
+  },
+  formError: {
+    color: "red",
+    marginBottom: 12,
+    fontSize: 14,
+    width: "100%",
+    textAlign: "left",
+  },
+  fieldError: {
+    color: "red",
+    fontSize: 12,
+    marginBottom: 8,
+    marginLeft: 4,
+    width: "100%",
+    textAlign: "left",
+  },
+  available: {
+    color: "green",
+    fontSize: 12,
+    marginBottom: 8,
+    marginLeft: 4,
+    width: "100%",
+    textAlign: "left",
+  },
+  hint: {
+    color: "#999",
+    fontSize: 12,
+    marginBottom: 8,
+    marginLeft: 4,
+    width: "100%",
+    textAlign: "left",
+  },
   link: {
     textAlign: "center",
-    marginTop: 16,
-    color: "#666",
-    fontFamily: "Raleway_400Regular",
+    marginTop: 20,
+    color: Colors.light.background,
+    fontFamily: Fonts.regular,
+    fontSize: 14,
+  },
+  linkUnderline: {
+    textDecorationLine: "underline",
+    color: Colors.light.background,
+    fontFamily: Fonts.bold,
   },
 });
