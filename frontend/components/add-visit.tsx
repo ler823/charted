@@ -1,7 +1,7 @@
 import { Colors, Fonts } from "@/constants/theme";
-import { Calendar } from "react-native-calendars";
 import React, { PropsWithChildren, useState } from 'react';
-import { Alert, Keyboard, Modal, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, Modal, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Calendar } from "react-native-calendars";
 
 
 type Props = PropsWithChildren<{
@@ -99,6 +99,7 @@ const styles = StyleSheet.create({
   title: {
     color: '#000000',
     fontSize: 16,
+    fontFamily: Fonts.regular
   },
   modalOverlay: {
     flex: 1,
@@ -158,6 +159,7 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontWeight: "bold",
     fontSize: 16,
+    fontFamily: Fonts.bold
   },
   saveBtn: {
     padding: 16,
@@ -173,5 +175,6 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontWeight: "bold",
     fontSize: 16,
+    fontFamily: Fonts.bold
   },
 });

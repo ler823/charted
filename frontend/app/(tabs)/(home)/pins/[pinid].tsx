@@ -5,10 +5,11 @@ import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, FlatList, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 //import { AutoSkeletonView } from "react-native-auto-skeleton";
+import { getPhotoUrl } from "@/app/make-pin";
 import LoadingPage from "@/components/loading-page";
-
+import { getPinChanged, setPinChanged } from "./pin_refresh_data";
 
 type Friend = {
   user_id: number;
@@ -45,10 +46,10 @@ type Pin = {
       photo_id: number | null;
       key: string | null;
     } | null;
-  } | null;
+    cover: boolean | null;
+  }[] | null;
   private: boolean | null;
 };
-
 
 export default function PinPage() {
   const { pinid, viewMode } = useLocalSearchParams();
@@ -56,6 +57,8 @@ export default function PinPage() {
   const [pin, setPin] = useState<Pin | null>(null);
   const [friends, setFriends] = useState<Friend[] | null>([]);
   const [isEnabled, setIsEnabled] = useState(false);
+  const [coverPhoto, setCoverPhoto] = useState<string | null>(null);
+  const [photoList, setPhotoList] = useState<string[] | null>(null);
   const toggleSwitch = () => setIsEnabled(previousState => !previousState);
 
   useFocusEffect(
@@ -67,7 +70,7 @@ export default function PinPage() {
             pin_tags(tags( tag_id, name )),
             pin_lists(lists( list_id, name )),
             pin_visits( visit_id, visit_timestamp ),
-            pin_photos(photos( photo_id, key ))` )
+            pin_photos(photos( photo_id, key ), cover)` )
           .eq('pin_id', Number(pinid))
           .single();
         if (error) {
@@ -75,8 +78,25 @@ export default function PinPage() {
           return;
         }
         setPin(data as Pin);
+        getPhotos(data as Pin);
       }
-      fetchPin();
+
+      async function getPhotos(myPin: Pin) {
+        if (myPin == null || myPin.pin_photos[0] == null || myPin.pin_photos[0].photos.key == "") {
+          setCoverPhoto("")
+          return;
+        }
+        const coverPhotoKey = myPin.pin_photos?.filter((pin_photo) => pin_photo.cover).flatMap((pin_photo) => pin_photo?.photos?.key)
+        const otherPhotoKeys = myPin.pin_photos?.filter((pin_photo) => !pin_photo.cover).flatMap((pin_photo) => pin_photo.photos?.key)
+        const coverPhotoUri = (await getPhotoUrl(coverPhotoKey))[0].url
+        const otherPhotoUris = (await getPhotoUrl(otherPhotoKeys)).flatMap((otherPhoto) => otherPhoto.url)
+        setCoverPhoto(coverPhotoUri);
+        setPhotoList(otherPhotoUris);
+      }
+      if (getPinChanged()) {
+        setPinChanged(false);
+        fetchPin();
+      }
     }, [pinid])
   );
 
@@ -92,9 +112,10 @@ export default function PinPage() {
       }
     }
     fetchUsers();
+
   }, []);
 
-  if (!pin || !friends) {
+  if (!pin || !friends || coverPhoto == null) {
     return <LoadingPage />
   }
 
@@ -103,12 +124,17 @@ export default function PinPage() {
       <ScrollView>
         {/* Image */}
 
-        {!pin.pin_photos?.photos?.key && (
-          <Image source={require("@/assets/images/no_image_default.png")} style={styles.img} placeholder="blur" />
-        )}
-        {pin.pin_photos?.photos?.key && (
-          <Image source={{ uri: pin.pin_photos?.photos?.key! }} style={styles.img} placeholder="blur" />
-        )}
+        <Image
+          source={
+            coverPhoto
+              ? { uri: coverPhoto }
+              : require("@/assets/images/no_image_default.png")
+          }
+          style={styles.img}
+          transition={500}
+          placeholder={"blur"}
+          placeholderContentFit="cover"
+        />
 
         <View style={{ marginHorizontal: 16 }}>
           {/* Title */}
@@ -244,6 +270,22 @@ export default function PinPage() {
                 return <Text style={styles.boxText} key={pin_visit.visit_id}>{displayDate}</Text>
               })}
             </ScrollView>
+          </View>
+          <Text style={styles.subtitle}>
+            Photos
+          </Text>
+          <View style={[styles.cardFullRow]}>
+            <FlatList
+              horizontal
+              data={photoList}
+              keyExtractor={(photo) => photo}
+              renderItem={({ item }) => (
+                <Pressable onPress={() => router.push({pathname: "/image-view", params: {uri: encodeURIComponent(item)}})}>
+                  <Image source={{ uri: item }} style={styles.photoCarousel} transition={500} />
+                </Pressable>
+              )}
+              ItemSeparatorComponent={() => <View style={{ width: 10 }} />}
+            />
           </View>
           <View style={{ height: 100 }}>
 
@@ -414,4 +456,9 @@ const styles = StyleSheet.create({
     paddingLeft: 15,
     paddingBottom: 2,
   },
+  photoCarousel: {
+    width: 90,
+    height: 90,
+    borderRadius: 12
+  }
 });

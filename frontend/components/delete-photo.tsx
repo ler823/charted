@@ -1,44 +1,33 @@
 import { Colors, Fonts } from "@/constants/theme";
 import React, { PropsWithChildren } from 'react';
-import { Keyboard, Modal, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 
 
 type Props = PropsWithChildren<{
   isVisible: boolean;
   onClose: () => void;
-  onSave: () => void;
-  newTag: string;
-  setNewTag: (value: string) => void;
+  onDelete: () => void;
 }>;
 
-export default function AddTagOrList({ isVisible, onClose, onSave, newTag, setNewTag }: Props) {
+export default function DeletePhotoModal({ isVisible, onClose, onDelete }: Props) {
   return (
     <View>
       <Modal animationType="fade" transparent={true} visible={isVisible}>
         <View style={styles.modalOverlay}>
-          <Pressable onPress={Keyboard.dismiss} style={styles.dismissArea}>
             <View style={styles.modalContent}>
               <View style={styles.titleContainer}>
-                <Text style={styles.title}>Add a new tag</Text>
+                <Text style={styles.title}>Delete photo</Text>
               </View>
-              <View style={styles.inputContainer}>
-                <TextInput
-                  placeholder="New Tag Name"
-                  placeholderTextColor="#aaaaaa"
-                  value={newTag}
-                  onChangeText={setNewTag}
-                  style={styles.input} />
-              </View>
+              
               <View style={styles.bottomButtons}>
-                <Pressable onPress={onClose} style={styles.cancelBtn}>
-                  <Text style={styles.cancelText}>Cancel</Text>
+                <Pressable onPress={onDelete} style={styles.cancelBtn}>
+                  <Text style={styles.cancelText}>Delete</Text>
                 </Pressable>
-                <Pressable onPress={onSave} style={styles.saveBtn}>
-                  <Text style={styles.saveText}>Save</Text>
+                <Pressable onPress={onClose} style={styles.saveBtn}>
+                  <Text style={styles.saveText}>Cancel</Text>
                 </Pressable>
               </View>
             </View>
-          </Pressable>
         </View>
       </Modal>
     </View>
@@ -47,21 +36,18 @@ export default function AddTagOrList({ isVisible, onClose, onSave, newTag, setNe
 
 const styles = StyleSheet.create({
   modalContent: {
-    height: '25%',
-    width: '75%',
+    height: 150,
+    width: 400,
     backgroundColor: '#ffffff',
     borderRadius: 18,
-    paddingLeft: 16,
-    paddingRight: 16,
     paddingTop: 10,
-    paddingBottom: 10,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 2,
   },
   titleContainer: {
-    height: '16%',
+    height: 50,
     backgroundColor: '#ffffff',
     borderRadius: 10,
     paddingHorizontal: 20,
@@ -72,7 +58,7 @@ const styles = StyleSheet.create({
   title: {
     color: '#000000',
     fontSize: 16,
-    fontFamily: Fonts.regular
+    fontFamily: Fonts.regular,
   },
   modalOverlay: {
     flex: 1,
@@ -80,38 +66,15 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "rgba(0,0,0,0.4)",
   },
-  input: {
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 8,
-    padding: 10,
-    fontSize: 15,
-    backgroundColor: Colors.light.accentLight,
-    fontFamily: Fonts.regular,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 2,
-    elevation: 4,
-  },
-  dismissArea: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    width: "100%",
-  },
   bottomButtons: {
     flexDirection: "row",
-    justifyContent: "space-evenly",
+    justifyContent: "center",
     alignItems: "center",
-    padding: "5%"
-  },
-  inputContainer: {
-    flex: 1,
-    justifyContent: "center"
+    flexWrap: "wrap"
   },
   cancelBtn: {
     padding: 16,
+    marginHorizontal: 8,
     backgroundColor: Colors.light.error,
     borderRadius: 999,
     shadowColor: "#000",
@@ -124,10 +87,11 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontWeight: "bold",
     fontSize: 16,
-    fontFamily: Fonts.bold
+    fontFamily: Fonts.bold,
   },
   saveBtn: {
     padding: 16,
+    marginHorizontal: 8,
     backgroundColor: "#243e36",
     borderRadius: 999,
     shadowColor: "#000",
