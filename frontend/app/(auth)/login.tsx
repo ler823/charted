@@ -14,20 +14,36 @@ import {
 export default function LoginScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
+  const [emailError, setEmailError] = useState("");
+  const [credentialsError, setCredentialsError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  const isValidEmail = (val: string) => /\S+@\S+\.\S+/.test(val);
+
   const handleLogin = async () => {
-    setError("");
+    setEmailError("");
+    setCredentialsError("");
+
+    if (!isValidEmail(email)) {
+      setEmailError("Incorrect format.");
+      return;
+    }
+
     setLoading(true);
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
     setLoading(false);
-    if (error) setError(error.message);
-  };
 
+    if (error) {
+      if (error.message.toLowerCase().includes("invalid login credentials")) {
+        setCredentialsError("The email or password you entered is incorrect.");
+      } else {
+        setEmailError(error.message);
+      }
+    }
+  };
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Welcome back</Text>
@@ -39,6 +55,7 @@ export default function LoginScreen() {
         value={email}
         onChangeText={setEmail}
       />
+      {emailError ? <Text style={styles.fieldError}>{emailError}</Text> : null}
 
       <TextInput
         style={styles.input}
@@ -47,6 +64,9 @@ export default function LoginScreen() {
         value={password}
         onChangeText={setPassword}
       />
+      {credentialsError ? (
+        <Text style={styles.fieldError}>{credentialsError}</Text>
+      ) : null}
 
       <TouchableOpacity
         onPress={() => {}}
@@ -145,5 +165,11 @@ const styles = StyleSheet.create({
     textDecorationLine: "underline",
     color: Colors.light.background,
     fontFamily: Fonts.bold,
+  },
+  fieldError: {
+    color: "red",
+    fontSize: 12,
+    width: "100%",
+    marginBottom: 4,
   },
 });
