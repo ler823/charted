@@ -1,31 +1,56 @@
+import { Stars } from "@/components/light-stars";
 import LoadingPage from "@/components/loading-page";
 import { Fonts } from "@/constants/theme";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import { Stars } from "@/components/light-stars";
+
+import { supabase } from "@/lib/supabase";
 
 export default function Account() {
   const [loading, setLoading] = useState(true);
+  const [username, setUsername] = useState("");
 
   useEffect(() => {
-    // placeholder for future data fetching
-    setLoading(false);
+    const fetchUser = async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (user) {
+        const { data } = await supabase
+          .from("profiles") // adjust to your table name
+          .select("username")
+          .eq("id", user.id)
+          .single();
+        if (data) setUsername(data.username);
+      }
+      setLoading(false);
+    };
+    fetchUser();
   }, []);
 
   if (loading) return <LoadingPage />;
 
   return (
     <ScrollView>
-      <View style={{ marginTop: 45, marginHorizontal: 10, flexDirection: "row", justifyContent: "flex-end" }}>
+      <View
+        style={{
+          marginTop: 45,
+          marginHorizontal: 10,
+          flexDirection: "row",
+          justifyContent: "flex-end",
+        }}
+      >
         <Pressable
           style={styles.editAccountButton}
           onPress={() => {
             router.push("/edit_account");
           }}
         >
-          <Text style={{ fontFamily: Fonts.bold, color: "#d9d9d9", fontSize: 16 }}>
+          <Text
+            style={{ fontFamily: Fonts.bold, color: "#d9d9d9", fontSize: 16 }}
+          >
             Edit Account
           </Text>
         </Pressable>
@@ -36,7 +61,7 @@ export default function Account() {
         <View style={styles.avatar} />
 
         {/* Username, Location, Bio */}
-        <Text style={styles.username}>Username</Text>
+        <Text style={styles.username}>{username}</Text>
         <View style={styles.locationRow}>
           <Ionicons name="location-sharp" size={17} color="#333" />
           <Text style={[styles.location, { paddingLeft: 2 }]}>Location</Text>
@@ -47,21 +72,43 @@ export default function Account() {
         <View style={styles.infoBox}>
           <Text style={styles.header}>Statistics</Text>
           <View style={[styles.statsRow, { gap: 20 }]}>
-            <View style={[styles.infoWindow, { width: "42%", alignItems: "center" }]}>
+            <View
+              style={[
+                styles.infoWindow,
+                { width: "42%", alignItems: "center" },
+              ]}
+            >
               <Text style={styles.subHeader}>Favorite</Text>
               <View style={styles.statsWindows} />
               <View style={styles.statsBar}>
-                <View style={{ flexDirection: "row", gap: 1, justifyContent: "center" }}>
+                <View
+                  style={{
+                    flexDirection: "row",
+                    gap: 1,
+                    justifyContent: "center",
+                  }}
+                >
                   <Stars starnum={4} />
                 </View>
               </View>
             </View>
-            <View style={[styles.infoWindow, { width: "42%", alignItems: "center" }]}>
+            <View
+              style={[
+                styles.infoWindow,
+                { width: "42%", alignItems: "center" },
+              ]}
+            >
               <Text style={styles.subHeader}>Top Visited</Text>
               <View style={styles.statsWindows} />
               <View style={styles.statsBar}>
                 <Text
-                  style={{ fontFamily: Fonts.regular, fontSize: 16, color: "#fefbea", marginHorizontal: 7, flexShrink: 1 }}
+                  style={{
+                    fontFamily: Fonts.regular,
+                    fontSize: 16,
+                    color: "#fefbea",
+                    marginHorizontal: 7,
+                    flexShrink: 1,
+                  }}
                   numberOfLines={1}
                   ellipsizeMode="tail"
                 >
@@ -78,9 +125,18 @@ export default function Account() {
           <View style={[styles.infoWindow, { justifyContent: "center" }]}>
             <View style={styles.activityRow}>
               <View style={styles.locAvatar} />
-              <Text style={{ fontFamily: Fonts.bold, fontSize: 14, marginLeft: 13 }}>Visited: </Text>
               <Text
-                style={{ fontFamily: Fonts.regular, fontSize: 14, flexShrink: 1, marginRight: 13 }}
+                style={{ fontFamily: Fonts.bold, fontSize: 14, marginLeft: 13 }}
+              >
+                Visited:{" "}
+              </Text>
+              <Text
+                style={{
+                  fontFamily: Fonts.regular,
+                  fontSize: 14,
+                  flexShrink: 1,
+                  marginRight: 13,
+                }}
                 numberOfLines={1}
                 ellipsizeMode="tail"
               >
@@ -90,9 +146,18 @@ export default function Account() {
             <View style={styles.divider} />
             <View style={styles.activityRow}>
               <View style={styles.locAvatar} />
-              <Text style={{ fontFamily: Fonts.bold, fontSize: 14, marginLeft: 13 }}>Friend Added: </Text>
               <Text
-                style={{ fontFamily: Fonts.regular, fontSize: 14, flexShrink: 1, marginRight: 13 }}
+                style={{ fontFamily: Fonts.bold, fontSize: 14, marginLeft: 13 }}
+              >
+                Friend Added:{" "}
+              </Text>
+              <Text
+                style={{
+                  fontFamily: Fonts.regular,
+                  fontSize: 14,
+                  flexShrink: 1,
+                  marginRight: 13,
+                }}
                 numberOfLines={1}
                 ellipsizeMode="tail"
               >
@@ -102,9 +167,18 @@ export default function Account() {
             <View style={styles.divider} />
             <View style={styles.activityRow}>
               <View style={styles.locAvatar} />
-              <Text style={{ fontFamily: Fonts.bold, fontSize: 14, marginLeft: 13 }}>New Pin: </Text>
               <Text
-                style={{ fontFamily: Fonts.regular, fontSize: 14, flexShrink: 1, marginRight: 13 }}
+                style={{ fontFamily: Fonts.bold, fontSize: 14, marginLeft: 13 }}
+              >
+                New Pin:{" "}
+              </Text>
+              <Text
+                style={{
+                  fontFamily: Fonts.regular,
+                  fontSize: 14,
+                  flexShrink: 1,
+                  marginRight: 13,
+                }}
                 numberOfLines={1}
                 ellipsizeMode="tail"
               >
