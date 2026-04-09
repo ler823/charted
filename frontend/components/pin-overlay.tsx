@@ -1,12 +1,12 @@
+import { getPhotoUrl } from "@/app/make-pin";
 import { Colors, Fonts } from "@/constants/theme";
 import { supabase } from "@/lib/supabase";
 import { Pin } from "@/types/types";
 import { Ionicons } from "@expo/vector-icons";
-import { getPhotoUrl } from "@/app/make-pin";
 import { Image } from "expo-image";
+import { useRouter } from "expo-router";
 import { Dispatch, SetStateAction, useEffect, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import { useRouter } from "expo-router";
 
 type PinOverlayProps = {
   selectedPin: Pin | null;

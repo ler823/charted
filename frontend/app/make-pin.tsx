@@ -1,3 +1,4 @@
+import { setPinChanged } from "@/app/(tabs)/(home)/pins/pin_refresh_data";
 import AddPhotoModal from "@/components/add-photo";
 import AddTagOrList from "@/components/add-tag";
 import AddVisit from "@/components/add-visit";
@@ -27,7 +28,6 @@ import {
 } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { setPinChanged } from "./(tabs)/(home)/pins/pin_refresh_data";
 
 type PhotoItem = {
   key: string,
