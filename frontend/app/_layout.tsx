@@ -1,9 +1,10 @@
+import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { DroppingPinProvider } from "@/context/DroppingPinContext";
 import {
   Raleway_200ExtraLight,
   Raleway_400Regular,
-  Raleway_700Bold,
   Raleway_400Regular_Italic,
+  Raleway_700Bold,
   Raleway_700Bold_Italic,
 } from "@expo-google-fonts/raleway";
 import { useFonts } from "expo-font";
@@ -13,10 +14,11 @@ import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
 import { StatusBar } from "react-native";
 
-// Hold the splash screen until we're ready
 SplashScreen.preventAutoHideAsync();
 
-export default function RootLayout() {
+function AppNavigator() {
+  const { session, loading: authLoading } = useAuth();
+
   const [fontsLoaded] = useFonts({
     Raleway_200ExtraLight,
     Raleway_400Regular,
@@ -26,10 +28,16 @@ export default function RootLayout() {
   });
 
   useEffect(() => {
-    if (!fontsLoaded) return;
+    if (!fontsLoaded || authLoading) return;
+
+    if (!session) {
+      SplashScreen.hideAsync().then(() => {
+        router.replace("/(auth)/login");
+      });
+      return;
+    }
 
     Location.getForegroundPermissionsAsync().then(({ status }) => {
-      // Hide splash screen first, THEN navigate — no animation occurs
       SplashScreen.hideAsync().then(() => {
         if (status === Location.PermissionStatus.UNDETERMINED) {
           router.replace("/onboarding/enable-location");
@@ -38,18 +46,31 @@ export default function RootLayout() {
         }
       });
     });
-  }, [fontsLoaded]);
+  }, [fontsLoaded, authLoading, session]);
 
   return (
-    <>
+    <DroppingPinProvider>
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="(auth)" />
+        <Stack.Screen
+          name="(tabs)"
+          options={{ animation: "slide_from_left" }}
+        />
+        <Stack.Screen
+          name="onboarding/enable-location"
+          options={{ animation: "none" }}
+        />
+        <Stack.Screen name="make-pin" />
+      </Stack>
+    </DroppingPinProvider>
+  );
+}
+
+export default function RootLayout() {
+  return (
+    <AuthProvider>
       <StatusBar barStyle="default" />
-      <DroppingPinProvider>
-        <Stack screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="(tabs)" options={{animation: "slide_from_left"}}/>
-          <Stack.Screen name="onboarding/enable-location" options={{animation: "none"}}/>
-          <Stack.Screen name="make-pin" />
-        </Stack>
-      </DroppingPinProvider>
-    </>
+      <AppNavigator />
+    </AuthProvider>
   );
 }
