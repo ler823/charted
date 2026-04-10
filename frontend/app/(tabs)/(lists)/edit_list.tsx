@@ -1,8 +1,8 @@
-import { Fonts } from "@/constants/theme";
+import { Colors, Fonts } from "@/constants/theme";
 import { setPinChanged } from "@/lib/pin_refresh_data";
 import { supabase } from "@/lib/supabase";
 import { Pin } from "@/types/types";
-import { Ionicons } from "@expo/vector-icons";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
@@ -53,28 +53,19 @@ export default function ListPinListView() {
     <View style={styles.container}>
       <View style={styles.topBar}>
         <Pressable
-          style={styles.button}
+          style={styles.cancelButton}
           onPress={() => { router.back() }}>
-          <Ionicons name="chevron-back" size={20} color="#d9d9d9" />
           <Text
             style={styles.buttonText}
           >
-            Back
+            Cancel
           </Text>
         </Pressable>
         <Pressable
           style={styles.button}>
           <Text
-            style={styles.buttonText}
-            onPress={() => {
-              router.push(
-                {
-                  pathname: "/(tabs)/(lists)/edit_list",
-                  params: {listIdToView: listIdToView}
-                }
-              )
-            }}>
-            Edit
+            style={styles.buttonText}>
+            Save
           </Text>
         </Pressable>
       </View>
@@ -100,6 +91,11 @@ export default function ListPinListView() {
           </Pressable>
         )}
       />
+      <Pressable
+        style={styles.plusButton}
+      >
+        <MaterialCommunityIcons name="plus" size={45} color="#fefbea" />
+      </Pressable>
     </View>
   )
 }
@@ -137,6 +133,19 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
     elevation: 4,
   },
+  cancelButton: {
+    backgroundColor: Colors.light.error,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 999,
+    padding: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
+    elevation: 4,
+  },
   cancelText: {
     color: "#fff",
     fontWeight: "bold",
@@ -157,5 +166,22 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.bold,
     color: "#d9d9d9",
     fontSize: 16
+  },
+  plusButton: {
+    position: "absolute",
+    bottom: 115,
+    right: 25,
+    zIndex: 20,
+    width: 50,
+    height: 50,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 100,
+    backgroundColor: "#243e36",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
+    elevation: 4,
   },
 });

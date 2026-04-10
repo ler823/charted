@@ -1,10 +1,10 @@
 import { Fonts } from "@/constants/theme";
 import { supabase } from "@/lib/supabase";
 import { Pin } from "@/types/types";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useState } from "react";
 import { Alert, FlatList, Pressable, StyleSheet, Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import ListItemsCard from "../(home)/list_item_card";
 
 type listItems = {
@@ -61,7 +61,7 @@ export default function Lists() {
     getUserLists();
   }, []))
   return (
-    <SafeAreaView>
+    <View style={styles.container}>
       <Text style={styles.title}>My Lists</Text>
       <View style={styles.spacer} />
 
@@ -85,11 +85,20 @@ export default function Lists() {
           </Pressable>
         )}
       />
-    </SafeAreaView>
+      <Pressable
+        style={styles.plusButton}
+      >
+        <MaterialCommunityIcons name="plus" size={45} color="#fefbea" />
+      </Pressable>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  container: {
+    paddingTop: 50,
+    flex: 1,
+  },
   cards: {
     width: "100%",
     alignItems: "center",
@@ -104,5 +113,22 @@ const styles = StyleSheet.create({
     margin: 15,
     fontFamily: Fonts.bold,
     fontSize: 20,
-  }
+  },
+  plusButton: {
+    position: "absolute",
+    bottom: 115,
+    right: 25,
+    zIndex: 20,
+    width: 50,
+    height: 50,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 100,
+    backgroundColor: "#243e36",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
+    elevation: 4,
+  },
 });
