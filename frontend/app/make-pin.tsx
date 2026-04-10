@@ -1,4 +1,3 @@
-import { setPinChanged } from "@/app/(tabs)/(home)/pins/pin_refresh_data";
 import AddPhotoModal from "@/components/add-photo";
 import AddTagOrList from "@/components/add-tag";
 import AddVisit from "@/components/add-visit";
@@ -7,6 +6,7 @@ import DeletePhotoModal from "@/components/delete-photo";
 import LoadingPage from "@/components/loading-page";
 import { PressableStars } from "@/components/pressable-stars";
 import { Colors, Fonts } from "@/constants/theme";
+import { setPinChanged } from "@/lib/pin_refresh_data";
 import { supabase } from "@/lib/supabase";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { Image } from "expo-image";

@@ -1,18 +1,19 @@
-import { Colors, Fonts } from "@/constants/theme";
+import { Fonts } from "@/constants/theme";
+import { setPinChanged } from "@/lib/pin_refresh_data";
 import { supabase } from "@/lib/supabase";
 import { Pin } from "@/types/types";
-import { router, useLocalSearchParams } from "expo-router";
-import { useEffect, useState } from "react";
+import { Ionicons } from "@expo/vector-icons";
+import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
+import { useCallback, useEffect, useState } from "react";
 import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import ListCard from "../(home)/list_card";
 
 export default function ListPinListView() {
   const { listIdToView } = useLocalSearchParams();
   const [pins, setPins] = useState<Pin[]>([]);
   const [listName, setListName] = useState("");
-  const getListName = async(listId: any) => {
-    const { data, error } = await supabase 
+  const getListName = async (listId: any) => {
+    const { data, error } = await supabase
       .from("lists")
       .select("name")
       .eq("list_id", listId)
@@ -37,45 +38,68 @@ export default function ListPinListView() {
     setPins(pinsInList)
   }
 
+  useFocusEffect(
+    useCallback(() => {
+      setPinChanged(true);
+    }, [])
+  )
+
   useEffect(() => {
     getListPins(listIdToView);
     getListName(listIdToView);
   }, []);
 
   return (
-    <View>
-      <SafeAreaView>
-        <Pressable 
-        style={styles.deleteBtn}
-        onPress={() => {router.back()}}>
-          <Text style={styles.cancelText}>Back</Text>
+    <View style={styles.container}>
+      <View style={styles.topBar}>
+        <Pressable
+          style={styles.button}
+          onPress={() => { router.back() }}>
+          <Ionicons name="chevron-back" size={20} color="#d9d9d9" />
+          <Text
+            style={styles.buttonText}
+          >
+            Back
+          </Text>
         </Pressable>
-        <Text style={styles.title}>{listName}</Text>
-        <View style={styles.spacer} />
+        <Pressable
+        style={styles.button}>
+          <Text
+          style={styles.buttonText}>
+            Edit
+          </Text>
+        </Pressable>
+      </View>
+      <Text ellipsizeMode="tail" style={styles.title}>{listName}</Text>
+      <View style={styles.spacer} />
 
-        <FlatList
-          data={pins}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.listContent}
-          renderItem={({ item }) => (
-            <Pressable
-              style={styles.cards}
-              onPress={() => {
-                router.push({pathname: "/pins/[pinid]",
-                  params: {pinid: Number(item.id), viewMode: ""}}
-                )
-              }}
-            >
-              <ListCard name={item.name} pinId={item.id} loc={item.address} />
-            </Pressable>
-          )}
-        />
-      </SafeAreaView>
+      <FlatList
+        data={pins}
+        keyExtractor={(item) => item.id}
+        contentContainerStyle={styles.listContent}
+        renderItem={({ item }) => (
+          <Pressable
+            style={styles.cards}
+            onPress={() => {
+              router.push({
+                pathname: "/pins/[pinid]",
+                params: { pinid: Number(item.id), viewMode: "" }
+              }
+              )
+            }}
+          >
+            <ListCard name={item.name} pinId={item.id} loc={item.address} />
+          </Pressable>
+        )}
+      />
     </View>
   )
 }
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
   cards: {
     width: "100%",
     alignItems: "center",
@@ -90,26 +114,36 @@ const styles = StyleSheet.create({
     margin: 15,
     fontFamily: Fonts.bold,
     fontSize: 20,
+    textAlign: "center"
   },
-  deleteBtn: {
-      flexDirection: "row",
-      justifyContent: "center",
-      alignItems: "center",
-      alignSelf: "flex-start",
-      gap: 10,
-      padding: 16,
-      backgroundColor: Colors.light.error,
-      borderRadius: 999,
-      shadowColor: "#000",
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.3,
-      shadowRadius: 2,
-      elevation: 4,
-      marginTop: 24,
-    },
-    cancelText: {
+  button: {
+    backgroundColor: "#243e36",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 999,
+    padding: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
+    elevation: 4,
+  },
+  cancelText: {
     color: "#fff",
     fontWeight: "bold",
     fontSize: 16,
   },
+  topBar: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 0,
+    position: "relative",
+    paddingTop: 50,
+    paddingRight: 16,
+    paddingLeft: 16,
+    zIndex: 10,
+  },
+  buttonText: { fontFamily: Fonts.bold, color: "#d9d9d9", fontSize: 16 }
 });

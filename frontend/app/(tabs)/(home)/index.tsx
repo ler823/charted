@@ -15,7 +15,7 @@ import { useDroppingPin } from "@/context/DroppingPinContext";
 import { useLocation } from "@/hooks/use-location";
 import { Coords, Pin, ViewMode, ViewOption } from "@/types/types";
 import { useFocusEffect, useLocalSearchParams } from "expo-router";
-import { setPinChanged } from "./pins/pin_refresh_data";
+import { setPinChanged } from "../../../lib/pin_refresh_data";
 
 // CSULB is default region if user does not share location
 const CSULB = {

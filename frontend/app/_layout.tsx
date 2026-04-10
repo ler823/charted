@@ -61,6 +61,7 @@ function AppNavigator() {
           options={{ animation: "none" }}
         />
         <Stack.Screen name="make-pin" />
+        <Stack.Screen name="pins" />
       </Stack>
     </DroppingPinProvider>
   );

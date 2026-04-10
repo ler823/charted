@@ -9,7 +9,7 @@ import { Alert, FlatList, Pressable, ScrollView, StyleSheet, Text, View } from "
 //import { AutoSkeletonView } from "react-native-auto-skeleton";
 import { getPhotoUrl } from "@/app/make-pin";
 import LoadingPage from "@/components/loading-page";
-import { getPinChanged, setPinChanged } from "./pin_refresh_data";
+import { getPinChanged, setPinChanged } from "@/lib/pin_refresh_data";
 
 type Friend = {
   user_id: number;
