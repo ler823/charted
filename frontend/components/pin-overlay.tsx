@@ -1,5 +1,6 @@
 import { getPhotoUrl } from "@/app/make-pin";
 import { Colors, Fonts } from "@/constants/theme";
+import { getPhotoUrl } from "@/lib/photo-utils";
 import { supabase } from "@/lib/supabase";
 import { Pin } from "@/types/types";
 import { Ionicons } from "@expo/vector-icons";
