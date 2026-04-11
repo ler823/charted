@@ -44,6 +44,29 @@ export default function Lists() {
     return data.map((list: any) => ({ listId: list.list_id, name: list.name }));
   };
 
+  const getFriendLists = async () => {
+    const { data, error } = await supabase
+      .from("lists")
+      .select(
+        `
+        list_id,
+        name,
+        users!lists_user_id_fkey (
+          username
+        )
+      `,
+      )
+      .neq("users.username", "TimTimTim")
+      .eq("private", true);
+
+    if (error) {
+      Alert.alert("Error", error.message);
+      return;
+    }
+    setLists(data.map((list: any) => ({ listId: list.list_id, name: list.name })))
+    return data.map((list: any) => ({ listId: list.list_id, name: list.name }));
+  }
+
   const getListPins = async (listId: any) => {
     const { data, error } = await supabase
       .from("pin_lists")
@@ -72,8 +95,13 @@ export default function Lists() {
   }
 
   useFocusEffect(useCallback(() => {
-    getUserLists();
-  }, []))
+    if (viewMode == "user") {
+      getUserLists();
+    }
+    else if (viewMode == "shared") {
+      getFriendLists();
+    }
+  }, [viewMode]))
   return (
     <View style={styles.container}>
       <View style={styles.searchRow}>
@@ -116,7 +144,7 @@ export default function Lists() {
                 backgroundColor: viewMode == "shared" ? Colors.light.accent : Colors.light.background
               },]}>
             <Text
-              style={styles.buttonText}>Shared Lists</Text>
+              style={styles.buttonText}>Friend Lists</Text>
           </Pressable>
         </View>
         <Pressable
@@ -131,6 +159,11 @@ export default function Lists() {
         data={lists}
         keyExtractor={(item) => item.name}
         contentContainerStyle={styles.listContent}
+        ListEmptyComponent={() => viewMode == "shared" ? (
+          <Text style={styles.text}>Your friends are not sharing any lists with their friends</Text>
+        ): (
+          <Text style={styles.text}>You do not have any lists</Text>
+        )}
         renderItem={({ item }) => (
           <Pressable
             style={styles.cards}
@@ -180,10 +213,11 @@ const styles = StyleSheet.create({
   listContent: {
     paddingBottom: 265,
   },
-  title: {
+  text: {
     margin: 15,
-    fontFamily: Fonts.bold,
-    fontSize: 20,
+    fontFamily: Fonts.regular,
+    fontSize: 16,
+    textAlign: "center",
   },
   plusButton: {
     position: "absolute",

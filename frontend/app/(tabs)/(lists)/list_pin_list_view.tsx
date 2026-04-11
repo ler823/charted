@@ -42,11 +42,13 @@ export default function ListPinListView() {
   useFocusEffect(
     useCallback(() => {
       setPinChanged(true);
+      getListPins(listIdToView)
+      getListName(listIdToView)
     }, [])
   )
 
   useEffect(() => {
-    getListPins(listIdToView);
+    
     getListName(listIdToView);
   }, []);
 

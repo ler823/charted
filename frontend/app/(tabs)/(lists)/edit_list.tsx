@@ -4,14 +4,14 @@ import { Colors, Fonts } from "@/constants/theme";
 import { setPinChanged } from "@/lib/pin_refresh_data";
 import { supabase } from "@/lib/supabase";
 import { Pin } from "@/types/types";
-import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { Checkbox } from "expo-checkbox";
 import { Image } from "expo-image";
 import * as ImageManipulator from "expo-image-manipulator";
 import * as ImagePicker from 'expo-image-picker';
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
-import { FlatList, Pressable, StyleSheet, Switch, Text, TextInput, View } from "react-native";
+import { Alert, FlatList, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import ListCard from "../(home)/list_card";
 
 type PhotoItem = {
@@ -23,6 +23,8 @@ type PhotoItem = {
 export default function EditList() {
   const { listIdToView } = useLocalSearchParams();
   const [pins, setPins] = useState<Pin[]>([]);
+  const [dbPins, setDbPins] = useState<Pin[]>([]);
+  const [dbListName, setDbListName] = useState("");
   const [listName, setListName] = useState("");
   const [checkedItems, setCheckedItems] = useState<Record<string, boolean>>({});
   const [addPinToListVisible, setAddPinToListVisible] = useState(false);
@@ -30,21 +32,31 @@ export default function EditList() {
   const [coverPhotoUrl, setCoverPhotoUrl] = useState("");
   const [coverPhotoChanged, setCoverPhotoChanged] = useState(false);
   const [photoToDelete, setPhotoToDelete] = useState<PhotoItem | null>(null)
-  const [isPrivate, setIsPrivate] = useState(false);
-  const publicDescription = "All of your friends can view this pin";
-  const privateDescription = "Only you can view this pin";
-  const [privacyDescription, setPrivacyDescription] = useState(publicDescription);
-  const [pinsToAppend, setPinsToAppend] = useState<Pin[]>([]);
-  const [pinsToRemove, setPinsToRemove] = useState<Number[]>([]);
+  const publicDescription = "All of your friends can view this list";
+  const selectivePrivateDescription = "Only friends you choose can view this list"
+  const privateDescription = "Only you can view this list";
+  const [privacyDescription, setPrivacyDescription] = useState(selectivePrivateDescription);
+  const [pinsToAdd, setPinsToAdd] = useState<Pin[]>([]);
+  const [pinsToRemove, setPinsToRemove] = useState<number[]>([]);
+  const [privacy, setPrivacy] = useState<number>(1); // 0: fully private, 1: selectively private, 2: all friends
 
-  const togglePrivacy = () => {
-    setIsPrivate((previousState) => !previousState);
-    if (isPrivate) {
-      setPrivacyDescription(publicDescription);
-    } else {
+  const changePrivacy = (value: number) => {
+    if (value < 0 || value > 2) {
+      return;
+    }
+    if (value == 0) {
+      setPrivacy(0);
       setPrivacyDescription(privateDescription);
     }
-  };
+    else if (value == 1) {
+      setPrivacy(1);
+      setPrivacyDescription(selectivePrivateDescription);
+    }
+    else {
+      setPrivacy(2);
+      setPrivacyDescription(publicDescription);
+    }
+  }
 
   const getListName = async (listId: any) => {
     const { data, error } = await supabase
@@ -52,6 +64,7 @@ export default function EditList() {
       .select("name")
       .eq("list_id", listId)
     setListName(data?.[0].name);
+    setDbListName(data?.[0].name);
   }
   const getListPins = async (listId: any) => {
     const { data, error } = await supabase
@@ -70,6 +83,7 @@ export default function EditList() {
       .eq("list_id", Number(listId))
     const pinsInList: Pin[] = data?.map(pin => ({ id: pin.pins.pin_id, name: pin.pins.name, address: pin.pins.address, latitude: pin.pins.locations.latitude, longitude: pin.pins.locations.longitude }))
     setPins(pinsInList)
+    setDbPins(pinsInList)
   }
 
   const printSelectedPins = async () => {
@@ -142,9 +156,11 @@ export default function EditList() {
   }
 
   const updateAddedToPinList = async () => {
-    if (pinsToAppend.length > 0) {
-      setPins((prev) => [...prev, ...pinsToAppend])
+    if (pinsToAdd.length > 0) {
+      setPins((prev) => [...prev, ...pinsToAdd])
     }
+    const pinIdsToAdd = pinsToAdd.map((item) => Number(item.id))
+    setPinsToRemove((prev) => prev.filter((item) => !pinIdsToAdd.includes(item)))
   }
 
   const updateRemovedFromPinList = async () => {
@@ -152,6 +168,50 @@ export default function EditList() {
       setPins(pins.filter((item) => !pinsToRemove.includes(Number(item.id))))
     }
   }
+
+  const saveChanges = async () => {
+    if (photoToDelete != null) {
+      // handle deleting a folder from db
+    }
+    if (coverPhotoChanged) {
+      // handle adding a photo to db
+    }
+    const pinIdsToAdd = pinsToAdd.map((item) => Number(item.id))
+    const dbPinIds = dbPins.map((item) => Number(item.id))
+    const pinIdsToRemove = pinsToRemove;
+    const pinsToAddToDb = pins.filter((item) => !dbPinIds.includes(Number(item.id)) && !pinIdsToRemove.includes(Number(item.id)))
+    const pinListAssociationToAdd = pinsToAddToDb.map((item) => ({pin_id: Number(item.id), list_id: listIdToView}))
+    const pinsToDeleteFromDb = pinIdsToRemove.filter((item) => dbPinIds.includes(Number(item)));
+    if (pinsToAddToDb.length > 0) {
+      const { error: addPinListError } = await supabase
+        .from("pin_lists")
+        .insert(pinListAssociationToAdd)
+      if (addPinListError) {
+        Alert.alert("Error", addPinListError.message)
+      }
+    }
+    if (pinsToDeleteFromDb.length > 0) {
+      const { error: deletePinListError } = await supabase
+        .from("pin_lists")
+        .delete()
+        .in("pin_id", pinsToDeleteFromDb)
+        .eq("list_id", listIdToView)
+      if (deletePinListError) {
+        Alert.alert("Error", deletePinListError.message)
+      }
+    }
+    if (dbListName != listName) {
+      const { error: updateListNameError } = await supabase
+        .from("lists")
+        .update({"name": listName})
+        .eq("list_id", listIdToView);
+      if (updateListNameError) {
+        Alert.alert("Error", updateListNameError.message)
+      }
+    }
+    router.back()
+  }
+  
 
   useFocusEffect(
     useCallback(() => {
@@ -166,7 +226,7 @@ export default function EditList() {
 
   useEffect(() => {
     updateAddedToPinList();
-  }, [pinsToAppend]);
+  }, [pinsToAdd]);
 
   useEffect(() => {
     updateRemovedFromPinList();
@@ -185,14 +245,9 @@ export default function EditList() {
           </Text>
         </Pressable>
         <Pressable
-          style={styles.button}>
-          <Text
-            style={styles.buttonText}>
-            Share with Friends
-          </Text>
-        </Pressable>
-        <Pressable
-          style={styles.button}>
+          style={styles.button}
+          onPress={saveChanges}>
+          
           <Text
             style={styles.buttonText}>
             Save
@@ -231,28 +286,64 @@ export default function EditList() {
               placeholder="Name"
               placeholderTextColor="#aaaaaa"
               value={listName}
+              onChangeText={setListName}
             />
           </View>
         </View>
       </View>
       {/* <Text ellipsizeMode="tail" style={styles.title}>{listName}</Text> */}
       <View>
-        <Text style={styles.title}>Private</Text>
-        <View style={styles.privacySwitchBackground}>
-          <Switch
-            trackColor={{
-              false: Colors.light.text,
-              true: Colors.light.accent,
-            }}
-            thumbColor="#FFF"
-            ios_backgroundColor={Colors.light.text}
-            onValueChange={togglePrivacy}
-            value={isPrivate}
-          />
-          <View style={{ flex: 1 }}>
-            <Text style={styles.privacyDescription}>
-              {privacyDescription}
-            </Text>
+        <Text style={styles.title}>Privacy</Text>
+        <View style={styles.privacyBackground}>
+          <View style={styles.row}>
+            <View style={styles.pill}>
+              <Pressable
+                onPress={() => changePrivacy(0)}
+                style={[
+                  styles.button,
+                  {
+                    borderTopRightRadius: 0,
+                    borderBottomRightRadius: 0,
+                    backgroundColor: privacy == 0 ? Colors.light.accent : Colors.light.background
+                  }]}>
+                <Ionicons name="lock-closed" size={24} color="#d9d9d9" />
+              </Pressable>
+              <Pressable
+                onPress={() => changePrivacy(1)}
+                style={[
+                  styles.button,
+                  {
+                    borderRadius: 0,
+                    backgroundColor: privacy == 1 ? Colors.light.accent : Colors.light.background
+                  },]}>
+                <Ionicons name="person-add" size={24} color="#d9d9d9" />
+              </Pressable>
+              <Pressable
+                onPress={() => changePrivacy(2)}
+                style={[
+                  styles.button,
+                  {
+                    borderTopLeftRadius: 0,
+                    borderBottomLeftRadius: 0,
+                    backgroundColor: privacy == 2 ? Colors.light.accent : Colors.light.background
+                  },]}>
+                <Ionicons name="people" size={24} color="#d9d9d9" />
+              </Pressable>
+            </View>
+            {privacy == 1 && (
+              <Pressable
+                style={styles.button}>
+                <Text
+                  style={styles.buttonText}>Edit Friends</Text>
+              </Pressable>
+            )}
+          </View>
+          <View>
+            <View>
+              <Text style={styles.privacyDescription}>
+                {privacyDescription}
+              </Text>
+            </View>
           </View>
         </View>
       </View>
@@ -293,7 +384,7 @@ export default function EditList() {
         onSave={() => setAddPinToListVisible(false)}
         listId={listIdToView.toString()}
         pinsInList={pins}
-        setPinsToAdd={setPinsToAppend}
+        setPinsToAdd={setPinsToAdd}
       />
       <Pressable
         style={styles.deleteButton}
@@ -301,7 +392,7 @@ export default function EditList() {
       >
         <Text
           style={styles.buttonText}>
-          Delete selected pins
+          Remove Selected Pins from List
         </Text>
       </Pressable>
     </View>
@@ -464,13 +555,12 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
     elevation: 4,
   },
-  privacySwitchBackground: {
-    flexDirection: "row",
+  privacyBackground: {
+    flexDirection: "column",
     gap: 8,
     margin: 15,
     backgroundColor: Colors.light.accentLight,
-    alignSelf: "flex-start",
-    alignItems: "center",
+    alignItems: "flex-start",
     padding: 9.5,
     borderWidth: 1,
     borderColor: "#ddd",
@@ -484,6 +574,10 @@ const styles = StyleSheet.create({
   privacyDescription: {
     flexShrink: 1,
     fontFamily: Fonts.regular,
-    marginLeft: 8,
+    marginHorizontal: 15, 
+    marginBottom: 15, 
+  },
+  pill: {
+    flexDirection: "row",
   },
 });
