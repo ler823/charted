@@ -1,5 +1,5 @@
-import { getPhotoUrl } from "@/app/make-pin";
 import { Fonts } from "@/constants/theme";
+import { getPhotoUrl } from "@/lib/photo-utils";
 import { supabase } from "@/lib/supabase";
 import { Pin } from "@/types/types";
 import { Image } from "expo-image";
@@ -71,11 +71,7 @@ function GridCard({ item }: { item: Pin }) {
             >
               {item.name || "Unnamed Pin"}
             </Text>
-            <Text
-              style={styles.cardLoc}
-              numberOfLines={1}
-              ellipsizeMode="tail"
-            >
+            <Text style={styles.cardLoc} numberOfLines={1} ellipsizeMode="tail">
               {item.address || "No address available"}
             </Text>
           </View>

@@ -9,8 +9,6 @@ import { Colors, Fonts } from "@/constants/theme";
 import { supabase } from "@/lib/supabase";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { Image } from "expo-image";
-import * as ImageManipulator from "expo-image-manipulator";
-import * as ImagePicker from "expo-image-picker";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
@@ -29,27 +27,13 @@ import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view
 import { SafeAreaView } from "react-native-safe-area-context";
 import { setPinChanged } from "./(tabs)/(home)/pins/pin_refresh_data";
 
+import { getPhotoUrl, pickImageAsync, processImage } from "@/lib/photo-utils";
+
 type PhotoItem = {
   key: string;
   url: string;
   changed: boolean;
 };
-
-export async function getPhotoUrl(keys: string[]) {
-  const res = await fetch(
-    "https://4nm4iifq65.execute-api.us-east-2.amazonaws.com/downloadphotourl",
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ keys }),
-    },
-  );
-
-  const { urls } = await res.json();
-  return urls;
-}
 
 export default function MakePin() {
   const router = useRouter();
@@ -200,31 +184,6 @@ export default function MakePin() {
     }
     router.back();
     return;
-  };
-
-  const processImage = async (uri: string) => {
-    const result = await ImageManipulator.manipulateAsync(
-      uri,
-      [{ resize: { width: 1080 } }], // keeps aspect ratio
-      {
-        compress: 0.7,
-        format: ImageManipulator.SaveFormat.JPEG,
-      },
-    );
-
-    return result;
-  };
-
-  const pickImageAsync = async () => {
-    let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ["images"],
-      allowsEditing: true,
-      quality: 1,
-    });
-
-    if (!result.canceled) {
-      return result;
-    }
   };
 
   const handleChooseFromLibrary = async (cover: boolean) => {

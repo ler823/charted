@@ -5,10 +5,18 @@ import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
-import { Alert, FlatList, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import {
+  Alert,
+  FlatList,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 //import { AutoSkeletonView } from "react-native-auto-skeleton";
-import { getPhotoUrl } from "@/app/make-pin";
 import LoadingPage from "@/components/loading-page";
+import { getPhotoUrl } from "@/lib/photo-utils";
 import { getPinChanged, setPinChanged } from "./pin_refresh_data";
 
 type Friend = {
@@ -25,29 +33,37 @@ type Pin = {
   user_note: string | null;
   name: string | null;
   address: string | null;
-  pin_tags: {
-    tags: {
-      tag_id: number | null;
-      name: string | null;
-    } | null;
-  }[] | null;
-  pin_lists: {
-    lists: {
-      list_id: number | null;
-      name: string | null;
-    } | null;
-  }[] | null;
-  pin_visits: {
-    visit_id: number | null;
-    visit_timestamp: string | null;
-  }[] | null;
-  pin_photos: {
-    photos: {
-      photo_id: number | null;
-      key: string | null;
-    } | null;
-    cover: boolean | null;
-  }[] | null;
+  pin_tags:
+    | {
+        tags: {
+          tag_id: number | null;
+          name: string | null;
+        } | null;
+      }[]
+    | null;
+  pin_lists:
+    | {
+        lists: {
+          list_id: number | null;
+          name: string | null;
+        } | null;
+      }[]
+    | null;
+  pin_visits:
+    | {
+        visit_id: number | null;
+        visit_timestamp: string | null;
+      }[]
+    | null;
+  pin_photos:
+    | {
+        photos: {
+          photo_id: number | null;
+          key: string | null;
+        } | null;
+        cover: boolean | null;
+      }[]
+    | null;
   private: boolean | null;
 };
 
@@ -59,22 +75,24 @@ export default function PinPage() {
   const [isEnabled, setIsEnabled] = useState(false);
   const [coverPhoto, setCoverPhoto] = useState<string | null>(null);
   const [photoList, setPhotoList] = useState<string[] | null>(null);
-  const toggleSwitch = () => setIsEnabled(previousState => !previousState);
+  const toggleSwitch = () => setIsEnabled((previousState) => !previousState);
 
   useFocusEffect(
     useCallback(() => {
       async function fetchPin() {
         const { data, error } = await supabase
           .from("pins")
-          .select(`*,
+          .select(
+            `*,
             pin_tags(tags( tag_id, name )),
             pin_lists(lists( list_id, name )),
             pin_visits( visit_id, visit_timestamp ),
-            pin_photos(photos( photo_id, key ), cover)` )
-          .eq('pin_id', Number(pinid))
+            pin_photos(photos( photo_id, key ), cover)`,
+          )
+          .eq("pin_id", Number(pinid))
           .single();
         if (error) {
-          Alert.alert(error.message)
+          Alert.alert(error.message);
           return;
         }
         setPin(data as Pin);
@@ -82,14 +100,24 @@ export default function PinPage() {
       }
 
       async function getPhotos(myPin: Pin) {
-        if (myPin == null || myPin.pin_photos[0] == null || myPin.pin_photos[0].photos.key == "") {
-          setCoverPhoto("")
+        if (
+          myPin == null ||
+          myPin.pin_photos[0] == null ||
+          myPin.pin_photos[0].photos.key == ""
+        ) {
+          setCoverPhoto("");
           return;
         }
-        const coverPhotoKey = myPin.pin_photos?.filter((pin_photo) => pin_photo.cover).flatMap((pin_photo) => pin_photo?.photos?.key)
-        const otherPhotoKeys = myPin.pin_photos?.filter((pin_photo) => !pin_photo.cover).flatMap((pin_photo) => pin_photo.photos?.key)
-        const coverPhotoUri = (await getPhotoUrl(coverPhotoKey))[0].url
-        const otherPhotoUris = (await getPhotoUrl(otherPhotoKeys)).flatMap((otherPhoto) => otherPhoto.url)
+        const coverPhotoKey = myPin.pin_photos
+          ?.filter((pin_photo) => pin_photo.cover)
+          .flatMap((pin_photo) => pin_photo?.photos?.key);
+        const otherPhotoKeys = myPin.pin_photos
+          ?.filter((pin_photo) => !pin_photo.cover)
+          .flatMap((pin_photo) => pin_photo.photos?.key);
+        const coverPhotoUri = (await getPhotoUrl(coverPhotoKey))[0].url;
+        const otherPhotoUris = (await getPhotoUrl(otherPhotoKeys)).flatMap(
+          (otherPhoto) => otherPhoto.url,
+        );
         setCoverPhoto(coverPhotoUri);
         setPhotoList(otherPhotoUris);
       }
@@ -97,7 +125,7 @@ export default function PinPage() {
         setPinChanged(false);
         fetchPin();
       }
-    }, [pinid])
+    }, [pinid]),
   );
 
   useEffect(() => {
@@ -107,16 +135,15 @@ export default function PinPage() {
         .select("user_id, username, location");
       setFriends(data ?? []);
       if (error) {
-        Alert.alert(error.message)
+        Alert.alert(error.message);
         return;
       }
     }
     fetchUsers();
-
   }, []);
 
   if (!pin || !friends || coverPhoto == null) {
-    return <LoadingPage />
+    return <LoadingPage />;
   }
 
   return (
@@ -138,7 +165,18 @@ export default function PinPage() {
 
         <View style={{ marginHorizontal: 16 }}>
           {/* Title */}
-          <View style={[styles.editRow, { alignItems: "center", alignContent: "center", marginTop: 10, marginRight: 25, gap: 6 }]}>
+          <View
+            style={[
+              styles.editRow,
+              {
+                alignItems: "center",
+                alignContent: "center",
+                marginTop: 10,
+                marginRight: 25,
+                gap: 6,
+              },
+            ]}
+          >
             <Text style={styles.title}>{pin.name ?? "No pin name"}</Text>
             {pin.private === true && (
               <Ionicons name="lock-closed" size={20} color="#243e36" />
@@ -150,7 +188,9 @@ export default function PinPage() {
 
           {/* Address */}
           <View>
-            <Text style={styles.address}>{pin.address ?? "No pin address"}</Text>
+            <Text style={styles.address}>
+              {pin.address ?? "No pin address"}
+            </Text>
           </View>
 
           {/* Stars */}
@@ -159,28 +199,46 @@ export default function PinPage() {
           </View>
 
           {/* Friend Visits */}
-          <Text style={styles.subtitle}>
-            Friends Who Have Visited
-          </Text>
+          <Text style={styles.subtitle}>Friends Who Have Visited</Text>
           <View style={{ marginHorizontal: -16 }}>
-            <ScrollView horizontal style={styles.cardRow} contentContainerStyle={{ paddingHorizontal: 16, gap: 10 }}>
+            <ScrollView
+              horizontal
+              style={styles.cardRow}
+              contentContainerStyle={{ paddingHorizontal: 16, gap: 10 }}
+            >
               {friends?.length === 0 && (
-                <Text style={styles.boxText}>None of your friends share this pin yet</Text>
+                <Text style={styles.boxText}>
+                  None of your friends share this pin yet
+                </Text>
               )}
               {friends?.map((friend) => (
-                <Pressable key={friend?.user_id} style={styles.cardPartialRow} onPress={() =>
-                  router.push({
-                    pathname: "/(tabs)/(home)/friend_profiles/[friendpf]",
-                    params: {
-                      friendpf: `${friend?.username}`
-                    }
-                  })}>
-                  <View style={{ flexDirection: "column", flex: 1, alignItems: "center", justifyContent: "center" }}>
+                <Pressable
+                  key={friend?.user_id}
+                  style={styles.cardPartialRow}
+                  onPress={() =>
+                    router.push({
+                      pathname: "/(tabs)/(home)/friend_profiles/[friendpf]",
+                      params: {
+                        friendpf: `${friend?.username}`,
+                      },
+                    })
+                  }
+                >
+                  <View
+                    style={{
+                      flexDirection: "column",
+                      flex: 1,
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
                     <View style={[styles.avatar, { marginBottom: 10 }]}>
-                      <Text style={styles.avatarInitial}>{friend?.username?.[0]?.toUpperCase()}</Text>
+                      <Text style={styles.avatarInitial}>
+                        {friend?.username?.[0]?.toUpperCase()}
+                      </Text>
                     </View>
                     <Text
-                      style={{ fontFamily: Fonts.bold, fontSize: 15, }}
+                      style={{ fontFamily: Fonts.bold, fontSize: 15 }}
                       adjustsFontSizeToFit
                       minimumFontScale={0.5}
                       numberOfLines={1}
@@ -194,17 +252,15 @@ export default function PinPage() {
           </View>
 
           {/* Notes */}
-          <Text style={styles.subtitle}>
-            My Notes
-          </Text>
+          <Text style={styles.subtitle}>My Notes</Text>
           <View style={styles.cardFullRow}>
-            <Text style={styles.boxText}>{pin.user_note || "You have no notes yet"}</Text>
+            <Text style={styles.boxText}>
+              {pin.user_note || "You have no notes yet"}
+            </Text>
           </View>
 
           {/* Friend Notes */}
-          <Text style={styles.subtitle}>
-            Friends' Notes
-          </Text>
+          <Text style={styles.subtitle}>Friends' Notes</Text>
           {/* Formatting for friend notes, once we implement that:
             <Pressable style={styles.cardFullRow}>
             <View style={styles.avatar}></View>
@@ -217,84 +273,119 @@ export default function PinPage() {
           </Pressable>
           */}
           <View style={styles.cardFullRow}>
-            <Text style={styles.boxText}>None of your friends share this pin yet</Text>
+            <Text style={styles.boxText}>
+              None of your friends share this pin yet
+            </Text>
           </View>
 
           {/* Tags */}
           <View style={styles.editRow}>
-            <Text style={styles.subtitle}>
-              Tags
-            </Text>
+            <Text style={styles.subtitle}>Tags</Text>
           </View>
           <View style={styles.cardFullRow}>
-            <ScrollView contentContainerStyle={{ flexDirection: "row", gap: 20, flexWrap: "wrap" }}>
+            <ScrollView
+              contentContainerStyle={{
+                flexDirection: "row",
+                gap: 20,
+                flexWrap: "wrap",
+              }}
+            >
               {pin.pin_tags?.length === 0 && (
                 <Text style={styles.boxText}>You have no tags yet</Text>
               )}
               {pin.pin_tags?.map((pin_tag) => (
-                <Text key={pin_tag.tags?.tag_id} style={styles.boxText}>{pin_tag.tags?.name ?? "Unnamed tag"}</Text>
+                <Text key={pin_tag.tags?.tag_id} style={styles.boxText}>
+                  {pin_tag.tags?.name ?? "Unnamed tag"}
+                </Text>
               ))}
             </ScrollView>
           </View>
 
           {/* Lists */}
           <View style={styles.editRow}>
-            <Text style={styles.subtitle}>
-              Lists
-            </Text>
+            <Text style={styles.subtitle}>Lists</Text>
           </View>
           <View style={styles.cardFullRow}>
-            <ScrollView contentContainerStyle={{ flexDirection: "row", gap: 20, flexWrap: "wrap" }}>
+            <ScrollView
+              contentContainerStyle={{
+                flexDirection: "row",
+                gap: 20,
+                flexWrap: "wrap",
+              }}
+            >
               {pin.pin_lists?.length === 0 && (
                 <Text style={styles.boxText}>You have no lists yet</Text>
               )}
               {pin.pin_lists?.map((pin_list) => (
-                <Text key={pin_list.lists?.list_id} style={styles.boxText}>{pin_list.lists?.name ?? "Unnamed list"}</Text>
+                <Text key={pin_list.lists?.list_id} style={styles.boxText}>
+                  {pin_list.lists?.name ?? "Unnamed list"}
+                </Text>
               ))}
             </ScrollView>
           </View>
 
           {/* History */}
-          <Text style={styles.subtitle}>
-            Visit History
-          </Text>
-          <View style={[styles.cardFullRow, { height: 200, flexDirection: "column", alignItems: "flex-start" }]}>
+          <Text style={styles.subtitle}>Visit History</Text>
+          <View
+            style={[
+              styles.cardFullRow,
+              {
+                height: 200,
+                flexDirection: "column",
+                alignItems: "flex-start",
+              },
+            ]}
+          >
             <ScrollView>
               {pin.pin_visits?.length === 0 && (
-                <Text style={[styles.boxText, { marginTop: 10 }]}>You have no logged visits</Text>
+                <Text style={[styles.boxText, { marginTop: 10 }]}>
+                  You have no logged visits
+                </Text>
               )}
               {pin.pin_visits?.map((pin_visit) => {
                 if (!pin_visit.visit_timestamp) return null;
-                const [year, month, day] = pin_visit.visit_timestamp.split("-").map(Number);
+                const [year, month, day] = pin_visit.visit_timestamp
+                  .split("-")
+                  .map(Number);
                 const displayDate = `${month}/${day}/${year}`;
-                return <Text style={styles.boxText} key={pin_visit.visit_id}>{displayDate}</Text>
+                return (
+                  <Text style={styles.boxText} key={pin_visit.visit_id}>
+                    {displayDate}
+                  </Text>
+                );
               })}
             </ScrollView>
           </View>
-          <Text style={styles.subtitle}>
-            Photos
-          </Text>
+          <Text style={styles.subtitle}>Photos</Text>
           <View style={[styles.cardFullRow]}>
             <FlatList
               horizontal
               data={photoList}
               keyExtractor={(photo) => photo}
               renderItem={({ item }) => (
-                <Pressable onPress={() => router.push({pathname: "/image-view", params: {uri: encodeURIComponent(item)}})}>
-                  <Image source={{ uri: item }} style={styles.photoCarousel} transition={500} />
+                <Pressable
+                  onPress={() =>
+                    router.push({
+                      pathname: "/image-view",
+                      params: { uri: encodeURIComponent(item) },
+                    })
+                  }
+                >
+                  <Image
+                    source={{ uri: item }}
+                    style={styles.photoCarousel}
+                    transition={500}
+                  />
                 </Pressable>
               )}
               ItemSeparatorComponent={() => <View style={{ width: 10 }} />}
             />
           </View>
-          <View style={{ height: 100 }}>
-
-          </View>
-
+          <View style={{ height: 100 }}></View>
         </View>
       </ScrollView>
 
-      { /* Back and Edit Buttons */}
+      {/* Back and Edit Buttons */}
       <View style={styles.header}>
         <View style={styles.buttonRow}>
           <Pressable
@@ -318,9 +409,9 @@ export default function PinPage() {
                 pathname: "/make-pin",
                 params: {
                   pinId: pin.pin_id,
-                  viewMode: viewMode
-                }
-              })
+                  viewMode: viewMode,
+                },
+              });
             }}
           >
             <Text
@@ -344,12 +435,12 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 26,
     color: "#243e36",
-    fontFamily: Fonts.bold
+    fontFamily: Fonts.bold,
   },
   subtitle: {
     fontSize: 22,
     color: "#243e36",
-    fontFamily: Fonts.regular
+    fontFamily: Fonts.regular,
   },
   boxText: {
     fontSize: 14,
@@ -402,7 +493,7 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: 50,
     left: 0,
-    right: 0
+    right: 0,
   },
   cardFullRow: {
     backgroundColor: "#DEE9E0",
@@ -459,6 +550,6 @@ const styles = StyleSheet.create({
   photoCarousel: {
     width: 90,
     height: 90,
-    borderRadius: 12
-  }
+    borderRadius: 12,
+  },
 });

@@ -1,12 +1,12 @@
 import { Colors, Fonts } from "@/constants/theme";
+import { getPhotoUrl } from "@/lib/photo-utils";
 import { supabase } from "@/lib/supabase";
 import { Pin } from "@/types/types";
 import { Ionicons } from "@expo/vector-icons";
-import { getPhotoUrl } from "@/app/make-pin";
 import { Image } from "expo-image";
+import { useRouter } from "expo-router";
 import { Dispatch, SetStateAction, useEffect, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import { useRouter } from "expo-router";
 
 type FriendAvatar = {
   user_id: number;

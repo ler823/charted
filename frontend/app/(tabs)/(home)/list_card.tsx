@@ -1,5 +1,5 @@
-import { getPhotoUrl } from "@/app/make-pin";
 import { Fonts } from "@/constants/theme";
+import { getPhotoUrl } from "@/lib/photo-utils";
 import { supabase } from "@/lib/supabase";
 import { Image } from "expo-image";
 import React, { useEffect, useState } from "react";
