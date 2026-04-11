@@ -9,9 +9,10 @@ type Props = {
   pinId: string;
   name?: string;
   loc?: string;
+  editList?: boolean;
 };
 
-export default function ListCard({ pinId, name, loc }: Props) {
+export default function ListCard({ pinId, name, loc, editList }: Props) {
   const [coverPhoto, setCoverPhoto] = useState<string | null>(null);
 
   useEffect(() => {
@@ -39,7 +40,7 @@ export default function ListCard({ pinId, name, loc }: Props) {
   }, [pinId]);
 
   return (
-    <View style={styles.card}>
+    <View style={(editList != null) ? styles.editListCard : styles.card}>
       <Image
         source={
           coverPhoto
@@ -105,5 +106,20 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.regular,
     fontSize: 12,
     flexShrink: 1,
+  },
+  editListCard: {
+    backgroundColor: "#DEE9E0",
+    padding: 12,
+    margin: 5,
+    borderRadius: 5,
+    height: 80,
+    width: "92%",
+    flexDirection: "row",
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
+    elevation: 4,
   },
 });

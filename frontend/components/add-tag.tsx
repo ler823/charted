@@ -1,6 +1,6 @@
 import { Colors, Fonts } from "@/constants/theme";
-import React, { PropsWithChildren } from 'react';
-import { Keyboard, Modal, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import React, { PropsWithChildren, useState } from 'react';
+import { Keyboard, Modal, Pressable, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 
 
 type Props = PropsWithChildren<{
@@ -13,6 +13,19 @@ type Props = PropsWithChildren<{
 }>;
 
 export default function AddTagOrList({ name, isVisible, onClose, onSave, newEntry, setNewEntry }: Props) {
+  const publicDescription = "All of your friends can view this pin";
+    const privateDescription = "Only you can view this pin";
+    const [privacyDescription, setPrivacyDescription] = useState(publicDescription);
+  const [isPrivate, setIsPrivate] = useState(false)
+
+  const togglePrivacy = () => {
+    setIsPrivate((previousState) => !previousState);
+    if (isPrivate) {
+      setPrivacyDescription(publicDescription);
+    } else {
+      setPrivacyDescription(privateDescription);
+    }
+  };
   return (
     <View>
       <Modal animationType="fade" transparent={true} visible={isVisible}>
@@ -30,6 +43,26 @@ export default function AddTagOrList({ name, isVisible, onClose, onSave, newEntr
                   onChangeText={setNewEntry}
                   style={styles.input} />
               </View>
+              <View>
+                      <Text style={styles.title}>Private</Text>
+                      <View style={styles.privacySwitchBackground}>
+                        <Switch
+                          trackColor={{
+                            false: Colors.light.text,
+                            true: Colors.light.accent,
+                          }}
+                          thumbColor="#FFF"
+                          ios_backgroundColor={Colors.light.text}
+                          onValueChange={togglePrivacy}
+                          value={isPrivate}
+                        />
+                        <View style={{ flex: 1 }}>
+                          <Text style={styles.privacyDescription}>
+                            {privacyDescription}
+                          </Text>
+                        </View>
+                      </View>
+                    </View>
               <View style={styles.bottomButtons}>
                 <Pressable onPress={onClose} style={styles.cancelBtn}>
                   <Text style={styles.cancelText}>Cancel</Text>
@@ -48,7 +81,7 @@ export default function AddTagOrList({ name, isVisible, onClose, onSave, newEntr
 
 const styles = StyleSheet.create({
   modalContent: {
-    height: '25%',
+    height: '30%',
     width: '75%',
     backgroundColor: '#ffffff',
     borderRadius: 18,
@@ -142,5 +175,26 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     fontSize: 16,
     fontFamily: Fonts.bold
+  },
+  privacySwitchBackground: {
+    flexDirection: "row",
+    gap: 8,
+    backgroundColor: Colors.light.accentLight,
+    alignSelf: "flex-start",
+    alignItems: "center",
+    padding: 9.5,
+    borderWidth: 1,
+    borderColor: "#ddd",
+    borderRadius: 8,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
+    elevation: 4,
+  },
+  privacyDescription: {
+    flexShrink: 1,
+    fontFamily: Fonts.regular,
+    marginLeft: 8,
   },
 });

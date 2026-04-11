@@ -1,17 +1,51 @@
+import AddPinToList from "@/components/add-pins-to-list";
+import CoverPhotoModal from "@/components/cover-photo-modal";
 import { Colors, Fonts } from "@/constants/theme";
 import { setPinChanged } from "@/lib/pin_refresh_data";
 import { supabase } from "@/lib/supabase";
 import { Pin } from "@/types/types";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { Checkbox } from "expo-checkbox";
+import { Image } from "expo-image";
+import * as ImageManipulator from "expo-image-manipulator";
+import * as ImagePicker from 'expo-image-picker';
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
-import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
+import { FlatList, Pressable, StyleSheet, Switch, Text, TextInput, View } from "react-native";
 import ListCard from "../(home)/list_card";
 
-export default function ListPinListView() {
+type PhotoItem = {
+  key: string,
+  url: string,
+  changed: boolean,
+};
+
+export default function EditList() {
   const { listIdToView } = useLocalSearchParams();
   const [pins, setPins] = useState<Pin[]>([]);
   const [listName, setListName] = useState("");
+  const [checkedItems, setCheckedItems] = useState<Record<string, boolean>>({});
+  const [addPinToListVisible, setAddPinToListVisible] = useState(false);
+  const [coverPhotoModalVisible, setCoverPhotoModalVisible] = useState(false);
+  const [coverPhotoUrl, setCoverPhotoUrl] = useState("");
+  const [coverPhotoChanged, setCoverPhotoChanged] = useState(false);
+  const [photoToDelete, setPhotoToDelete] = useState<PhotoItem | null>(null)
+  const [isPrivate, setIsPrivate] = useState(false);
+  const publicDescription = "All of your friends can view this pin";
+  const privateDescription = "Only you can view this pin";
+  const [privacyDescription, setPrivacyDescription] = useState(publicDescription);
+  const [pinsToAppend, setPinsToAppend] = useState<Pin[]>([]);
+  const [pinsToRemove, setPinsToRemove] = useState<Number[]>([]);
+
+  const togglePrivacy = () => {
+    setIsPrivate((previousState) => !previousState);
+    if (isPrivate) {
+      setPrivacyDescription(publicDescription);
+    } else {
+      setPrivacyDescription(privateDescription);
+    }
+  };
+
   const getListName = async (listId: any) => {
     const { data, error } = await supabase
       .from("lists")
@@ -38,6 +72,87 @@ export default function ListPinListView() {
     setPins(pinsInList)
   }
 
+  const printSelectedPins = async () => {
+    Object.entries(checkedItems).forEach(([id, isChecked]) => {
+      if (isChecked) {
+        console.log(id);
+      }
+    })
+  };
+
+  const processImage = async (uri: string) => {
+    const result = await ImageManipulator.manipulateAsync(
+      uri,
+      [{ resize: { width: 1080 } }], // keeps aspect ratio
+      {
+        compress: 0.7,
+        format: ImageManipulator.SaveFormat.JPEG,
+      }
+    );
+
+    return result;
+  };
+
+  const pickImageAsync = async () => {
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      quality: 1,
+    });
+
+    if (!result.canceled) {
+      return result;
+    }
+  };
+
+  const handleChooseFromLibrary = async (cover: boolean) => {
+    const result = await pickImageAsync();
+    setCoverPhotoModalVisible(false);
+    //setAddPhotoModalVisible(false);
+    if (!result) return;
+    const uri = result!.assets[0].uri;
+    const processedImage = await processImage(uri);
+    setCoverPhotoUrl(processedImage.uri);
+    setCoverPhotoChanged(true);
+  };
+
+  const handleDeletePhoto = async (key: string, url: string, cover: boolean) => {
+    if (key == "") {
+      //remove from the list
+      //setPhotoList(photoList.filter((photo) => photo.url != url))
+      setCoverPhotoUrl("")
+    } else {
+      //remove from db
+      //setPhotoList(photoList.filter((photo) => photo.url != url))
+      setCoverPhotoUrl("")
+      setPhotoToDelete({ key: key, url: url, changed: true })
+      //deletePhoto(key);
+    }
+
+    if (cover) {
+      setCoverPhotoUrl("")
+      //setCoverPhotoKey("")
+    }
+    setCoverPhotoModalVisible(false)
+  }
+
+  const removeSelectedPins = async () => {
+    const pinIdsToRemove = Object.entries(checkedItems).filter(([_, selected]) => selected).map(([item, _]) => Number(item))
+    setPinsToRemove(pinIdsToRemove)
+  }
+
+  const updateAddedToPinList = async () => {
+    if (pinsToAppend.length > 0) {
+      setPins((prev) => [...prev, ...pinsToAppend])
+    }
+  }
+
+  const updateRemovedFromPinList = async () => {
+    if (pinsToRemove.length > 0) {
+      setPins(pins.filter((item) => !pinsToRemove.includes(Number(item.id))))
+    }
+  }
+
   useFocusEffect(
     useCallback(() => {
       setPinChanged(true);
@@ -48,6 +163,14 @@ export default function ListPinListView() {
     getListPins(listIdToView);
     getListName(listIdToView);
   }, []);
+
+  useEffect(() => {
+    updateAddedToPinList();
+  }, [pinsToAppend]);
+
+  useEffect(() => {
+    updateRemovedFromPinList();
+  }, [pinsToRemove]);
 
   return (
     <View style={styles.container}>
@@ -65,36 +188,121 @@ export default function ListPinListView() {
           style={styles.button}>
           <Text
             style={styles.buttonText}>
+            Share with Friends
+          </Text>
+        </Pressable>
+        <Pressable
+          style={styles.button}>
+          <Text
+            style={styles.buttonText}>
             Save
           </Text>
         </Pressable>
       </View>
-      <Text ellipsizeMode="tail" style={styles.title}>{listName}</Text>
+      <View style={styles.row}>
+        <View style={styles.shadowWrapper}>
+          <Pressable
+            style={styles.photoInput}
+            onPress={() => setCoverPhotoModalVisible(true)}
+          >
+            {coverPhotoUrl ? (
+              <Image source={{ uri: coverPhotoUrl }} style={styles.photo} transition={500} />
+            ) : (
+              <MaterialCommunityIcons
+                name="camera-plus"
+                size={28}
+                color="#888"
+              />
+            )}
+          </Pressable>
+        </View>
+        <CoverPhotoModal
+          isVisible={coverPhotoModalVisible}
+          onClose={() => setCoverPhotoModalVisible(false)}
+          onChooseFromLibrary={() => handleChooseFromLibrary(true)}
+          onDelete={() => handleDeletePhoto("", "", true)}
+        />
+        <View style={styles.fields}>
+          <View style={styles.fields}>
+            <TextInput
+              style={
+                styles.input
+              }
+              placeholder="Name"
+              placeholderTextColor="#aaaaaa"
+              value={listName}
+            />
+          </View>
+        </View>
+      </View>
+      {/* <Text ellipsizeMode="tail" style={styles.title}>{listName}</Text> */}
+      <View>
+        <Text style={styles.title}>Private</Text>
+        <View style={styles.privacySwitchBackground}>
+          <Switch
+            trackColor={{
+              false: Colors.light.text,
+              true: Colors.light.accent,
+            }}
+            thumbColor="#FFF"
+            ios_backgroundColor={Colors.light.text}
+            onValueChange={togglePrivacy}
+            value={isPrivate}
+          />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.privacyDescription}>
+              {privacyDescription}
+            </Text>
+          </View>
+        </View>
+      </View>
       <View style={styles.spacer} />
-
       <FlatList
         data={pins}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContent}
         renderItem={({ item }) => (
-          <Pressable
-            style={styles.cards}
-            onPress={() => {
-              router.push({
-                pathname: "/pins/[pinid]",
-                params: { pinid: Number(item.id), viewMode: "" }
-              }
-              )
-            }}
-          >
-            <ListCard name={item.name} pinId={item.id} loc={item.address} />
-          </Pressable>
+          <View style={styles.listCheckBoxRow}>
+            <Checkbox
+              color={Colors.light.background}
+              style={styles.checkBox}
+              value={checkedItems[item.id]}
+              onValueChange={(value) => {
+                setCheckedItems(prev => ({
+                  ...prev,
+                  [item.id]: value
+                }));
+              }} />
+            <Pressable
+              style={styles.cards}
+            >
+              <ListCard name={item.name} pinId={item.id} loc={item.address} editList={true} />
+            </Pressable>
+          </View>
         )}
       />
       <Pressable
         style={styles.plusButton}
+        onPress={() => setAddPinToListVisible(true)}
       >
-        <MaterialCommunityIcons name="plus" size={45} color="#fefbea" />
+        <MaterialCommunityIcons name="plus" size={45} color="#d9d9d9" />
+      </Pressable>
+      <AddPinToList
+        isVisible={addPinToListVisible}
+        onClose={() => setAddPinToListVisible(false)}
+        onSave={() => setAddPinToListVisible(false)}
+        listId={listIdToView.toString()}
+        pinsInList={pins}
+        setPinsToAdd={setPinsToAppend}
+      />
+      <Pressable
+        style={styles.deleteButton}
+        onPress={removeSelectedPins}
+      >
+        <Text
+          style={styles.buttonText}>
+          Delete selected pins
+        </Text>
       </Pressable>
     </View>
   )
@@ -105,8 +313,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   cards: {
-    width: "100%",
-    alignItems: "center",
+    flex: 1,
   },
   spacer: {
     marginTop: 0,
@@ -115,10 +322,10 @@ const styles = StyleSheet.create({
     paddingBottom: 265,
   },
   title: {
-    margin: 15,
-    fontFamily: Fonts.bold,
+    marginHorizontal: 15,
+    fontFamily: Fonts.regular,
     fontSize: 20,
-    textAlign: "center"
+    textAlign: "left"
   },
   button: {
     backgroundColor: "#243e36",
@@ -183,5 +390,100 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 2,
     elevation: 4,
+  },
+  listCheckBoxRow: {
+    flexDirection: "row",
+    justifyContent: "center",
+    flex: 1,
+  },
+  checkBox: {
+    alignSelf: "center",
+    margin: 20,
+  },
+  deleteButton: {
+    position: "absolute",
+    bottom: 115,
+    left: 15,
+    zIndex: 20,
+    height: 50,
+    padding: 16,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 100,
+    backgroundColor: Colors.light.error,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
+    elevation: 4,
+  },
+  row: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    margin: 15,
+  },
+  shadowWrapper: {
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
+    elevation: 4,
+  },
+  photoInput: {
+    width: 90,
+    height: 90,
+    borderRadius: 12,
+    backgroundColor: "#eee",
+    justifyContent: "center",
+    alignItems: "center",
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: "#ddd",
+  },
+  photo: {
+    width: "100%",
+    height: "100%",
+  },
+  fields: {
+    flex: 1,
+    gap: 8,
+    justifyContent: "center"
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: "#ddd",
+    borderRadius: 8,
+    padding: 10,
+    fontSize: 15,
+    backgroundColor: Colors.light.accentLight,
+    fontFamily: Fonts.regular,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
+    elevation: 4,
+  },
+  privacySwitchBackground: {
+    flexDirection: "row",
+    gap: 8,
+    margin: 15,
+    backgroundColor: Colors.light.accentLight,
+    alignSelf: "flex-start",
+    alignItems: "center",
+    padding: 9.5,
+    borderWidth: 1,
+    borderColor: "#ddd",
+    borderRadius: 8,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
+    elevation: 4,
+  },
+  privacyDescription: {
+    flexShrink: 1,
+    fontFamily: Fonts.regular,
+    marginLeft: 8,
   },
 });

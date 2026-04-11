@@ -1,17 +1,18 @@
-import { Fonts } from "@/constants/theme";
+import { Colors, Fonts } from "@/constants/theme";
 import { setPinChanged } from "@/lib/pin_refresh_data";
 import { supabase } from "@/lib/supabase";
 import { Pin } from "@/types/types";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
-import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
+import { FlatList, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import ListCard from "../(home)/list_card";
 
 export default function ListPinListView() {
   const { listIdToView } = useLocalSearchParams();
   const [pins, setPins] = useState<Pin[]>([]);
   const [listName, setListName] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
   const getListName = async (listId: any) => {
     const { data, error } = await supabase
       .from("lists")
@@ -51,6 +52,22 @@ export default function ListPinListView() {
 
   return (
     <View style={styles.container}>
+      <View style={styles.searchRow}>
+        <View style={styles.searchBar}>
+          <TextInput
+            style={styles.searchText}
+            placeholder="Search"
+            placeholderTextColor="#fefbea"
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
+          <Ionicons name="search" size={16} color={"#fefbea"} />
+        </View>
+        <Pressable style={styles.sortBtn}>
+          <Text style={styles.sortText}>Sort</Text>
+          <Ionicons name="chevron-down" size={14} color={"#fefbea"} />
+        </Pressable>
+      </View>
       <View style={styles.topBar}>
         <Pressable
           style={styles.button}
@@ -70,7 +87,7 @@ export default function ListPinListView() {
               router.push(
                 {
                   pathname: "/(tabs)/(lists)/edit_list",
-                  params: {listIdToView: listIdToView}
+                  params: { listIdToView: listIdToView }
                 }
               )
             }}>
@@ -107,6 +124,7 @@ export default function ListPinListView() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    paddingTop: 50
   },
   cards: {
     width: "100%",
@@ -148,7 +166,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 0,
     position: "relative",
-    paddingTop: 50,
+    paddingVertical: 15,
     paddingRight: 16,
     paddingLeft: 16,
     zIndex: 10,
@@ -157,5 +175,53 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.bold,
     color: "#d9d9d9",
     fontSize: 16
+  },
+  searchRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    gap: 10,
+
+  },
+  searchBar: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: Colors.light.accent,
+    borderRadius: 999,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    gap: 8,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
+    elevation: 4,
+  },
+  searchText: {
+    flex: 1,
+    fontSize: 15,
+    color: "#fefbea",
+    fontFamily: Fonts.bold,
+  },
+  sortBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: Colors.light.accent,
+    borderRadius: 999,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    gap: 5,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
+    elevation: 4,
+  },
+  sortText: {
+    fontSize: 14,
+    fontFamily: Fonts.bold,
+    color: "#fefbea",
   },
 });
