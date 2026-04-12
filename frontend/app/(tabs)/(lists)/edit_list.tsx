@@ -181,54 +181,54 @@ export default function EditList() {
   }
 
   const uploadPhoto = async (photoUrl: string) => {
-      const imageFile = await fetch(photoUrl);
-      const imageFileBlob = await imageFile.blob();
-      const res = await fetch(
-        "https://4nm4iifq65.execute-api.us-east-2.amazonaws.com/uploadphotourl",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            contentType: "image/jpeg",
-          }),
-        },
-      );
-      const { uploadUrl, key } = await res.json();
-  
-      const response = await fetch(uploadUrl, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "image/jpeg",
-        },
-        body: imageFileBlob,
-      });
-  
-      if (!response.ok) {
-        console.log("Something went wrong when uploading");
-      }
-      const { data, error: addPhotoError } = await supabase
-        .from("photos")
-        .insert({
-          key: key,
-        })
-        .select("photo_id")
-        .single();
-  
-      if (addPhotoError) {
-        Alert.alert("Error", addPhotoError.message);
-      }
-  
-      const { error: listPhotoError } = await supabase
+    const imageFile = await fetch(photoUrl);
+    const imageFileBlob = await imageFile.blob();
+    const res = await fetch(
+      "https://4nm4iifq65.execute-api.us-east-2.amazonaws.com/uploadphotourl",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contentType: "image/jpeg",
+        }),
+      },
+    );
+    const { uploadUrl, key } = await res.json();
+
+    const response = await fetch(uploadUrl, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "image/jpeg",
+      },
+      body: imageFileBlob,
+    });
+
+    if (!response.ok) {
+      console.log("Something went wrong when uploading");
+    }
+    const { data, error: addPhotoError } = await supabase
+      .from("photos")
+      .insert({
+        key: key,
+      })
+      .select("photo_id")
+      .single();
+
+    if (addPhotoError) {
+      Alert.alert("Error", addPhotoError.message);
+    }
+
+    const { error: listPhotoError } = await supabase
       .from("lists")
       .update({
         "cover_photo": data?.photo_id
       })
       .eq("list_id", listIdToView);
-  
-      if (listPhotoError) {
-        Alert.alert("Error", listPhotoError.message);
-      }
-    };
+
+    if (listPhotoError) {
+      Alert.alert("Error", listPhotoError.message);
+    }
+  };
 
   const deletePhoto = async (key: string) => {
     setCoverPhotoModalVisible(false);
@@ -268,12 +268,12 @@ export default function EditList() {
   };
 
   const loadPhotos = async (keys: string[]) => {
-      let signedUrls = await getPhotoUrl(keys);
-      let signedCoverPhotoUrl = signedUrls[0].url;
-      let coverPhotoKey = keys[0];
-      setCoverPhotoUrl(signedCoverPhotoUrl);
-      setCoverPhotoKey(coverPhotoKey);
-    };
+    let signedUrls = await getPhotoUrl(keys);
+    let signedCoverPhotoUrl = signedUrls[0].url;
+    let coverPhotoKey = keys[0];
+    setCoverPhotoUrl(signedCoverPhotoUrl);
+    setCoverPhotoKey(coverPhotoKey);
+  };
 
   const saveChanges = async () => {
     if (photoToDelete != null) {
@@ -331,6 +331,31 @@ export default function EditList() {
     }
     router.back()
   }
+
+  const deleteList = async () => {
+      Alert.alert(
+        "Are you sure you want to delete this list?",
+        "This action cannot be undone",
+        [
+          { text: "Cancel" },
+          {
+            text: "Delete",
+            style: "destructive",
+            onPress: async () => {
+              const { error } = await supabase
+              .from("lists")
+              .delete()
+              .eq("list_id", listIdToView);
+              if (error) {
+                console.log(error.message);
+              }
+              router.dismissAll();
+              router.replace("/lists")
+            },
+          },
+        ],
+      );
+    };
 
 
   useFocusEffect(
@@ -461,11 +486,11 @@ export default function EditList() {
                   <Text
                     style={styles.buttonText}>Edit Friends</Text>
                 </Pressable>
-                <EditListFriends 
-                isVisible={editFriendsModalVisible}
-                onClose={() => setEditFriendsModalVisible(false)}
-                onSave={() =>setEditFriendsModalVisible(false)}
-                listId={listIdToView.toString()}/>
+                <EditListFriends
+                  isVisible={editFriendsModalVisible}
+                  onClose={() => setEditFriendsModalVisible(false)}
+                  onSave={() => setEditFriendsModalVisible(false)}
+                  listId={listIdToView.toString()} />
               </View>
             )}
           </View>
@@ -484,8 +509,20 @@ export default function EditList() {
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContent}
         ListEmptyComponent={(
-                  <Text style={styles.text}>You have not added any pins to this list</Text>
-                )}
+          <Text style={styles.text}>You have not added any pins to this list</Text>
+        )}
+        ListFooterComponent={
+          <View style={{ alignSelf: "center" }}>
+            <Pressable style={styles.deleteBtn} onPress={deleteList} >
+              <MaterialCommunityIcons
+                name="trash-can-outline"
+                size={24}
+                color="#d9d9d9"
+              />
+              <Text style={styles.buttonText}>Delete</Text>
+            </Pressable>
+          </View>
+        }
         renderItem={({ item }) => (
           <View style={styles.listCheckBoxRow}>
             <Checkbox
@@ -719,5 +756,21 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.regular,
     fontSize: 16,
     textAlign: "center",
+  },
+  deleteBtn: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    alignSelf: "flex-start",
+    gap: 10,
+    padding: 16,
+    backgroundColor: Colors.light.error,
+    borderRadius: 999,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
+    elevation: 4,
+    marginTop: 24,
   },
 });

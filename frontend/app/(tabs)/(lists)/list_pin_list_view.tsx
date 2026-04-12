@@ -5,14 +5,15 @@ import { Pin } from "@/types/types";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
-import { FlatList, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { Alert, FlatList, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import ListCard from "../(home)/list_card";
 
 export default function ListPinListView() {
-  const { listIdToView } = useLocalSearchParams();
+  const { listIdToView, isShared } = useLocalSearchParams();
   const [pins, setPins] = useState<Pin[]>([]);
   const [listName, setListName] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+  const userId = 4;
   const getListName = async (listId: any) => {
     const { data, error } = await supabase
       .from("lists")
@@ -39,6 +40,32 @@ export default function ListPinListView() {
     setPins(pinsInList)
   }
 
+  const onLeaveList = async () => {
+    Alert.alert(
+      "Are you sure you want to leave this list?",
+      "This action cannot be undone.\nIf you want access to this list later, you will have to contact the list's owner",
+      [
+        { text: "Cancel" },
+        {
+          text: "Leave",
+          style: "destructive",
+          onPress: async () => {
+            const { error } = await supabase
+              .from("list_members")
+              .delete()
+              .eq("list_id", listIdToView)
+              .eq("viewer_id", userId)
+            if (error) {
+              console.log(error.message);
+            }
+            router.dismissAll();
+            router.replace("/lists")
+          },
+        },
+      ],
+    );
+  };
+
   useFocusEffect(
     useCallback(() => {
       setPinChanged(true);
@@ -48,7 +75,7 @@ export default function ListPinListView() {
   )
 
   useEffect(() => {
-    
+
     getListName(listIdToView);
   }, []);
 
@@ -81,21 +108,30 @@ export default function ListPinListView() {
             Back
           </Text>
         </Pressable>
-        <Pressable
-          style={styles.button}>
-          <Text
-            style={styles.buttonText}
-            onPress={() => {
-              router.push(
-                {
-                  pathname: "/(tabs)/(lists)/edit_list",
-                  params: { listIdToView: listIdToView }
-                }
-              )
-            }}>
-            Edit
-          </Text>
-        </Pressable>
+        {isShared == "false" && (
+          <Pressable
+            style={styles.button}>
+            <Text
+              style={styles.buttonText}
+              onPress={() => {
+                router.push(
+                  {
+                    pathname: "/(tabs)/(lists)/edit_list",
+                    params: { listIdToView: listIdToView }
+                  }
+                )
+              }}>
+              Edit
+            </Text>
+          </Pressable>
+        )}
+        {isShared == "true" && (
+          <Pressable 
+          style={styles.cancelButton}
+          onPress={onLeaveList}>
+            <Text style={styles.buttonText}>Leave this list</Text>
+          </Pressable>
+        )}
       </View>
       <Text ellipsizeMode="tail" style={styles.title}>{listName}</Text>
       <View style={styles.spacer} />
@@ -234,5 +270,18 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.regular,
     fontSize: 16,
     textAlign: "center",
+  },
+  cancelButton: {
+    backgroundColor: Colors.light.error,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 999,
+    padding: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
+    elevation: 4,
   },
 });

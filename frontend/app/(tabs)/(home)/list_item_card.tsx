@@ -8,10 +8,10 @@ import { StyleSheet, Text, View } from "react-native";
 type Props = {
   listId: string;
   name?: string;
-  loc?: string;
+  user?: string | null;
 };
 
-export default function ListItemsCard({ listId, name }: Props) {
+export default function ListItemsCard({ listId, name, user=null }: Props) {
   const [coverPhoto, setCoverPhoto] = useState<string | null>(null);
 
   useEffect(() => {
@@ -52,6 +52,11 @@ export default function ListItemsCard({ listId, name }: Props) {
         <Text style={styles.cardTitle} numberOfLines={1} ellipsizeMode="tail">
           {name || "Unnamed List"}
         </Text>
+        {user != null && (
+          <Text style={styles.cardLoc} numberOfLines={1} ellipsizeMode="tail">
+            Shared by {user}
+          </Text>
+        )}
       </View>
     </View>
   );

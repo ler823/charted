@@ -15,7 +15,8 @@ type ListType = {
 
 type listItems = {
   listId: string,
-  name: string
+  name: string,
+  username: string | null
 };
 
 export default function Lists() {
@@ -78,31 +79,34 @@ export default function Lists() {
       Alert.alert("Error", error.message);
       return;
     }
-    setLists(data.map((list: any) => ({ listId: list.list_id, name: list.name })))
-    return data.map((list: any) => ({ listId: list.list_id, name: list.name }));
+    setLists(data.map((list: any) => ({ listId: list.list_id, name: list.name, username: null })))
+    //return data.map((list: any) => ({ listId: list.list_id, name: list.name, username: null }));
   };
 
   const getFriendLists = async () => {
     const { data, error } = await supabase
-      .from("lists")
+      .from("list_members")
       .select(
         `
+        viewer_id,
         list_id,
-        name,
-        users!lists_user_id_fkey (
+        lists (
+          name,
+          privacy
+        ),
+        users!list_members_creator_id_fkey (
           username
         )
       `,
       )
-      .neq("users.username", "TimTimTim")
-      .eq("privacy", 2);
+      .eq("viewer_id", 4)
 
     if (error) {
       Alert.alert("Error", error.message);
       return;
     }
-    setLists(data.map((list: any) => ({ listId: list.list_id, name: list.name })))
-    return data.map((list: any) => ({ listId: list.list_id, name: list.name }));
+  setLists(data.map((list: any) => ({ listId: list.list_id, name: list.lists.name, username: list.users.username })))
+    //return data.map((list: any) => ({ listId: list.list_id, name: list.name }));
   }
 
   const getListPins = async (listId: any) => {
@@ -189,11 +193,6 @@ export default function Lists() {
               style={styles.buttonText}>Friend Lists</Text>
           </Pressable>
         </View>
-        <Pressable
-          style={styles.button}>
-          <Text
-            style={styles.buttonText}>Edit</Text>
-        </Pressable>
       </View>
       <View style={styles.spacer} />
 
@@ -213,21 +212,28 @@ export default function Lists() {
               router.push(
                 {
                   pathname: "/(tabs)/(lists)/list_pin_list_view",
-                  params: { listIdToView: String(item.listId) }
+                  params: { listIdToView: String(item.listId), isShared: viewMode == "user" ? "false" : "true" }
                 }
               )
             }}
           >
-            <ListItemsCard name={item.name} listId={item.listId} />
+            {viewMode == "user" && (
+              <ListItemsCard name={item.name} listId={item.listId} />
+            )}
+            {viewMode == "shared" && (
+              <ListItemsCard name={item.name} listId={item.listId} user={item.username} />
+            )}
           </Pressable>
         )}
       />
-      <Pressable
-        style={styles.plusButton}
-        onPress={() => setAddListModalVisible(true)}
-      >
-        <MaterialCommunityIcons name="plus" size={45} color="#fefbea" />
-      </Pressable>
+      {viewMode == "user" && (
+        <Pressable
+          style={styles.plusButton}
+          onPress={() => setAddListModalVisible(true)}
+        >
+          <MaterialCommunityIcons name="plus" size={45} color="#fefbea" />
+        </Pressable>
+      )}
       <AddTagOrList
         name="list"
         isVisible={addListModalVisible}
