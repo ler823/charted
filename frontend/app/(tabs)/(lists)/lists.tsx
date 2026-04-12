@@ -1,4 +1,5 @@
 import AddTagOrList from "@/components/add-tag";
+import LoadingPage from "@/components/loading-page";
 import Sort from "@/components/sort-lists";
 import { Colors, Fonts } from "@/constants/theme";
 import { supabase } from "@/lib/supabase";
@@ -32,6 +33,7 @@ export default function Lists() {
   const [sortModalVisible, setSortModalVisible] = useState(false)
   const [sortChoice, setSortChoice] = useState("date")
   const [ascending, setAscending] = useState(true)
+  const [loading, setLoading] = useState(true)
   
   const filteredLists = lists.filter((item) =>
     item.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -168,16 +170,19 @@ export default function Lists() {
 
   const refreshLists = async () => {
     if (viewMode == "user") {
-      getUserLists();
+      await getUserLists();
     }
     else if (viewMode == "shared") {
-      getFriendLists();
+      await getFriendLists();
     }
+    setLoading(false)
   }
 
   useFocusEffect(useCallback(() => {
     refreshLists();
   }, [viewMode, sortModalVisible]))
+
+  if (loading) return <LoadingPage />;
   return (
     <View style={styles.container}>
       <View style={styles.searchRow}>

@@ -1,3 +1,4 @@
+import LoadingPage from "@/components/loading-page";
 import Sort from "@/components/sort-lists";
 import { Colors, Fonts } from "@/constants/theme";
 import { setPinChanged } from "@/lib/pin_refresh_data";
@@ -25,6 +26,7 @@ export default function ListPinListView() {
   const [sortModalVisible, setSortModalVisible] = useState(false)
   const [sortChoice, setSortChoice] = useState("date")
   const [ascending, setAscending] = useState(true)
+  const [loading, setLoading] = useState(true)
   const userId = 4;
 
   const handleSort = async (pin: PinWithDate[]) => {
@@ -103,18 +105,24 @@ export default function ListPinListView() {
     );
   };
 
+  const refreshPins = async () => {
+    setPinChanged(true);
+    await getListPins(listIdToView)
+    await getListName(listIdToView)
+    setLoading(false)
+  }
+
   useFocusEffect(
     useCallback(() => {
-      setPinChanged(true);
-      getListPins(listIdToView)
-      getListName(listIdToView)
+      refreshPins()
     }, [sortModalVisible])
   )
 
   useEffect(() => {
-    
     getListName(listIdToView);
   }, []);
+
+  if (loading) return <LoadingPage />;
 
   return (
     <View style={styles.container}>

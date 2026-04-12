@@ -1,6 +1,7 @@
 import AddPinToList from "@/components/add-pins-to-list";
 import CoverPhotoModal from "@/components/cover-photo-modal";
 import EditListFriends from "@/components/edit-list-friends";
+import LoadingPage from "@/components/loading-page";
 import { Colors, Fonts } from "@/constants/theme";
 import { getPhotoUrl } from "@/lib/photo-utils";
 import { setPinChanged } from "@/lib/pin_refresh_data";
@@ -44,6 +45,7 @@ export default function EditList() {
   const [dbPrivacy, setDbPrivacy] = useState<number | null>(null)
   const [coverPhotoKey, setCoverPhotoKey] = useState("")
   const [editFriendsModalVisible, setEditFriendsModalVisible] = useState(false)
+  const [loading, setLoading] = useState(true)
 
   const changePrivacy = (value: number) => {
     if (value < 0 || value > 2) {
@@ -368,6 +370,7 @@ export default function EditList() {
     const loadInfo = async () => {
       await getListPins(listIdToView);
       await getListInfo(listIdToView);
+      setLoading(false)
     }
     loadInfo();
   }, []);
@@ -379,6 +382,8 @@ export default function EditList() {
   useEffect(() => {
     updateRemovedFromPinList();
   }, [pinsToRemove]);
+
+  if (loading) return <LoadingPage />;
 
   return (
     <View style={styles.container}>
