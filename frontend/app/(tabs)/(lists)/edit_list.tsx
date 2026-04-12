@@ -732,7 +732,6 @@ const styles = StyleSheet.create({
     margin: 15,
     backgroundColor: Colors.light.accentLight,
     alignItems: "flex-start",
-    padding: 9.5,
     borderWidth: 1,
     borderColor: "#ddd",
     borderRadius: 8,
