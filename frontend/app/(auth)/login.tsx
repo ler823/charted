@@ -4,10 +4,14 @@ import { router } from "expo-router";
 import { useState } from "react";
 import {
   ActivityIndicator,
+  Keyboard,
+  KeyboardAvoidingView,
+  Platform,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
+  TouchableWithoutFeedback,
   View,
 } from "react-native";
 
@@ -45,55 +49,64 @@ export default function LoginScreen() {
     }
   };
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Welcome back</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Enter email"
-        autoCapitalize="none"
-        keyboardType="email-address"
-        value={email}
-        onChangeText={setEmail}
-      />
-      {emailError ? <Text style={styles.fieldError}>{emailError}</Text> : null}
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+    >
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <View style={styles.container}>
+          <Text style={styles.title}>Welcome back</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Enter email"
+            autoCapitalize="none"
+            keyboardType="email-address"
+            value={email}
+            onChangeText={setEmail}
+          />
+          {emailError ? (
+            <Text style={styles.fieldError}>{emailError}</Text>
+          ) : null}
 
-      <TextInput
-        style={styles.input}
-        placeholder="Enter password"
-        secureTextEntry
-        value={password}
-        onChangeText={setPassword}
-      />
-      {credentialsError ? (
-        <Text style={styles.fieldError}>{credentialsError}</Text>
-      ) : null}
+          <TextInput
+            style={styles.input}
+            placeholder="Enter password"
+            secureTextEntry
+            value={password}
+            onChangeText={setPassword}
+          />
+          {credentialsError ? (
+            <Text style={styles.fieldError}>{credentialsError}</Text>
+          ) : null}
 
-      <TouchableOpacity
-        onPress={() => {}}
-        style={styles.forgotPasswordContainer}
-      >
-        <Text style={styles.forgotPassword}>Forgot password?</Text>
-      </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => {}}
+            style={styles.forgotPasswordContainer}
+          >
+            <Text style={styles.forgotPassword}>Forgot password?</Text>
+          </TouchableOpacity>
 
-      <TouchableOpacity
-        style={styles.button}
-        onPress={handleLogin}
-        disabled={loading}
-      >
-        {loading ? (
-          <ActivityIndicator color="#fff" />
-        ) : (
-          <Text style={styles.buttonText}>Log in</Text>
-        )}
-      </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.button}
+            onPress={handleLogin}
+            disabled={loading}
+          >
+            {loading ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.buttonText}>Log in</Text>
+            )}
+          </TouchableOpacity>
 
-      <TouchableOpacity onPress={() => router.push("/(auth)/signup")}>
-        <Text style={styles.link}>
-          Don&apos;t have an account?{" "}
-          <Text style={styles.linkUnderline}>Sign up</Text>
-        </Text>
-      </TouchableOpacity>
-    </View>
+          <TouchableOpacity onPress={() => router.push("/(auth)/signup")}>
+            <Text style={styles.link}>
+              Don&apos;t have an account?{" "}
+              <Text style={styles.linkUnderline}>Sign up</Text>
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </TouchableWithoutFeedback>
+    </KeyboardAvoidingView>
   );
 }
 
