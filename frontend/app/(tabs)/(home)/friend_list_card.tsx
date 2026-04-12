@@ -6,30 +6,27 @@ import React, { useEffect, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 
 type Props = {
-  pinId: string;
+  userId: string;
   name?: string;
   loc?: string;
   editList?: boolean;
 };
 
-export default function ListCard({ pinId, name, loc, editList }: Props) {
+export default function FriendListCard({ userId, name, loc, editList }: Props) {
   const [coverPhoto, setCoverPhoto] = useState<string | null>(null);
 
   useEffect(() => {
     setCoverPhoto(null);
-    if (!pinId) return;
+    if (!userId) return;
 
     async function fetchCoverPhoto() {
       const { data } = await supabase
-        .from("pins")
-        .select("pin_photos(photos(key), cover)")
-        .eq("pin_id", pinId)
+        .from("users")
+        .select("photos(key)")
+        .eq("user_id", userId)
         .single();
 
-      if (!data?.pin_photos?.length) return;
-
-      const coverEntry = data.pin_photos.find((p: any) => p.cover);
-      const key = coverEntry?.photos?.key;
+      const key = data?.photos?.key;
       if (!key) return;
 
       const urls = await getPhotoUrl([key]);
@@ -37,7 +34,7 @@ export default function ListCard({ pinId, name, loc, editList }: Props) {
     }
 
     fetchCoverPhoto();
-  }, [pinId]);
+  }, [userId]);
 
   return (
     <View style={(editList != null) ? styles.editListCard : styles.card}>
@@ -70,7 +67,7 @@ const styles = StyleSheet.create({
     height: 65,
     resizeMode: "cover",
     aspectRatio: 1,
-    borderRadius: 9,
+    borderRadius: "100%",
   },
 
   card: {

@@ -17,7 +17,7 @@ import {
 //import { AutoSkeletonView } from "react-native-auto-skeleton";
 import LoadingPage from "@/components/loading-page";
 import { getPhotoUrl } from "@/lib/photo-utils";
-import { getPinChanged, setPinChanged } from "./pin_refresh_data";
+import { getPinChanged, setPinChanged } from "@/lib/pin_refresh_data";
 
 type Friend = {
   user_id: number;
@@ -358,6 +358,9 @@ export default function PinPage() {
           </View>
           <Text style={styles.subtitle}>Photos</Text>
           <View style={[styles.cardFullRow]}>
+            {(photoList == null || photoList.length == 0) && (
+              <Text style={styles.boxText}>You have added no photos</Text>
+            )}
             <FlatList
               horizontal
               data={photoList}
