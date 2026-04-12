@@ -1,19 +1,50 @@
+import Sort from "@/components/sort-lists";
 import { Colors, Fonts } from "@/constants/theme";
 import { setPinChanged } from "@/lib/pin_refresh_data";
 import { supabase } from "@/lib/supabase";
-import { Pin } from "@/types/types";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import { Alert, FlatList, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import ListCard from "../(home)/list_card";
 
+type PinWithDate = {
+  id: string;
+  name: string;
+  address: string;
+  latitude: number;
+  longitude: number;
+  date: string
+}
+
 export default function ListPinListView() {
   const { listIdToView, isShared } = useLocalSearchParams();
-  const [pins, setPins] = useState<Pin[]>([]);
+  const [pins, setPins] = useState<PinWithDate[]>([]);
   const [listName, setListName] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+  const [sortModalVisible, setSortModalVisible] = useState(false)
+  const [sortChoice, setSortChoice] = useState("date")
+  const [ascending, setAscending] = useState(true)
   const userId = 4;
+
+  const handleSort = async (pin: PinWithDate[]) => {
+    if (sortChoice == "date") {
+      if (ascending) {
+        setPins(pin.sort((a, b) => a.date.localeCompare(b.date)))
+      }
+      else {
+        setPins(pin.sort((a, b) => b.date.localeCompare(a.date)))
+      }
+    }
+    else {
+      if (ascending) {
+        setPins(pin.sort((a, b) => a.name.localeCompare(b.name)))
+      }
+      else {
+        setPins(pin.sort((a, b) => b.name.localeCompare(a.name)))
+      }
+    }
+  }
 
   const filteredPins = pins.filter((item) =>
     item.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -30,6 +61,7 @@ export default function ListPinListView() {
     const { data, error } = await supabase
       .from("pin_lists")
       .select(`
+        created_at,
             pins (
               pin_id,
               name,
@@ -41,8 +73,8 @@ export default function ListPinListView() {
             )
           `)
       .eq("list_id", Number(listId))
-    const pinsInList: Pin[] = data?.map(pin => ({ id: pin.pins.pin_id, name: pin.pins.name, address: pin.pins.address, latitude: pin.pins.locations.latitude, longitude: pin.pins.locations.longitude }))
-    setPins(pinsInList)
+    const pinsInList: PinWithDate[] = data?.map(pin => ({ id: pin.pins.pin_id, name: pin.pins.name, address: pin.pins.address, latitude: pin.pins.locations.latitude, longitude: pin.pins.locations.longitude, date: pin.created_at }))
+    handleSort(pinsInList)
   }
 
   const onLeaveList = async () => {
@@ -76,11 +108,11 @@ export default function ListPinListView() {
       setPinChanged(true);
       getListPins(listIdToView)
       getListName(listIdToView)
-    }, [])
+    }, [sortModalVisible])
   )
 
   useEffect(() => {
-
+    
     getListName(listIdToView);
   }, []);
 
@@ -97,7 +129,7 @@ export default function ListPinListView() {
           />
           <Ionicons name="search" size={16} color={"#fefbea"} />
         </View>
-        <Pressable style={styles.sortBtn}>
+        <Pressable style={styles.sortBtn} onPress={() => setSortModalVisible(true)}>
           <Text style={styles.sortText}>Sort</Text>
           <Ionicons name="chevron-down" size={14} color={"#fefbea"} />
         </Pressable>
@@ -162,6 +194,15 @@ export default function ListPinListView() {
             <ListCard name={item.name} pinId={item.id} loc={item.address} />
           </Pressable>
         )}
+      />
+      <Sort
+        contentType="list"
+        isVisible={sortModalVisible}
+        onClose={() => setSortModalVisible(false)}
+        sortChoice={sortChoice}
+        setSortChoice={setSortChoice}
+        ascending={ascending}
+        setAscending={setAscending}
       />
     </View>
   )

@@ -1,4 +1,5 @@
 import AddTagOrList from "@/components/add-tag";
+import Sort from "@/components/sort-lists";
 import { Colors, Fonts } from "@/constants/theme";
 import { supabase } from "@/lib/supabase";
 import { Pin } from "@/types/types";
@@ -16,7 +17,8 @@ type ListType = {
 type listItems = {
   listId: string,
   name: string,
-  username: string | null
+  username: string | null,
+  date: string
 };
 
 export default function Lists() {
@@ -27,10 +29,32 @@ export default function Lists() {
   const [newList, setNewList] = useState<ListType>({ name: "", privacy: 1 })
   const [searchQuery, setSearchQuery] = useState("")
   const [viewMode, setViewMode] = useState("user")
+  const [sortModalVisible, setSortModalVisible] = useState(false)
+  const [sortChoice, setSortChoice] = useState("date")
+  const [ascending, setAscending] = useState(true)
   
   const filteredLists = lists.filter((item) =>
     item.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const handleSort = async (list: listItems[]) => {
+    if (sortChoice == "date") {
+      if (ascending) {
+        setLists(list.sort((a, b) => a.date.localeCompare(b.date)))
+      }
+      else {
+        setLists(list.sort((a, b) => b.date.localeCompare(a.date)))
+      }
+    }
+    else {
+      if (ascending) {
+        setLists(list.sort((a, b) => a.name.localeCompare(b.name)))
+      }
+      else {
+        setLists(list.sort((a, b) => b.name.localeCompare(a.name)))
+      }
+    }
+  }
 
   const addList = async () => {
     if (!newList) {
@@ -71,6 +95,7 @@ export default function Lists() {
         `
         list_id,
         name,
+        created_at,
         users!lists_user_id_fkey (
           username
         )
@@ -82,7 +107,8 @@ export default function Lists() {
       Alert.alert("Error", error.message);
       return;
     }
-    setLists(data.map((list: any) => ({ listId: list.list_id, name: list.name, username: null })))
+    const userLists = data.map((list: any) =>  ({ listId: list.list_id, name: list.name, username: null, date: list.created_at }))
+    handleSort(userLists)
     //return data.map((list: any) => ({ listId: list.list_id, name: list.name, username: null }));
   };
 
@@ -95,7 +121,8 @@ export default function Lists() {
         list_id,
         lists (
           name,
-          privacy
+          privacy,
+          created_at
         ),
         users!list_members_creator_id_fkey (
           username
@@ -108,8 +135,8 @@ export default function Lists() {
       Alert.alert("Error", error.message);
       return;
     }
-  setLists(data.map((list: any) => ({ listId: list.list_id, name: list.lists.name, username: list.users.username })))
-    //return data.map((list: any) => ({ listId: list.list_id, name: list.name }));
+  const friendLists = data.map((list: any) => ({ listId: list.list_id, name: list.lists.name, username: list.users.username, date: list.lists.created_at }))
+  setLists(friendLists.sort((a, b) => a.date.localeCompare(b.date)))
   }
 
   const getListPins = async (listId: any) => {
@@ -150,7 +177,7 @@ export default function Lists() {
 
   useFocusEffect(useCallback(() => {
     refreshLists();
-  }, [viewMode]))
+  }, [viewMode, sortModalVisible]))
   return (
     <View style={styles.container}>
       <View style={styles.searchRow}>
@@ -164,7 +191,7 @@ export default function Lists() {
           />
           <Ionicons name="search" size={16} color={"#fefbea"} />
         </View>
-        <Pressable style={styles.sortBtn}>
+        <Pressable style={styles.sortBtn} onPress={() => setSortModalVisible(true)}>
           <Text style={styles.sortText}>Sort</Text>
           <Ionicons name="chevron-down" size={14} color={"#fefbea"} />
         </Pressable>
@@ -248,6 +275,15 @@ export default function Lists() {
         onSave={addList}
         newEntry={newList}
         setNewEntry={setNewList}
+      />
+      <Sort 
+      contentType="list"
+      isVisible={sortModalVisible} 
+      onClose={() => setSortModalVisible(false)}
+      sortChoice={sortChoice}
+      setSortChoice={setSortChoice}
+      ascending={ascending}
+      setAscending={setAscending}
       />
     </View>
   );
