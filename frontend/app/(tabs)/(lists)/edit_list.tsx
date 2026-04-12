@@ -1,6 +1,7 @@
 import AddPinToList from "@/components/add-pins-to-list";
 import CoverPhotoModal from "@/components/cover-photo-modal";
 import { Colors, Fonts } from "@/constants/theme";
+import { getPhotoUrl } from "@/lib/photo-utils";
 import { setPinChanged } from "@/lib/pin_refresh_data";
 import { supabase } from "@/lib/supabase";
 import { Pin } from "@/types/types";
@@ -39,6 +40,8 @@ export default function EditList() {
   const [pinsToAdd, setPinsToAdd] = useState<Pin[]>([]);
   const [pinsToRemove, setPinsToRemove] = useState<number[]>([]);
   const [privacy, setPrivacy] = useState<number>(1); // 0: fully private, 1: selectively private, 2: all friends
+  const [dbPrivacy, setDbPrivacy] = useState<number | null>(null)
+  const [coverPhotoKey, setCoverPhotoKey] = useState("")
 
   const changePrivacy = (value: number) => {
     if (value < 0 || value > 2) {
@@ -58,13 +61,24 @@ export default function EditList() {
     }
   }
 
-  const getListName = async (listId: any) => {
+  const getListInfo = async (listId: any) => {
     const { data, error } = await supabase
       .from("lists")
-      .select("name")
+      .select(`
+        name,
+        privacy,
+        photos (
+          key
+        )`)
       .eq("list_id", listId)
     setListName(data?.[0].name);
     setDbListName(data?.[0].name);
+    setDbPrivacy(data?.[0].privacy);
+    const key = data?.[0].photos?.key ?? ""
+    setCoverPhotoKey(key)
+    if (key != "") {
+      await loadPhotos([key])
+    }
   }
   const getListPins = async (listId: any) => {
     const { data, error } = await supabase
@@ -122,7 +136,6 @@ export default function EditList() {
   const handleChooseFromLibrary = async (cover: boolean) => {
     const result = await pickImageAsync();
     setCoverPhotoModalVisible(false);
-    //setAddPhotoModalVisible(false);
     if (!result) return;
     const uri = result!.assets[0].uri;
     const processedImage = await processImage(uri);
@@ -130,23 +143,18 @@ export default function EditList() {
     setCoverPhotoChanged(true);
   };
 
-  const handleDeletePhoto = async (key: string, url: string, cover: boolean) => {
+  const handleDeletePhoto = async (key: string, url: string) => {
     if (key == "") {
       //remove from the list
-      //setPhotoList(photoList.filter((photo) => photo.url != url))
       setCoverPhotoUrl("")
     } else {
       //remove from db
-      //setPhotoList(photoList.filter((photo) => photo.url != url))
       setCoverPhotoUrl("")
       setPhotoToDelete({ key: key, url: url, changed: true })
-      //deletePhoto(key);
     }
 
-    if (cover) {
-      setCoverPhotoUrl("")
-      //setCoverPhotoKey("")
-    }
+
+    setCoverPhotoUrl("")
     setCoverPhotoModalVisible(false)
   }
 
@@ -169,18 +177,118 @@ export default function EditList() {
     }
   }
 
+  const uploadPhoto = async (photoUrl: string) => {
+      const imageFile = await fetch(photoUrl);
+      const imageFileBlob = await imageFile.blob();
+      const res = await fetch(
+        "https://4nm4iifq65.execute-api.us-east-2.amazonaws.com/uploadphotourl",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contentType: "image/jpeg",
+          }),
+        },
+      );
+      const { uploadUrl, key } = await res.json();
+  
+      const response = await fetch(uploadUrl, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "image/jpeg",
+        },
+        body: imageFileBlob,
+      });
+  
+      if (!response.ok) {
+        console.log("Something went wrong when uploading");
+      }
+      const { data, error: addPhotoError } = await supabase
+        .from("photos")
+        .insert({
+          key: key,
+        })
+        .select("photo_id")
+        .single();
+  
+      if (addPhotoError) {
+        Alert.alert("Error", addPhotoError.message);
+      }
+  
+      const { error: listPhotoError } = await supabase
+      .from("lists")
+      .update({
+        "cover_photo": data?.photo_id
+      })
+      .eq("list_id", listIdToView);
+  
+      if (listPhotoError) {
+        Alert.alert("Error", listPhotoError.message);
+      }
+    };
+
+  const deletePhoto = async (key: string) => {
+    setCoverPhotoModalVisible(false);
+    const { data, error: deletePhotoError } = await supabase
+      .from("photos")
+      .delete()
+      .eq("key", key)
+      .select("photo_id")
+      .single();
+
+    if (deletePhotoError) {
+      Alert.alert("Error", deletePhotoError.message);
+    }
+
+    const res = await fetch(
+      "https://4nm4iifq65.execute-api.us-east-2.amazonaws.com/deletephotourl",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ key: key }),
+      },
+    );
+
+    const { url } = await res.json();
+    if (!url) {
+      console.log("No URL returned");
+      return;
+    }
+    const deleteRes = await fetch(url, {
+      method: "DELETE",
+    });
+    if (!deleteRes.ok) {
+      console.log("S3 delete failed");
+    }
+  };
+
+  const loadPhotos = async (keys: string[]) => {
+      let signedUrls = await getPhotoUrl(keys);
+      let signedCoverPhotoUrl = signedUrls[0].url;
+      let coverPhotoKey = keys[0];
+      setCoverPhotoUrl(signedCoverPhotoUrl);
+      setCoverPhotoKey(coverPhotoKey);
+    };
+
   const saveChanges = async () => {
     if (photoToDelete != null) {
-      // handle deleting a folder from db
+      // handle deleting a photo from db
+      deletePhoto(coverPhotoKey)
     }
     if (coverPhotoChanged) {
       // handle adding a photo to db
+      if (coverPhotoKey != "") {
+        deletePhoto(coverPhotoKey)
+      }
+      uploadPhoto(coverPhotoUrl)
     }
     const pinIdsToAdd = pinsToAdd.map((item) => Number(item.id))
     const dbPinIds = dbPins.map((item) => Number(item.id))
     const pinIdsToRemove = pinsToRemove;
     const pinsToAddToDb = pins.filter((item) => !dbPinIds.includes(Number(item.id)) && !pinIdsToRemove.includes(Number(item.id)))
-    const pinListAssociationToAdd = pinsToAddToDb.map((item) => ({pin_id: Number(item.id), list_id: listIdToView}))
+    const pinListAssociationToAdd = pinsToAddToDb.map((item) => ({ pin_id: Number(item.id), list_id: listIdToView }))
     const pinsToDeleteFromDb = pinIdsToRemove.filter((item) => dbPinIds.includes(Number(item)));
     if (pinsToAddToDb.length > 0) {
       const { error: addPinListError } = await supabase
@@ -203,15 +311,24 @@ export default function EditList() {
     if (dbListName != listName) {
       const { error: updateListNameError } = await supabase
         .from("lists")
-        .update({"name": listName})
+        .update({ "name": listName })
         .eq("list_id", listIdToView);
       if (updateListNameError) {
         Alert.alert("Error", updateListNameError.message)
       }
     }
+    if (dbPrivacy != privacy) {
+      const { error: updatePrivacyError } = await supabase
+        .from("lists")
+        .update({ "privacy": privacy })
+        .eq("list_id", listIdToView);
+      if (updatePrivacyError) {
+        Alert.alert("Error", updatePrivacyError.message);
+      }
+    }
     router.back()
   }
-  
+
 
   useFocusEffect(
     useCallback(() => {
@@ -220,8 +337,11 @@ export default function EditList() {
   )
 
   useEffect(() => {
-    getListPins(listIdToView);
-    getListName(listIdToView);
+    const loadInfo = async () => {
+      await getListPins(listIdToView);
+      await getListInfo(listIdToView);
+    }
+    loadInfo();
   }, []);
 
   useEffect(() => {
@@ -247,7 +367,7 @@ export default function EditList() {
         <Pressable
           style={styles.button}
           onPress={saveChanges}>
-          
+
           <Text
             style={styles.buttonText}>
             Save
@@ -275,7 +395,7 @@ export default function EditList() {
           isVisible={coverPhotoModalVisible}
           onClose={() => setCoverPhotoModalVisible(false)}
           onChooseFromLibrary={() => handleChooseFromLibrary(true)}
-          onDelete={() => handleDeletePhoto("", "", true)}
+          onDelete={() => handleDeletePhoto(coverPhotoKey, coverPhotoUrl)}
         />
         <View style={styles.fields}>
           <View style={styles.fields}>
@@ -574,8 +694,8 @@ const styles = StyleSheet.create({
   privacyDescription: {
     flexShrink: 1,
     fontFamily: Fonts.regular,
-    marginHorizontal: 15, 
-    marginBottom: 15, 
+    marginHorizontal: 15,
+    marginBottom: 15,
   },
   pill: {
     flexDirection: "row",

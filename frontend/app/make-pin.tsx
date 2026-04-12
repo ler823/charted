@@ -35,6 +35,11 @@ type PhotoItem = {
   changed: boolean;
 };
 
+type ListType = {
+  name: string;
+  privacy: number;
+}
+
 export default function MakePin() {
   const router = useRouter();
   const {
@@ -75,8 +80,8 @@ export default function MakePin() {
   const [visits, setVisits] = useState<string[]>([]);
   const [newVisit, setNewVisit] = useState("");
   const [originalVisits, setOriginalVisits] = useState<string[]>([]);
-  const [newTag, setNewTag] = useState("");
-  const [newList, setNewList] = useState("");
+  const [newTag, setNewTag] = useState<ListType>({name: "", privacy: 1});
+  const [newList, setNewList] = useState<ListType>({name: "", privacy: 1});
   const [newListPrivacy, setNewListPrivacy] = useState(0);
   const [dataLoaded, setDataLoaded] = useState(false);
   const [isPrivate, setIsPrivate] = useState(false);
@@ -434,7 +439,8 @@ export default function MakePin() {
     }
     let tagToAdd = {
       user_id: userId[0].user_id,
-      name: newTag,
+      name: newTag.name,
+      privacy: newTag.privacy
     };
 
     const { error: addTagError } = await supabase.from("tags").insert(tagToAdd);
@@ -465,7 +471,8 @@ export default function MakePin() {
     }
     let listToAdd = {
       user_id: userId[0].user_id,
-      name: newList,
+      name: newList.name,
+      privacy: newList.privacy
     };
 
     const { error: addListError } = await supabase.from("lists").insert(listToAdd);

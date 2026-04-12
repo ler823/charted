@@ -8,6 +8,11 @@ import { useCallback, useState } from "react";
 import { Alert, FlatList, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import ListItemsCard from "../(home)/list_item_card";
 
+type ListType = {
+  name: string;
+  privacy: number;
+}
+
 type listItems = {
   listId: string,
   name: string
@@ -18,9 +23,40 @@ export default function Lists() {
   const [lists, setLists] = useState<listItems[]>([]);
   const [pins, setPins] = useState<Pin[]>([]);
   const [addListModalVisible, setAddListModalVisible] = useState(false)
-  const [newList, setNewList] = useState("")
+  const [newList, setNewList] = useState<ListType>({ name: "", privacy: 1 })
   const [searchQuery, setSearchQuery] = useState("")
   const [viewMode, setViewMode] = useState("user")
+
+  const addList = async () => {
+    if (!newList) {
+      Alert.alert("Missing field", "Please enter a name for the new list");
+      return;
+    }
+    const { data: userId, error: userIdError } = await supabase
+      .from("users")
+      .select("user_id")
+      .eq("username", "TimTimTim");
+    if (userIdError) {
+      Alert.alert("Error", userIdError.message);
+      return;
+    }
+    let listToAdd = {
+      user_id: userId[0].user_id,
+      name: newList.name,
+      privacy: newList.privacy
+    };
+
+    const { error: addListError } = await supabase.from("lists").insert(listToAdd);
+    if (addListError) {
+      Alert.alert(
+        "This list has already been added",
+        "You have added a list with this name before",
+      );
+      return;
+    }
+    setAddListModalVisible(false);
+    setNewList({name: "", privacy: 1})
+  };
 
   const getUserLists = async () => {
     const { data, error } = await supabase
@@ -57,7 +93,7 @@ export default function Lists() {
       `,
       )
       .neq("users.username", "TimTimTim")
-      .eq("private", true);
+      .eq("privacy", 2);
 
     if (error) {
       Alert.alert("Error", error.message);
@@ -123,7 +159,7 @@ export default function Lists() {
       <View style={styles.row}>
         <View style={styles.pill}>
           <Pressable
-          onPress={switchToUserView}
+            onPress={switchToUserView}
             style={[
               styles.button,
               {
@@ -161,7 +197,7 @@ export default function Lists() {
         contentContainerStyle={styles.listContent}
         ListEmptyComponent={() => viewMode == "shared" ? (
           <Text style={styles.text}>Your friends are not sharing any lists with their friends</Text>
-        ): (
+        ) : (
           <Text style={styles.text}>You do not have any lists</Text>
         )}
         renderItem={({ item }) => (
@@ -190,7 +226,7 @@ export default function Lists() {
         name="list"
         isVisible={addListModalVisible}
         onClose={() => setAddListModalVisible(false)}
-        onSave={() => setAddListModalVisible(false)}
+        onSave={addList}
         newEntry={newList}
         setNewEntry={setNewList}
       />
