@@ -1,5 +1,6 @@
 import AddPinToList from "@/components/add-pins-to-list";
 import CoverPhotoModal from "@/components/cover-photo-modal";
+import EditListFriends from "@/components/edit-list-friends";
 import { Colors, Fonts } from "@/constants/theme";
 import { getPhotoUrl } from "@/lib/photo-utils";
 import { setPinChanged } from "@/lib/pin_refresh_data";
@@ -42,6 +43,7 @@ export default function EditList() {
   const [privacy, setPrivacy] = useState<number>(1); // 0: fully private, 1: selectively private, 2: all friends
   const [dbPrivacy, setDbPrivacy] = useState<number | null>(null)
   const [coverPhotoKey, setCoverPhotoKey] = useState("")
+  const [editFriendsModalVisible, setEditFriendsModalVisible] = useState(false)
 
   const changePrivacy = (value: number) => {
     if (value < 0 || value > 2) {
@@ -74,6 +76,7 @@ export default function EditList() {
     setListName(data?.[0].name);
     setDbListName(data?.[0].name);
     setDbPrivacy(data?.[0].privacy);
+    setPrivacy(data?.[0].privacy);
     const key = data?.[0].photos?.key ?? ""
     setCoverPhotoKey(key)
     if (key != "") {
@@ -451,11 +454,19 @@ export default function EditList() {
               </Pressable>
             </View>
             {privacy == 1 && (
-              <Pressable
-                style={styles.button}>
-                <Text
-                  style={styles.buttonText}>Edit Friends</Text>
-              </Pressable>
+              <View>
+                <Pressable
+                  style={styles.button}
+                  onPress={() => setEditFriendsModalVisible(true)}>
+                  <Text
+                    style={styles.buttonText}>Edit Friends</Text>
+                </Pressable>
+                <EditListFriends 
+                isVisible={editFriendsModalVisible}
+                onClose={() => setEditFriendsModalVisible(false)}
+                onSave={() =>setEditFriendsModalVisible(false)}
+                listId={listIdToView.toString()}/>
+              </View>
             )}
           </View>
           <View>
@@ -472,6 +483,9 @@ export default function EditList() {
         data={pins}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContent}
+        ListEmptyComponent={(
+                  <Text style={styles.text}>You have not added any pins to this list</Text>
+                )}
         renderItem={({ item }) => (
           <View style={styles.listCheckBoxRow}>
             <Checkbox
@@ -699,5 +713,11 @@ const styles = StyleSheet.create({
   },
   pill: {
     flexDirection: "row",
+  },
+  text: {
+    margin: 15,
+    fontFamily: Fonts.regular,
+    fontSize: 16,
+    textAlign: "center",
   },
 });

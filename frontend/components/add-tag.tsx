@@ -19,7 +19,7 @@ type Props = PropsWithChildren<{
 
 export default function AddTagOrList({ name, isVisible, onClose, onSave, newEntry, setNewEntry }: Props) {
   const publicDescription = "All of your friends can view this pin";
-  const selectivePrivateDescription = "Only friends you choose can view this list"
+  const selectivePrivateDescription = "Only friends you choose can view this list\nYou can choose these friends from the edit list page"
   const privateDescription = "Only you can view this pin";
   const [privacyDescription, setPrivacyDescription] = useState(name == "tag" ? publicDescription : selectivePrivateDescription);
   const [isPrivate, setIsPrivate] = useState(false)
@@ -107,7 +107,7 @@ export default function AddTagOrList({ name, isVisible, onClose, onSave, newEntr
                             {
                               borderTopRightRadius: 0,
                               borderBottomRightRadius: 0,
-                              backgroundColor: privacy == 0 ? Colors.light.accent : Colors.light.background
+                              backgroundColor: newEntry.privacy == 0 ? Colors.light.accent : Colors.light.background
                             }]}>
                           <Ionicons name="lock-closed" size={24} color="#d9d9d9" />
                         </Pressable>
@@ -117,7 +117,7 @@ export default function AddTagOrList({ name, isVisible, onClose, onSave, newEntr
                             styles.button,
                             {
                               borderRadius: 0,
-                              backgroundColor: privacy == 1 ? Colors.light.accent : Colors.light.background
+                              backgroundColor: newEntry.privacy == 1 ? Colors.light.accent : Colors.light.background
                             },]}>
                           <Ionicons name="person-add" size={24} color="#d9d9d9" />
                         </Pressable>
@@ -128,18 +128,18 @@ export default function AddTagOrList({ name, isVisible, onClose, onSave, newEntr
                             {
                               borderTopLeftRadius: 0,
                               borderBottomLeftRadius: 0,
-                              backgroundColor: privacy == 2 ? Colors.light.accent : Colors.light.background
+                              backgroundColor: newEntry.privacy == 2 ? Colors.light.accent : Colors.light.background
                             },]}>
                           <Ionicons name="people" size={24} color="#d9d9d9" />
                         </Pressable>
                       </View>
-                      {privacy == 1 && (
+                      {/* {privacy == 1 && (
                         <Pressable
                           style={styles.button}>
                           <Text
                             style={styles.buttonText}>Edit Friends</Text>
                         </Pressable>
-                      )}
+                      )} */}
                     </View>
                     <View>
                       <View>
@@ -302,7 +302,7 @@ const styles = StyleSheet.create({
   privacyBackground: {
     flexDirection: "column",
     gap: 8,
-    margin: 15,
+    marginTop: 15,
     backgroundColor: Colors.light.accentLight,
     alignItems: "flex-start",
     padding: 9.5,

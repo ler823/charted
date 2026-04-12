@@ -6,24 +6,25 @@ import React, { useEffect, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 
 type Props = {
-  listId: string;
+  userId: string;
   name?: string;
   loc?: string;
+  editList?: boolean;
 };
 
-export default function ListItemsCard({ listId, name }: Props) {
+export default function FriendListCard({ userId, name, loc, editList }: Props) {
   const [coverPhoto, setCoverPhoto] = useState<string | null>(null);
 
   useEffect(() => {
     setCoverPhoto(null);
-    if (!listId) return;
-    
+    if (!userId) return;
+
     async function fetchCoverPhoto() {
       const { data } = await supabase
-      .from("lists")
-      .select("photos(key)")
-      .eq("list_id", listId)
-      .single();
+        .from("users")
+        .select("photos(key)")
+        .eq("user_id", userId)
+        .single();
 
       const key = data?.photos?.key;
       if (!key) return;
@@ -33,10 +34,10 @@ export default function ListItemsCard({ listId, name }: Props) {
     }
 
     fetchCoverPhoto();
-  }, [listId]);
+  }, [userId]);
 
   return (
-    <View style={styles.card}>
+    <View style={(editList != null) ? styles.editListCard : styles.card}>
       <Image
         source={
           coverPhoto
@@ -50,7 +51,10 @@ export default function ListItemsCard({ listId, name }: Props) {
       />
       <View style={styles.textContainer}>
         <Text style={styles.cardTitle} numberOfLines={1} ellipsizeMode="tail">
-          {name || "Unnamed List"}
+          {name || "Unnamed Pin"}
+        </Text>
+        <Text style={styles.cardLoc} numberOfLines={1} ellipsizeMode="tail">
+          {loc || "No address available"}
         </Text>
       </View>
     </View>
@@ -63,7 +67,7 @@ const styles = StyleSheet.create({
     height: 65,
     resizeMode: "cover",
     aspectRatio: 1,
-    borderRadius: 9,
+    borderRadius: "100%",
   },
 
   card: {
@@ -99,5 +103,20 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.regular,
     fontSize: 12,
     flexShrink: 1,
+  },
+  editListCard: {
+    backgroundColor: "#DEE9E0",
+    padding: 12,
+    margin: 5,
+    borderRadius: 5,
+    height: 80,
+    width: "92%",
+    flexDirection: "row",
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
+    elevation: 4,
   },
 });

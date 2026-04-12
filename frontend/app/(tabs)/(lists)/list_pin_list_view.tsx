@@ -103,6 +103,9 @@ export default function ListPinListView() {
       <FlatList
         data={pins}
         keyExtractor={(item) => item.id}
+        ListEmptyComponent={(
+          <Text style={styles.text}>You have not added any pins to this list</Text>
+        )}
         contentContainerStyle={styles.listContent}
         renderItem={({ item }) => (
           <Pressable
@@ -225,5 +228,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: Fonts.bold,
     color: "#fefbea",
+  },
+  text: {
+    margin: 15,
+    fontFamily: Fonts.regular,
+    fontSize: 16,
+    textAlign: "center",
   },
 });

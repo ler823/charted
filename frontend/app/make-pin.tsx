@@ -963,7 +963,7 @@ export default function MakePin() {
       // These two are loaded for both adding and editing
       await cleanupUnusedTags();
       await loadTags();
-      await cleanupUnusedLists();
+      //await cleanupUnusedLists();
       await loadLists();
       setDataLoaded(true);
     };
@@ -1160,7 +1160,7 @@ export default function MakePin() {
                         />
                       )}
                     </View>
-                    <Text style={styles.tagLabel}>{tag}</Text>
+                    <Text style={styles.tagLabel} numberOfLines={1} ellipsizeMode="tail">{tag}</Text>
                   </Pressable>
                 ))}
                 <AddTagOrList
@@ -1211,7 +1211,7 @@ export default function MakePin() {
                         />
                       )}
                     </View>
-                    <Text style={styles.tagLabel}>{list}</Text>
+                    <Text style={styles.tagLabel} numberOfLines={1} ellipsizeMode="tail">{list}</Text>
                   </Pressable>
                 ))}
                 <AddTagOrList
@@ -1468,6 +1468,7 @@ const styles = StyleSheet.create({
     color: "#333",
     textTransform: "capitalize",
     fontFamily: Fonts.regular,
+    maxWidth: 90,
   },
   starRow: {
     flexDirection: "row",

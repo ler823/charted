@@ -26,6 +26,7 @@ export default function Lists() {
   const [newList, setNewList] = useState<ListType>({ name: "", privacy: 1 })
   const [searchQuery, setSearchQuery] = useState("")
   const [viewMode, setViewMode] = useState("user")
+  
 
   const addList = async () => {
     if (!newList) {
@@ -56,6 +57,7 @@ export default function Lists() {
     }
     setAddListModalVisible(false);
     setNewList({name: "", privacy: 1})
+    refreshLists();
   };
 
   const getUserLists = async () => {
@@ -130,13 +132,17 @@ export default function Lists() {
     setViewMode("shared")
   }
 
-  useFocusEffect(useCallback(() => {
+  const refreshLists = async () => {
     if (viewMode == "user") {
       getUserLists();
     }
     else if (viewMode == "shared") {
       getFriendLists();
     }
+  }
+
+  useFocusEffect(useCallback(() => {
+    refreshLists();
   }, [viewMode]))
   return (
     <View style={styles.container}>
