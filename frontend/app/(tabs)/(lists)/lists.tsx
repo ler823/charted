@@ -28,6 +28,9 @@ export default function Lists() {
   const [searchQuery, setSearchQuery] = useState("")
   const [viewMode, setViewMode] = useState("user")
   
+  const filteredLists = lists.filter((item) =>
+    item.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   const addList = async () => {
     if (!newList) {
@@ -197,14 +200,18 @@ export default function Lists() {
       <View style={styles.spacer} />
 
       <FlatList
-        data={lists}
+        data={filteredLists}
         keyExtractor={(item) => item.name}
         contentContainerStyle={styles.listContent}
-        ListEmptyComponent={() => viewMode == "shared" ? (
+        ListEmptyComponent={() => viewMode == "shared" ? (searchQuery == "" ? (
           <Text style={styles.text}>Your friends are not sharing any lists with their friends</Text>
         ) : (
+          <Text style={styles.text}>No lists found matching the query</Text>
+        )) : (searchQuery == "" ? (
           <Text style={styles.text}>You do not have any lists</Text>
-        )}
+        ) : (
+          <Text style={styles.text}>No lists found matching the query</Text>
+        ))}
         renderItem={({ item }) => (
           <Pressable
             style={styles.cards}

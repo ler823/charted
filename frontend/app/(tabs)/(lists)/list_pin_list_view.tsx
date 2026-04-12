@@ -14,6 +14,11 @@ export default function ListPinListView() {
   const [listName, setListName] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const userId = 4;
+
+  const filteredPins = pins.filter((item) =>
+    item.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   const getListName = async (listId: any) => {
     const { data, error } = await supabase
       .from("lists")
@@ -126,9 +131,9 @@ export default function ListPinListView() {
           </Pressable>
         )}
         {isShared == "true" && (
-          <Pressable 
-          style={styles.cancelButton}
-          onPress={onLeaveList}>
+          <Pressable
+            style={styles.cancelButton}
+            onPress={onLeaveList}>
             <Text style={styles.buttonText}>Leave this list</Text>
           </Pressable>
         )}
@@ -137,7 +142,7 @@ export default function ListPinListView() {
       <View style={styles.spacer} />
 
       <FlatList
-        data={pins}
+        data={filteredPins}
         keyExtractor={(item) => item.id}
         ListEmptyComponent={(
           <Text style={styles.text}>You have not added any pins to this list</Text>
