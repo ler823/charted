@@ -82,7 +82,7 @@ export default function PinPage() {
       }
 
       async function getPhotos(myPin: Pin) {
-        if (myPin == null || myPin.pin_photos[0] == null || myPin.pin_photos[0].photos.key == "") {
+        if (myPin == null || myPin.pin_photos?.[0] == null || myPin.pin_photos?.[0].photos?.key == "") {
           setCoverPhoto("")
           return;
         }
@@ -280,7 +280,7 @@ export default function PinPage() {
               data={photoList}
               keyExtractor={(photo) => photo}
               renderItem={({ item }) => (
-                <Pressable onPress={() => router.push({pathname: "/image-view", params: {uri: encodeURIComponent(item)}})}>
+                <Pressable onPress={() => router.push({pathname: "./image-view", params: {uri: encodeURIComponent(item)}})}>
                   <Image source={{ uri: item }} style={styles.photoCarousel} transition={500} />
                 </Pressable>
               )}
