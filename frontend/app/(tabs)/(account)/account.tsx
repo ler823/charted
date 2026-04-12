@@ -1,7 +1,9 @@
 import { Stars } from "@/components/light-stars";
 import LoadingPage from "@/components/loading-page";
 import { Fonts } from "@/constants/theme";
+import { getPhotoUrl } from "@/lib/photo-utils";
 import { Ionicons } from "@expo/vector-icons";
+import { Image } from "expo-image";
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
@@ -11,6 +13,7 @@ import { supabase } from "@/lib/supabase";
 export default function Account() {
   const [loading, setLoading] = useState(true);
   const [username, setUsername] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -19,11 +22,17 @@ export default function Account() {
       } = await supabase.auth.getUser();
       if (user) {
         const { data } = await supabase
-          .from("profiles") // adjust to your table name
-          .select("username")
+          .from("profiles")
+          .select("username, avatar_key")
           .eq("id", user.id)
           .single();
-        if (data) setUsername(data.username);
+        if (data) {
+          setUsername(data.username);
+          if (data.avatar_key) {
+            const urls = await getPhotoUrl([data.avatar_key]);
+            setAvatarUrl(urls[0].url);
+          }
+        }
       }
       setLoading(false);
     };
@@ -58,7 +67,15 @@ export default function Account() {
 
       <View style={styles.container}>
         {/* Avatar */}
-        <View style={styles.avatar} />
+        {avatarUrl ? (
+          <Image
+            source={{ uri: avatarUrl }}
+            style={styles.avatar}
+            transition={300}
+          />
+        ) : (
+          <View style={styles.avatar} />
+        )}
 
         {/* Username, Location, Bio */}
         <Text style={styles.username}>{username}</Text>

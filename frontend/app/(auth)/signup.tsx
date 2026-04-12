@@ -1,9 +1,17 @@
 import { Colors, Fonts } from "@/constants/theme";
+import {
+  pickImageAsync,
+  processImage,
+  uploadImageToS3,
+} from "@/lib/photo-utils";
 import { supabase } from "@/lib/supabase";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { Image } from "expo-image";
 import { router } from "expo-router";
 import { useState } from "react";
 import {
   ActivityIndicator,
+  Pressable,
   StyleSheet,
   Text,
   TextInput,
@@ -42,6 +50,7 @@ export default function SignupScreen() {
   const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(
     null,
   );
+  const [avatarUri, setAvatarUri] = useState<string | null>(null);
 
   const [errors, setErrors] = useState({
     email: "",
@@ -50,6 +59,13 @@ export default function SignupScreen() {
     confirmPassword: "",
     form: "",
   });
+
+  const handlePickAvatar = async () => {
+    const result = await pickImageAsync();
+    if (!result) return;
+    const processed = await processImage(result.assets[0].uri);
+    setAvatarUri(processed.uri);
+  };
 
   const checkUsernameAvailability = async (value: string) => {
     const usernameError = validateUsername(value);
@@ -107,20 +123,27 @@ export default function SignupScreen() {
       return;
     }
 
+    // Upload avatar if one was picked
+    let avatarKey: string | null = null;
+    if (avatarUri) {
+      avatarKey = await uploadImageToS3(avatarUri);
+    }
+
     const { error: profileError } = await supabase
       .from("profiles")
-      .insert({ id: data.user.id, username });
+      .insert({ id: data.user.id, username, avatar_key: avatarKey });
 
     if (profileError) {
       setErrors((e) => ({
         ...e,
-        form: "Failed to save username. Please try again.",
+        form: "Failed to save profile. Please try again.",
       }));
       setLoading(false);
       return;
     }
 
     setLoading(false);
+    // onAuthStateChange fires → _layout.tsx re-routes automatically
   };
 
   return (
@@ -128,6 +151,28 @@ export default function SignupScreen() {
       <Text style={styles.title}>Create account</Text>
 
       {errors.form ? <Text style={styles.formError}>{errors.form}</Text> : null}
+
+      {/* Avatar picker */}
+      <Pressable onPress={handlePickAvatar} style={styles.avatarContainer}>
+        {avatarUri ? (
+          <Image
+            source={{ uri: avatarUri }}
+            style={styles.avatar}
+            transition={300}
+          />
+        ) : (
+          <View style={styles.avatarPlaceholder}>
+            <MaterialCommunityIcons
+              name="camera-plus"
+              size={28}
+              color="#6a8f6a"
+            />
+          </View>
+        )}
+        <Text style={styles.changePhotoText}>
+          {avatarUri ? "Change photo" : "Add profile photo"}
+        </Text>
+      </Pressable>
 
       <TextInput
         style={styles.input}
@@ -228,24 +273,29 @@ const styles = StyleSheet.create({
     width: "100%",
     textAlign: "left",
   },
-  logoContainer: {
+  avatarContainer: {
     alignItems: "center",
-    marginBottom: 48,
+    marginBottom: 20,
   },
-  logo: {
-    width: 80,
-    height: 80,
-    resizeMode: "contain",
-    marginBottom: 8,
+  avatar: {
+    width: 90,
+    height: 90,
+    borderRadius: 45,
   },
-  appName: {
-    fontSize: 28,
-    fontFamily: Fonts.bold,
+  avatarPlaceholder: {
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    backgroundColor: "#e4ede4",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  changePhotoText: {
+    marginTop: 8,
+    fontSize: 13,
     color: Colors.light.background,
-    letterSpacing: 3,
-  },
-  form: {
-    width: "100%",
+    fontFamily: Fonts.regular,
+    textDecorationLine: "underline",
   },
   input: {
     backgroundColor: "#e4ede4",
