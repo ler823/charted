@@ -8,33 +8,27 @@ import { useRouter } from "expo-router";
 import { Dispatch, SetStateAction, useEffect, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
-type FriendAvatar = {
-  user_id: number;
-  username: string;
-};
-
 type PinOverlayProps = {
   selectedPin: Pin | null;
   setSelectedPin: Dispatch<SetStateAction<Pin | null>>;
 };
 
-export default function PinOverlay({
+export default function PinOverlayFriend({
   selectedPin,
   setSelectedPin,
 }: PinOverlayProps) {
   const router = useRouter();
   const [coverPhoto, setCoverPhoto] = useState<string | null>(null);
-  const [friendAvatars, setFriendAvatars] = useState<FriendAvatar[]>([]);
 
   useEffect(() => {
     setCoverPhoto(null);
-    if (!selectedPin?.pinIds?.[0]) return;
+    if (!selectedPin?.id) return;
 
     async function fetchCoverPhoto() {
       const { data } = await supabase
         .from("pins")
         .select("pin_photos(photos(key), cover)")
-        .eq("pin_id", selectedPin?.pinIds?.[0])
+        .eq("pin_id", selectedPin?.id)
         .single();
 
       if (!data?.pin_photos?.length) return;
@@ -48,40 +42,12 @@ export default function PinOverlay({
     }
 
     fetchCoverPhoto();
-  }, [selectedPin?.pinIds?.[0]]);
+  }, [selectedPin?.id]);
 
   // fetch some users to preview what the friend circles look like
   // later data implementation needed when auth is set up
   // should fetch profiles based on the user's friends and what pins they share
-  useEffect(() => {
-    async function fetchFriendAvatars() {
-      if (!selectedPin?.userIds?.length) {
-        setFriendAvatars([]);
-        return;
-      }
-
-      if (selectedPin?.userIds?.length === 1 && selectedPin.userIds[0] === 4) {
-        setFriendAvatars([]);
-        return;
-      }
-
-      const { data, error } = await supabase
-        .from("users")
-        .select("user_id, username")
-        .in("user_id", selectedPin.userIds)
-        .limit(10);
-      
-        if (error) {
-          console.log(error.message);
-          return;
-        }
-
-      setFriendAvatars(data ?? []);
-    }
-    fetchFriendAvatars();
-  }, [selectedPin?.userIds]);
-
-  const AVATAR_SIZE = 23;
+  
 
   return (
     <Pressable style={styles.backdrop} onPress={() => setSelectedPin(null)}>
@@ -100,27 +66,6 @@ export default function PinOverlay({
             </View>
           )}
 
-          {friendAvatars.length > 0 && (
-            <View style={styles.friendsRow}>
-              {friendAvatars.map((friend, index) => (
-                <View
-                  key={friend.user_id}
-                  style={[
-                    styles.friendAvatar,
-                    {
-                      width: AVATAR_SIZE,
-                      height: AVATAR_SIZE,
-                      borderRadius: AVATAR_SIZE / 2,
-                    },
-                  ]}
-                >
-                  <Text style={styles.friendInitial}>
-                    {friend.username?.[0]?.toUpperCase()}
-                  </Text>
-                </View>
-              ))}
-            </View>
-          )}
         </View>
 
         <View style={styles.infoContainer}>
@@ -133,7 +78,7 @@ export default function PinOverlay({
               if (!selectedPin?.id) return;
               router.push({
                 pathname: "/pins/[pinid]",
-                params: { pinid: String(selectedPin?.pinIds?.[0]) },
+                params: { pinid: String(selectedPin?.id) },
               });
             }}
           >

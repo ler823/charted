@@ -16,13 +16,13 @@ function GridCard({ item }: { item: Pin }) {
 
   useEffect(() => {
     setCoverPhoto(null);
-    if (!item.id) return;
+    if (!item.pinIds?.[0]) return;
 
     async function fetchCoverPhoto() {
       const { data } = await supabase
         .from("pins")
         .select("pin_photos(photos(key), cover)")
-        .eq("pin_id", item.id)
+        .eq("pin_id", String(item.pinIds?.[0]))
         .single();
 
       if (!data?.pin_photos?.length) return;
@@ -36,7 +36,7 @@ function GridCard({ item }: { item: Pin }) {
     }
 
     fetchCoverPhoto();
-  }, [item.id]);
+  }, [item.pinIds?.[0]]);
 
   return (
     <View style={styles.shadowWrapper}>
@@ -45,7 +45,7 @@ function GridCard({ item }: { item: Pin }) {
           onPress={() =>
             router.push({
               pathname: "/pins/[pinid]",
-              params: { pinid: item.id },
+              params: { pinid: String(item.pinIds?.[0]) },
             })
           }
         >
@@ -85,7 +85,7 @@ export default function PinGridView({ pins }: Props) {
   return (
     <FlatList
       data={pins}
-      keyExtractor={(item) => String(item.id)}
+      keyExtractor={(item) => String(item.pinIds?.[0])}
       numColumns={2}
       contentContainerStyle={styles.listContainer}
       columnWrapperStyle={styles.row}

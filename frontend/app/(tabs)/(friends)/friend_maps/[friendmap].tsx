@@ -1,11 +1,7 @@
 import FriendHeader from "@/components/friend-header";
 import LoadingPage from "@/components/loading-page";
-import PinMarker from "@/components/pin-marker";
-import PinOverlay from "@/components/pin-overlay";
-import { Fonts } from "@/constants/theme";
 import { supabase } from "@/lib/supabase";
 import { Pin, ViewMode, ViewOption } from "@/types/types";
-import { Ionicons } from "@expo/vector-icons";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
@@ -14,6 +10,7 @@ import { Marker } from "react-native-maps";
 import PinGridView from "../../(home)/pin_grid_view";
 import PinListView from "../../(home)/pin_list_view";
 import PinMarkers from "@/components/pin-markers";
+import PinOverlayFriend from "@/components/pin-overlay-friends";
 
 
 type Friend = {
@@ -158,19 +155,19 @@ export default function FriendMap() {
 
     {viewMode === "list" && (
         <View style={{flex: 1, marginTop: 55}}>
-            <PinListView pins={pins}/>
+            <PinListView pins={validPins}/>
         </View>
     )}
     {viewMode === "grid" && (
         <View style={{marginTop: 55}}>
-            <PinGridView pins={pins} />
+            <PinGridView pins={validPins} />
         </View>
     )}
     {/* 
     PIN OVERLAY
     */}
     {selectedPin && (
-        <PinOverlay selectedPin={selectedPin} setSelectedPin={setSelectedPin} />
+        <PinOverlayFriend selectedPin={selectedPin} setSelectedPin={setSelectedPin} />
     )}
     </>
   );

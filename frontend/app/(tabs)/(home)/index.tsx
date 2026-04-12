@@ -1,7 +1,7 @@
 import PinMarker from "@/components/pin-marker";
 import { supabase } from "@/lib/supabase";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
-import React, { useCallback, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 import ClusteredMapView from "react-native-map-clustering";
 import { Marker } from "react-native-maps";
@@ -10,6 +10,8 @@ import PinListView from "./pin_list_view";
 import PinGridView from "@/app/(tabs)/(home)/pin_grid_view";
 import DroppingPinOverlay from "@/components/dropping-pin-overlay";
 import Header from "@/components/header";
+import PinMarkers from "@/components/pin-markers";
+import SharedPinMarkers from "@/components/pin-markers-shared";
 import PinOverlay from "@/components/pin-overlay";
 import { useDroppingPin } from "@/context/DroppingPinContext";
 import { useLocation } from "@/hooks/use-location";
@@ -33,6 +35,10 @@ const VIEW_OPTIONS: ViewOption[] = [
   { mode: "grid", icon: "grid" },
 ];
 
+type Friend = {
+    user_id: string;
+  }
+
 export default function Home() {
   const { viewMode: incomingViewMode } = useLocalSearchParams<{ viewMode?: ViewMode }>();
   const { isDroppingPin, setIsDroppingPin } = useDroppingPin();
@@ -43,50 +49,68 @@ export default function Home() {
   const mapRef = useRef<any>(null);
   const { userCoords, permissionStatus, fetchUserLocation } = useLocation();
   const [region, setRegion] = useState(INITIAL_REGION);
+  const [friends, setFriends] = useState<Friend[]>([]);
 
   // This fetches data from the 'pins' table in Supabase. Also has error handling if unable to fetch
-  useFocusEffect(
+  useEffect(
     useCallback(() => {
-      async function fetchLocations() {
+      async function fetchFriends() {
         const { data, error } = await supabase
-          .from("pins")
-          .select(
-            `pin_id, location_id, user_id, name, address,
-           locations:location_id( id, latitude, longitude )`,
-          )
-          .eq("user_id", 4);
+        .from("user_relationships")
+        .select("*")
+        .eq("is_friend", true)
+        .or("requester_id.eq.4,target_id.eq.4");
+
         if (error) {
-          console.error("Failed to fetch locations:", error.message);
+          console.log("Failed to fetch friends:", error.message);
           return;
         }
 
-        const typedData = data as unknown as {
-          pin_id: number;
-          name: string;
-          address: string;
-          location_id: number;
-          user_id: number;
-          locations?: {
-            id: number;
-            latitude: number;
-            longitude: number;
-          } | null;
-        }[];
+        const user_ids = new Set<string>();
 
-        setPins(
-          typedData.map((row) => ({
-            id: String(row.pin_id),
-            name: row.name,
-            address: row.address,
-            latitude: row.locations?.latitude ?? 0,
-            longitude: row.locations?.longitude ?? 0,
-          })),
-        );
+        data.forEach((relation: any) => {
+          user_ids.add(relation.requester_id);
+          user_ids.add(relation.target_id);
+        });
+
+        // Convert the set back to an array
+        const uniqueUserIds = Array.from(user_ids).map(user_id => ({ user_id }));
+        
+        setFriends(uniqueUserIds);
+        fetchSharedPins(uniqueUserIds);
+      }
+
+      async function fetchSharedPins(userIds: Friend[]) {
+        const { data, error } = await supabase
+          .from("pin_clusters")
+          .select("*")
+          .overlaps("user_ids", userIds.map(friend => Number(friend.user_id)))
+
+        if (error) {
+          console.error("Failed to fetch shared pins:", error.message);
+          return;
+        }
+
+        const formattedPins: Pin[] = data.map((cluster: any) => ({
+          id: String(cluster.cluster_id),
+          latitude: cluster.latitude,
+          longitude: cluster.longitude,
+          address: cluster.address,
+          name: cluster.name,
+          user_id: cluster.user_ids?.[0]?.toString() ?? "",
+          isShared: cluster.is_shared,
+          pinCount: cluster.pin_count,
+          pinIds: cluster.pin_ids,
+          userIds: cluster.user_ids,
+        }));
+
+        setPins(formattedPins);
       }
       setPinChanged(true);
-      fetchLocations();
-    }, []),
-  );
+      fetchFriends();
+    }, [])
+  )
+  
 
   return (
     <View style={styles.container}>
@@ -157,7 +181,14 @@ export default function Home() {
                 onPress={() => setSelectedPin(pin)}
                 tracksViewChanges={false}
               >
+              {pin.isShared ? (
+                <SharedPinMarkers users_id={pin.userIds!} number_shared={pin.pinCount!} />
+              ) : pin.user_id === "4" ? (
                 <PinMarker />
+              ) : (
+                <PinMarkers users_id={Number(pin.user_id)} />
+              )
+              }
               </Marker>
             ))}
         </ClusteredMapView>

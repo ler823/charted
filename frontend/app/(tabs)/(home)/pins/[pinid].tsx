@@ -102,8 +102,8 @@ export default function PinPage() {
       async function getPhotos(myPin: Pin) {
         if (
           myPin == null ||
-          myPin.pin_photos[0] == null ||
-          myPin.pin_photos[0].photos.key == ""
+          myPin.pin_photos?.[0] == null ||
+          myPin.pin_photos?.[0].photos?.key == ""
         ) {
           setCoverPhoto("");
           return;

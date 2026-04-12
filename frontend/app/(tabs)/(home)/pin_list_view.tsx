@@ -29,12 +29,12 @@ export default function PinListView({ pins }: Props) {
               router.push({
                 pathname: "/pins/[pinid]",
                 params: {
-                  pinid: item.id,
+                  pinid: String(item.pinIds?.[0]),
                 },
               })
             }
           >
-            <ListCard pinId={item.id} name={item.name} loc={item.address} />
+            <ListCard pinId={String(item.pinIds?.[0])} name={item.name} loc={item.address} />
           </Pressable>
         )}
         ListEmptyComponent={
