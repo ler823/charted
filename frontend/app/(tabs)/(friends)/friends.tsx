@@ -1,5 +1,5 @@
 import { supabase } from "@/lib/supabase";
-import { Ionicons } from "@expo/vector-icons";
+import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter, Stack } from "expo-router";
 import React, { useEffect, useState } from "react";
 import { FlatList, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
@@ -48,28 +48,10 @@ export default function Friends() {
       Looks a little small so might need to tweak the sizing a bit
       Pressable components for future interaction implmenetation
       */}
+      <Pressable style={styles.plusButton}>
+        <MaterialCommunityIcons name="plus" size={45} color="#fefbea" />
+      </Pressable>
       <View style={styles.header}>
-        <Pressable style={styles.addFriendBtn}>
-          <Ionicons name="add-circle-outline" size={20} color="#FEFBEA" />
-          <Text style={styles.addFriendText}>Add Friend</Text>
-        </Pressable>
-        {/* CHECK: This bell looks a little off when loaded*/}
-        <Pressable style={styles.notifBtn} onPress={() => router.push("./friend-notifications")}>
-          <Ionicons
-            name="notifications-outline"
-            size={33}
-            color={Colors.light.background}
-          />
-          <View style={styles.notifBadge} />
-        </Pressable>
-      </View>
-
-      <View style={{ borderBottomColor: Colors.light.background, borderBottomWidth: 1, marginHorizontal: 16 }} />
-
-      {/*  
-      Deals with the serach row and sort button 
-      */}
-      <View style={styles.searchRow}>
         <View style={styles.searchBar}>
           <TextInput
             style={styles.searchText}
@@ -83,6 +65,15 @@ export default function Friends() {
         <Pressable style={styles.sortBtn}>
           <Text style={styles.sortText}>Sort</Text>
           <Ionicons name="chevron-down" size={14} color={"#fefbea"} />
+        </Pressable>
+        {/* CHECK: This bell looks a little off when loaded*/}
+        <Pressable style={styles.notifBtn} onPress={() => router.push("./friend-notifications")}>
+          <Ionicons
+            name="notifications-outline"
+            size={33}
+            color={Colors.light.background}
+          />
+          <View style={styles.notifBadge} />
         </Pressable>
       </View>
 
@@ -131,28 +122,29 @@ export default function Friends() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
   },
   /* 
   Styling for the add button and notification button
   */
   header: {
-    paddingTop: 55,
+    paddingTop: 64,
     paddingBottom: 18,
     paddingHorizontal: 16,
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
   },
-  addFriendBtn: {
-    flex: 1,
-    flexDirection: "row",
+  plusButton: {
+    position: "absolute",
+    bottom: 115,
+    right: 25,
+    zIndex: 20,
+    width: 50,
+    height: 50,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: Colors.light.background,
-    paddingVertical: 13,
-    borderRadius: 999,
-    gap: 8,
+    borderRadius: 100,
+    backgroundColor: "#243e36",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
