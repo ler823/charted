@@ -183,7 +183,6 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
   },
   listModalContent: {
-    height: '45%',
     width: '95%',
     backgroundColor: '#ffffff',
     borderRadius: 18,
