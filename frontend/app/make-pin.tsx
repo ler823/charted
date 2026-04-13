@@ -225,7 +225,6 @@ export default function MakePin() {
       }
     }
     setPinChanged(true);
-    supabase.rpc("rebuild_pin_clusters");
     router.back();
     return;
   };
@@ -907,7 +906,6 @@ export default function MakePin() {
       }
       setPinChanged(true);
     }
-    supabase.rpc("rebuild_pin_clusters");
     router.back();
   };
 
@@ -928,7 +926,6 @@ export default function MakePin() {
               console.log(error.message);
             }
             setPinChanged(true);
-            supabase.rpc("rebuild_pin_clusters");
             router.replace({
               pathname: "/(tabs)/(home)",
               params: { viewMode },

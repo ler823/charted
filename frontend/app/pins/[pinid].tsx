@@ -67,11 +67,26 @@ type Pin = {
   private: boolean | null;
 };
 
+type Cluster = {
+  pin_ids: number[];
+  user_ids: number[];
+}
+
+type Notes = {
+  user_id: number;
+  user_note: string | null;
+  users: {
+    username: string;
+  } | null;
+}
+
 export default function PinPage() {
   const { pinid, viewMode } = useLocalSearchParams();
 
   const [pin, setPin] = useState<Pin | null>(null);
   const [friends, setFriends] = useState<Friend[] | null>([]);
+  const [cluster, setCluster] = useState<Cluster | null>(null);
+  const [notes, setNotes] = useState<Notes[] | null>([]);
   const [isEnabled, setIsEnabled] = useState(false);
   const [coverPhoto, setCoverPhoto] = useState<string | null>(null);
   const [photoList, setPhotoList] = useState<string[] | null>(null);
@@ -129,10 +144,34 @@ export default function PinPage() {
   );
 
   useEffect(() => {
+    async function fetchSharedPins() {
+      const { data, error } = await supabase
+      .from("pin_clusters")
+      .select("pin_ids, user_ids")
+      .contains("pin_ids", [Number(pinid)])
+      .single();
+
+      if (error) {
+        console.log(error.message);
+        return;
+      }
+
+      setCluster(data);
+    }
+    fetchSharedPins();
+  }, []);
+
+  useEffect(() => {
     async function fetchUsers() {
+      if (!cluster || !pin) return;
+      if (!cluster?.user_ids?.length) return;
+
+      const filteredUserIds = cluster?.user_ids?.filter((id) => id !== pin?.user_id) ?? [];
+
       const { data, error } = await supabase
         .from("users")
-        .select("user_id, username, location");
+        .select("user_id, username, location")
+        .in("user_id", filteredUserIds ?? []);
       setFriends(data ?? []);
       if (error) {
         Alert.alert(error.message);
@@ -140,7 +179,35 @@ export default function PinPage() {
       }
     }
     fetchUsers();
-  }, []);
+  }, [cluster, pin]);
+
+  useEffect(() => {
+    async function fetchUserNotes() {
+      if (!cluster?.pin_ids?.length) return;
+
+      const filteredPinIds = cluster?.pin_ids?.filter((id) => id !== pin?.pin_id) ?? [];
+
+      const { data, error } = await supabase
+        .from("pins")
+        .select("user_id, user_note, users:user_id( username )")
+        .in("pin_id", filteredPinIds ?? []);
+
+        const normalized = (data ?? []).map((row) => ({
+          user_id: row.user_id,
+          user_note: row.user_note,
+          users: Array.isArray(row.users)
+          ? row.users[0] ?? null
+          : row.users ?? null,
+        }));
+
+      setNotes(normalized);
+      if (error) {
+        Alert.alert(error.message);
+        return;
+      }
+    }
+    fetchUserNotes();
+  }, [cluster, pin]);
 
   if (!pin || !friends || coverPhoto == null) {
     return <LoadingPage />;
@@ -201,28 +268,22 @@ export default function PinPage() {
           {/* Friend Visits */}
           <Text style={styles.subtitle}>Friends Who Have Visited</Text>
           <View style={{ marginHorizontal: -16 }}>
+            {friends?.length === 0 && (
+                <View style={[styles.cardFullRow, {width: "92%", alignSelf: "center"}]}>
+                  <Text style={styles.boxText}>
+                    None of your friends share this pin yet
+                  </Text>
+                </View>
+              )}
             <ScrollView
               horizontal
               style={styles.cardRow}
               contentContainerStyle={{ paddingHorizontal: 16, gap: 10 }}
             >
-              {friends?.length === 0 && (
-                <Text style={styles.boxText}>
-                  None of your friends share this pin yet
-                </Text>
-              )}
               {friends?.map((friend) => (
                 <Pressable
                   key={friend?.user_id}
                   style={styles.cardPartialRow}
-                  onPress={() =>
-                    router.push({
-                      pathname: "/(tabs)/(home)/friend_profiles/[friendpf]",
-                      params: {
-                        friendpf: `${friend?.username}`,
-                      },
-                    })
-                  }
                 >
                   <View
                     style={{
@@ -261,22 +322,44 @@ export default function PinPage() {
 
           {/* Friend Notes */}
           <Text style={styles.subtitle}>Friends' Notes</Text>
-          {/* Formatting for friend notes, once we implement that:
-            <Pressable style={styles.cardFullRow}>
-            <View style={styles.avatar}></View>
-            <View style={styles.cardInfo}>
-              <Text style={styles.username}>seasideauthor</Text>
-              <Text style={[styles.boxText, { paddingLeft: 15 }]}>
-                They have pretty unique flavors.
+          {notes?.length === 0 && (
+            <View style={styles.cardFullRow}>
+              <Text style={styles.boxText}>
+                None of your friends share this pin yet
               </Text>
             </View>
-          </Pressable>
-          */}
-          <View style={styles.cardFullRow}>
-            <Text style={styles.boxText}>
-              None of your friends share this pin yet
-            </Text>
-          </View>
+          )}
+          {notes?.length! > 0 && (
+            <FlatList
+              data={notes}
+              keyExtractor={(item, index) =>
+                `${item.user_id}-${index}`
+              }
+              scrollEnabled={false}
+              contentContainerStyle={{ gap: 10 }}
+              renderItem={({ item }) => (
+                <Pressable style={styles.cardFullRow}>
+                  {/* Avatar */}
+                  <View style={styles.avatar}>
+                    <Text style={styles.avatarInitial}>
+                      {item.users?.username?.[0]?.toUpperCase() ?? ""}
+                    </Text>
+                  </View>
+
+                  {/* Content */}
+                  <View style={styles.cardInfo}>
+                    <Text style={styles.username}>
+                      {item.users?.username ?? "Unknown user"}
+                    </Text>
+
+                    <Text style={[styles.boxText, {marginLeft: 15}]}>
+                      {item.user_note || "No note added"}
+                    </Text>
+                  </View>
+                </Pressable>
+              )}
+            />
+          )}
 
           {/* Tags */}
           <View style={styles.editRow}>
