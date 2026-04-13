@@ -188,6 +188,7 @@ export default function SignupScreen() {
           <TextInput
             style={styles.input}
             placeholder="Email"
+            placeholderTextColor={Colors.light.accent}
             autoCapitalize="none"
             keyboardType="email-address"
             value={email}
@@ -203,6 +204,7 @@ export default function SignupScreen() {
           <TextInput
             style={styles.input}
             placeholder="Username"
+            placeholderTextColor={Colors.light.accent}
             autoCapitalize="none"
             value={username}
             onChangeText={(v) => {
@@ -222,6 +224,7 @@ export default function SignupScreen() {
           <TextInput
             style={styles.input}
             placeholder="Password"
+            placeholderTextColor={Colors.light.accent}
             secureTextEntry
             value={password}
             onChangeText={setPassword}
@@ -233,6 +236,7 @@ export default function SignupScreen() {
           <TextInput
             style={styles.input}
             placeholder="Confirm password"
+            placeholderTextColor={Colors.light.accent}
             secureTextEntry
             value={confirmPassword}
             onChangeText={setConfirmPassword}
