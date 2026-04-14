@@ -31,6 +31,7 @@ import { GooglePlacesAutocomplete } from "react-native-google-places-autocomplet
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { useLocation } from "@/hooks/use-location";
 import { getPhotoUrl, pickImageAsync, processImage } from "@/lib/photo-utils";
 
 type PhotoItem = {
@@ -109,6 +110,9 @@ export default function MakePin() {
   let originalNotes = "";
   let originalPrivacy = false;
   let inserted_pin_id = 0;
+  const { userCoords } = useLocation();
+
+  console.log(userCoords);
 
   const togglePrivacy = () => {
     setIsPrivate((previousState) => !previousState);
@@ -1061,6 +1065,10 @@ export default function MakePin() {
                         key: process.env.EXPO_PUBLIC_GOOGLE_PLACES_KEY,
                         language: "en",
                         types: "establishment",
+                        location: userCoords
+                          ? `${userCoords.latitude},${userCoords.longitude}`
+                          : undefined,
+                        radius: 500,
                       }}
                       textInputProps={{
                         placeholderTextColor: "#aaaaaa",
@@ -1091,6 +1099,10 @@ export default function MakePin() {
                         key: process.env.EXPO_PUBLIC_GOOGLE_PLACES_KEY,
                         language: "en",
                         types: "address",
+                        location: userCoords
+                          ? `${userCoords.latitude},${userCoords.longitude}`
+                          : undefined,
+                        radius: 500,
                       }}
                       listViewDisplayed={false}
                       textInputProps={{

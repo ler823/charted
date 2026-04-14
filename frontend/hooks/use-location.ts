@@ -29,6 +29,9 @@ export function useLocation() {
   const checkPermission = async () => {
     const { status } = await Location.getForegroundPermissionsAsync();
     setState((prev) => ({ ...prev, permissionStatus: status, loading: false }));
+    if (status === Location.PermissionStatus.GRANTED) {
+      fetchUserLocation(); // 👈 auto-fetch if we already have permission
+    }
   };
 
   // Call this only on explicit user action (button tap)
