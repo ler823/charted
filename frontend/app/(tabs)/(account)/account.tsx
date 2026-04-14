@@ -44,6 +44,9 @@ export default function Account() {
   const [recentVisitPhoto, setRecentVisitPhoto] = useState<string | null>(null);
   const [recentFriendPhoto, setRecentFriendPhoto] = useState<string | null>(null);
   const [recentPinPhoto, setRecentPinPhoto] = useState<string | null>(null);
+  const [recentVisitPinId, setRecentVisitPinId] = useState<number | null>(null);
+  const [recentFriendId, setRecentFriendId] = useState<number | null>(null);
+  const [recentPinId, setRecentPinId] = useState<number | null>(null);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -191,7 +194,7 @@ export default function Account() {
         // exclude users who have set their account to not discoverable
         supabase
           .from("users")
-          .select("username, photo_id")
+          .select("user_id, username, photo_id")
           .eq("discoverable", true)
           .order("user_id", { ascending: false })
           .limit(1)
@@ -216,9 +219,13 @@ export default function Account() {
         setRecentPin(pinRes.data.name);
       }
 
-      const visitPinId = visitRes.data?.pin_id;
-      const newPinId = pinRes.data?.pin_id;
-      const friendPhotoId = friendRes.data?.photo_id;
+      const visitPinId = visitRes.data?.pin_id ?? null;
+      const newPinId = pinRes.data?.pin_id ?? null;
+      const friendPhotoId = friendRes.data?.photo_id ?? null;
+
+      setRecentVisitPinId(visitPinId);
+      setRecentPinId(newPinId);
+      setRecentFriendId(friendRes.data?.user_id ?? null);
 
       // This sections supports the mini photos found in the Recent Activity box 
       const [visitPhotoUrl, newPinPhotoUrl] = await Promise.all([
@@ -287,9 +294,9 @@ export default function Account() {
         <Text style={styles.username}>{username}</Text>
         <View style={styles.locationRow}>
           <Ionicons name="location-sharp" size={17} color="#333" />
-          <Text style={[styles.location, { paddingLeft: 2 }]}>Location</Text>
+          <Text style={[styles.location, { paddingLeft: 2 }]}>Long Beach</Text>
         </View>
-        <Text style={styles.bio}>Bio</Text>
+        <Text style={styles.bio}>Charted Developer</Text>
 
         {/* Stats */}
           <View style={styles.infoBox}>
@@ -387,7 +394,10 @@ export default function Account() {
         <View style={styles.infoBox}>
           <Text style={styles.header}>Recent Activity</Text>
           <View style={[styles.infoWindow, { justifyContent: "center" }]}>
-            <View style={styles.activityRow}>
+            <Pressable
+              style={styles.activityRow}
+              onPress={() => recentVisitPinId && router.push({ pathname: "/pins/[pinid]", params: { pinid: String(recentVisitPinId) } })}
+            >
               {recentVisitPhoto ? (
                 <Image source={{ uri: recentVisitPhoto }} style={styles.locAvatar} contentFit="cover" transition={300} />
               ) : (
@@ -410,9 +420,12 @@ export default function Account() {
               >
                 {recentVisit ?? "—"}
               </Text>
-            </View>
+            </Pressable>
             <View style={styles.divider} />
-            <View style={styles.activityRow}>
+            <Pressable
+              style={styles.activityRow}
+              onPress={() => recentFriendId && router.push({ pathname: "/friend_profiles/[friendid]", params: { friendid: String(recentFriendId) } })}
+            >
               {recentFriendPhoto ? (
                 <Image source={{ uri: recentFriendPhoto }} style={styles.locAvatar} contentFit="cover" transition={300} />
               ) : (
@@ -435,9 +448,12 @@ export default function Account() {
               >
                 {recentFriend ?? "—"}
               </Text>
-            </View>
+            </Pressable>
             <View style={styles.divider} />
-            <View style={styles.activityRow}>
+            <Pressable
+              style={styles.activityRow}
+              onPress={() => recentPinId && router.push({ pathname: "/pins/[pinid]", params: { pinid: String(recentPinId) } })}
+            >
               {recentPinPhoto ? (
                 <Image source={{ uri: recentPinPhoto }} style={styles.locAvatar} contentFit="cover" transition={300} />
               ) : (
@@ -460,7 +476,7 @@ export default function Account() {
               >
                 {recentPin ?? "—"}
               </Text>
-            </View>
+            </Pressable>
           </View>
         </View>
       </View>
