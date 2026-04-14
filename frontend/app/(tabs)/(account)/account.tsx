@@ -176,6 +176,9 @@ export default function Account() {
       return urls?.[0]?.url ?? null;
     }
 
+    // Deala with Recent Activty fetching of data from Supabase DB
+    // For now, does practical queries such as most recent pins made and most recent user create
+    // Awaits multiple user integration in Sprint 3 to support accurate data
     async function fetchActivity() {
       const [visitRes, friendRes, pinRes] = await Promise.all([
         supabase
@@ -212,6 +215,7 @@ export default function Account() {
       const newPinId = pinRes.data?.pin_id;
       const friendPhotoId = friendRes.data?.photo_id;
 
+      // This sections supports the mini photos found in the Recent Activity box 
       const [visitPhotoUrl, newPinPhotoUrl] = await Promise.all([
         visitPinId ? fetchPinCoverUrl(visitPinId) : Promise.resolve(null),
         newPinId ? fetchPinCoverUrl(newPinId) : Promise.resolve(null),
