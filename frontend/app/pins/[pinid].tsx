@@ -23,6 +23,7 @@ type Friend = {
   user_id: number;
   username: string;
   location: string | null;
+  avatarUrl?: string | null;
 };
 
 type Pin = {
@@ -78,6 +79,7 @@ type Notes = {
   users: {
     username: string;
   } | null;
+  avatarUrl?: string | null;
 }
 
 export default function PinPage() {
@@ -170,13 +172,29 @@ export default function PinPage() {
 
       const { data, error } = await supabase
         .from("users")
-        .select("user_id, username, location")
+        .select("user_id, username, location, photos:photo_id(key)")
         .in("user_id", filteredUserIds ?? []);
-      setFriends(data ?? []);
-      if (error) {
-        Alert.alert(error.message);
-        return;
-      }
+
+      if (!data) return;
+      
+      const enriched = await Promise.all(
+        data.map(async (user) => {
+          const key = user.photos?.key;
+
+          let avatarUrl = null;
+          if (key) {
+            const urls = await getPhotoUrl([key]);
+            avatarUrl = urls?.[0]?.url ?? null;
+          }
+
+          return {
+            ...user,
+            avatarUrl,
+          };
+        })
+      );
+
+      setFriends(enriched);
     }
     fetchUsers();
   }, [cluster, pin]);
@@ -189,18 +207,42 @@ export default function PinPage() {
 
       const { data, error } = await supabase
         .from("pins")
-        .select("user_id, user_note, users:user_id( username )")
+        .select("user_id, user_note, users:user_id( username, photos:photo_id(key) )")
         .in("pin_id", filteredPinIds ?? []);
 
-        const normalized = (data ?? []).map((row) => ({
-          user_id: row.user_id,
-          user_note: row.user_note,
-          users: Array.isArray(row.users)
-          ? row.users[0] ?? null
-          : row.users ?? null,
-        }));
+        const normalized = (data ?? []).map((row) => {
+          const user = Array.isArray(row.users)
+            ? row.users[0]
+            : row.users;
 
-      setNotes(normalized);
+          const key = user?.photos?.key ?? null;
+
+          return {
+            user_id: row.user_id,
+            user_note: row.user_note,
+            users: user ?? null,
+            avatarKey: key,
+            avatarUrl: null,
+          };
+        });
+
+      const enriched = await Promise.all(
+        normalized.map(async (item) => {
+          let avatarUrl = null;
+
+          if (item.avatarKey) {
+            const urls = await getPhotoUrl([item.avatarKey]);
+            avatarUrl = urls?.[0]?.url ?? null;
+          }
+
+          return {
+            ...item,
+            avatarUrl,
+          };
+        })
+      );
+
+      setNotes(enriched);
       if (error) {
         Alert.alert(error.message);
         return;
@@ -294,9 +336,18 @@ export default function PinPage() {
                     }}
                   >
                     <View style={[styles.avatar, { marginBottom: 10 }]}>
-                      <Text style={styles.avatarInitial}>
-                        {friend?.username?.[0]?.toUpperCase()}
-                      </Text>
+                      {friend.avatarUrl ? (
+                        <Image
+                          source={{ uri: friend.avatarUrl }}
+                          style={StyleSheet.absoluteFill}
+                          contentFit="cover"
+                          transition={300}
+                        />
+                      ) : (
+                        <Text style={styles.avatarInitial}>
+                          {friend.username?.[0]?.toUpperCase()}
+                        </Text>
+                      )}
                     </View>
                     <Text
                       style={{ fontFamily: Fonts.bold, fontSize: 15 }}
@@ -341,9 +392,18 @@ export default function PinPage() {
                 <Pressable style={styles.cardFullRow}>
                   {/* Avatar */}
                   <View style={styles.avatar}>
-                    <Text style={styles.avatarInitial}>
-                      {item.users?.username?.[0]?.toUpperCase() ?? ""}
-                    </Text>
+                    {item.avatarUrl ? (
+                      <Image
+                        source={{ uri: item.avatarUrl }}
+                        style={StyleSheet.absoluteFill}
+                        contentFit="cover"
+                        transition={300}
+                      />
+                    ) : (
+                      <Text style={styles.avatarInitial}>
+                        {item.users?.username?.[0]?.toUpperCase()}
+                      </Text>
+                    )}
                   </View>
 
                   {/* Content */}
@@ -618,6 +678,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#d8d8d8",
     alignItems: "center",
     justifyContent: "center",
+    overflow: "hidden",
   },
   avatarInitial: {
     fontSize: 28,

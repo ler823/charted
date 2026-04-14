@@ -12,6 +12,7 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 type FriendAvatar = {
   user_id: number;
   username: string;
+  avatarUrl?: string | null;
 };
 
 type PinOverlayProps = {
@@ -68,7 +69,7 @@ export default function PinOverlay({
 
       const { data, error } = await supabase
         .from("users")
-        .select("user_id, username")
+        .select("user_id, username, photos:photo_id(key)")
         .in("user_id", selectedPin.userIds)
         .limit(10);
       
@@ -77,7 +78,24 @@ export default function PinOverlay({
           return;
         }
 
-      setFriendAvatars(data ?? []);
+        const enriched = await Promise.all(
+          data.map(async (user) => {
+            const key = user.photos?.key;
+  
+            let avatarUrl = null;
+            if (key) {
+              const urls = await getPhotoUrl([key]);
+              avatarUrl = urls?.[0]?.url ?? null;
+            }
+  
+            return {
+              ...user,
+              avatarUrl,
+            };
+          })
+        );
+
+      setFriendAvatars(enriched);
     }
     fetchFriendAvatars();
   }, [selectedPin?.userIds]);
@@ -115,9 +133,18 @@ export default function PinOverlay({
                     },
                   ]}
                 >
-                  <Text style={styles.friendInitial}>
-                    {friend.username?.[0]?.toUpperCase()}
-                  </Text>
+                  {friend.avatarUrl ? (
+                    <Image
+                      source={{ uri: friend.avatarUrl }}
+                      style={StyleSheet.absoluteFill}
+                      contentFit="cover"
+                      transition={300}
+                    />
+                  ) : (
+                    <Text style={styles.friendInitial}>
+                      {friend.username?.[0]?.toUpperCase()}
+                    </Text>
+                  )}
                 </View>
               ))}
             </View>
@@ -201,6 +228,7 @@ const styles = StyleSheet.create({
     borderColor: "#fff",
     alignItems: "center",
     justifyContent: "center",
+    overflow: "hidden",
   },
   friendInitial: {
     fontSize: 10,
