@@ -44,8 +44,6 @@ type ListType = {
 }
 
 export default function MakePin() {
-  console.log(process.env.EXPO_PUBLIC_GOOGLE_PLACES_KEY);
-
   const router = useRouter();
   const {
     pinId,
@@ -1074,6 +1072,7 @@ export default function MakePin() {
                       query={{
                         key: process.env.EXPO_PUBLIC_GOOGLE_PLACES_KEY,
                         language: "en",
+                        types: "address",
                       }}
                       textInputProps={{
                         placeholderTextColor: "#aaaaaa",
@@ -1351,6 +1350,7 @@ export default function MakePin() {
 const addressInputStyles = {
   container: {
     flex: 0,
+    width: "100%",
   },
   textInputContainer: {
     backgroundColor: "transparent",
@@ -1375,6 +1375,9 @@ const addressInputStyles = {
     borderColor: "#dddddd",
     borderRadius: 8,
     marginTop: 4,
+    position: "absolute",
+    zIndex: 100,
+    top: "100%",
   },
   row: {
     backgroundColor: "#ffffff",
@@ -1466,6 +1469,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 2,
     elevation: 4,
+    width: "100%",
   },
   inputDisabled: {
     color: "#ccc",
