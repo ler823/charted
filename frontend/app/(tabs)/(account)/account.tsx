@@ -2,41 +2,120 @@ import { Stars } from "@/components/light-stars";
 import LoadingPage from "@/components/loading-page";
 import { Fonts } from "@/constants/theme";
 import { getPhotoUrl } from "@/lib/photo-utils";
+import { supabase } from "@/lib/supabase";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
-import { supabase } from "@/lib/supabase";
+type FavPin = {
+  pin_id: number;
+  user_rating: number;
+  name: string;
+  last_visited: string | null;
+};
+
+type VisPin = {
+  pin_id: number;
+  visit_count: number;
+  name: string;
+  last_visited: string | null;
+};
 
 export default function Account() {
   const [loading, setLoading] = useState(true);
   const [username, setUsername] = useState("");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [favorite, setFavorite] = useState<FavPin | null>(null);
+  const [visited, setVisited] = useState<VisPin | null>(null);
+  const [lastVisitedPin, setLastVisitedPin] = useState<string | null>(null);
+  const [newestPin, setNewestPin] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchUser = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (user) {
-        const { data } = await supabase
-          .from("profiles")
-          .select("username, avatar_key")
-          .eq("id", user.id)
-          .single();
-        if (data) {
-          setUsername(data.username);
-          if (data.avatar_key) {
-            const urls = await getPhotoUrl([data.avatar_key]);
-            setAvatarUrl(urls[0].url);
-          }
+    const fetchAll = async () => {
+      // Step 1: get auth user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { setLoading(false); return; }
+
+      // Step 2: fetch profile (username + avatar)
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("username, avatar_key")
+        .eq("id", user.id)
+        .single();
+
+      if (profile) {
+        setUsername(profile.username);
+        if (profile.avatar_key) {
+          const urls = await getPhotoUrl([profile.avatar_key]);
+          setAvatarUrl(urls[0]?.url ?? null);
         }
       }
+
+      // Step 3: resolve auth UUID → integer user_id via profile_id link
+      const { data: userRow } = await supabase
+        .from("users")
+        .select("user_id")
+        .eq("profile_id", user.id)
+        .maybeSingle();
+
+      const intId = userRow?.user_id ?? null;
+
+      if (intId !== null) {
+        // Step 4: fetch all stats in parallel
+        const [favResult, visResult, recentVisitResult, newestPinResult] =
+          await Promise.all([
+            // Favorite: highest rated pin
+            supabase
+              .from("pins_with_last_visit")
+              .select("pin_id, user_rating, name, last_visited")
+              .eq("user_id", intId)
+              .order("user_rating", { ascending: false })
+              .order("last_visited", { ascending: false })
+              .limit(1)
+              .maybeSingle(),
+
+            // Top visited: most visit count
+            supabase
+              .from("pins_with_visit_count")
+              .select("pin_id, visit_count, name, last_visited")
+              .eq("user_id", intId)
+              .order("visit_count", { ascending: false })
+              .order("last_visited", { ascending: false })
+              .limit(1)
+              .maybeSingle(),
+
+            // Most recently visited pin
+            supabase
+              .from("pins_with_last_visit")
+              .select("name, last_visited")
+              .eq("user_id", intId)
+              .not("last_visited", "is", null)
+              .order("last_visited", { ascending: false })
+              .limit(1)
+              .maybeSingle(),
+
+            // Most recently created pin
+            supabase
+              .from("pins")
+              .select("name")
+              .eq("user_id", intId)
+              .order("pin_id", { ascending: false })
+              .limit(1)
+              .maybeSingle(),
+          ]);
+
+        setFavorite(favResult.data ?? null);
+        setVisited(visResult.data ?? null);
+        setLastVisitedPin(recentVisitResult.data?.name ?? null);
+        setNewestPin(newestPinResult.data?.name ?? null);
+      }
+
       setLoading(false);
     };
-    fetchUser();
+
+    fetchAll();
   }, []);
 
   if (loading) return <LoadingPage />;
@@ -53,13 +132,9 @@ export default function Account() {
       >
         <Pressable
           style={styles.editAccountButton}
-          onPress={() => {
-            router.push("/edit_account");
-          }}
+          onPress={() => router.push("/edit_account")}
         >
-          <Text
-            style={{ fontFamily: Fonts.bold, color: "#d9d9d9", fontSize: 16 }}
-          >
+          <Text style={{ fontFamily: Fonts.bold, color: "#d9d9d9", fontSize: 16 }}>
             Edit Account
           </Text>
         </Pressable>
@@ -89,34 +164,29 @@ export default function Account() {
         <View style={styles.infoBox}>
           <Text style={styles.header}>Statistics</Text>
           <View style={[styles.statsRow, { gap: 20 }]}>
-            <View
-              style={[
-                styles.infoWindow,
-                { width: "42%", alignItems: "center" },
-              ]}
-            >
+            {/* Favorite */}
+            <View style={[styles.infoWindow, { width: "42%", alignItems: "center" }]}>
               <Text style={styles.subHeader}>Favorite</Text>
-              <View style={styles.statsWindows} />
+              <View style={styles.statsWindows}>
+                <Text style={styles.statsPinName}>
+                  {favorite?.name ?? "No pins yet."}
+                </Text>
+              </View>
               <View style={styles.statsBar}>
-                <View
-                  style={{
-                    flexDirection: "row",
-                    gap: 1,
-                    justifyContent: "center",
-                  }}
-                >
-                  <Stars starnum={4} />
+                <View style={{ flexDirection: "row", gap: 1, justifyContent: "center" }}>
+                  <Stars starnum={favorite?.user_rating ?? 0} />
                 </View>
               </View>
             </View>
-            <View
-              style={[
-                styles.infoWindow,
-                { width: "42%", alignItems: "center" },
-              ]}
-            >
+
+            {/* Top Visited */}
+            <View style={[styles.infoWindow, { width: "42%", alignItems: "center" }]}>
               <Text style={styles.subHeader}>Top Visited</Text>
-              <View style={styles.statsWindows} />
+              <View style={styles.statsWindows}>
+                <Text style={styles.statsPinName}>
+                  {visited?.name ?? "No pins yet."}
+                </Text>
+              </View>
               <View style={styles.statsBar}>
                 <Text
                   style={{
@@ -129,52 +199,38 @@ export default function Account() {
                   numberOfLines={1}
                   ellipsizeMode="tail"
                 >
-                  — Visits
+                  {visited ? `${visited.visit_count} Visits` : "— Visits"}
                 </Text>
               </View>
             </View>
           </View>
         </View>
 
-        {/* Activity */}
+        {/* Recent Activity */}
         <View style={styles.infoBox}>
           <Text style={styles.header}>Recent Activity</Text>
           <View style={[styles.infoWindow, { justifyContent: "center" }]}>
             <View style={styles.activityRow}>
               <View style={styles.locAvatar} />
-              <Text
-                style={{ fontFamily: Fonts.bold, fontSize: 14, marginLeft: 13 }}
-              >
+              <Text style={{ fontFamily: Fonts.bold, fontSize: 14, marginLeft: 13 }}>
                 Visited:{" "}
               </Text>
               <Text
-                style={{
-                  fontFamily: Fonts.regular,
-                  fontSize: 14,
-                  flexShrink: 1,
-                  marginRight: 13,
-                }}
+                style={{ fontFamily: Fonts.regular, fontSize: 14, flexShrink: 1, marginRight: 13 }}
                 numberOfLines={1}
                 ellipsizeMode="tail"
               >
-                —
+                {lastVisitedPin ?? "—"}
               </Text>
             </View>
             <View style={styles.divider} />
             <View style={styles.activityRow}>
               <View style={styles.locAvatar} />
-              <Text
-                style={{ fontFamily: Fonts.bold, fontSize: 14, marginLeft: 13 }}
-              >
+              <Text style={{ fontFamily: Fonts.bold, fontSize: 14, marginLeft: 13 }}>
                 Friend Added:{" "}
               </Text>
               <Text
-                style={{
-                  fontFamily: Fonts.regular,
-                  fontSize: 14,
-                  flexShrink: 1,
-                  marginRight: 13,
-                }}
+                style={{ fontFamily: Fonts.regular, fontSize: 14, flexShrink: 1, marginRight: 13 }}
                 numberOfLines={1}
                 ellipsizeMode="tail"
               >
@@ -184,22 +240,15 @@ export default function Account() {
             <View style={styles.divider} />
             <View style={styles.activityRow}>
               <View style={styles.locAvatar} />
-              <Text
-                style={{ fontFamily: Fonts.bold, fontSize: 14, marginLeft: 13 }}
-              >
+              <Text style={{ fontFamily: Fonts.bold, fontSize: 14, marginLeft: 13 }}>
                 New Pin:{" "}
               </Text>
               <Text
-                style={{
-                  fontFamily: Fonts.regular,
-                  fontSize: 14,
-                  flexShrink: 1,
-                  marginRight: 13,
-                }}
+                style={{ fontFamily: Fonts.regular, fontSize: 14, flexShrink: 1, marginRight: 13 }}
                 numberOfLines={1}
                 ellipsizeMode="tail"
               >
-                —
+                {newestPin ?? "—"}
               </Text>
             </View>
           </View>
@@ -327,6 +376,12 @@ const styles = StyleSheet.create({
     height: 96,
     width: "88%",
     backgroundColor: "#d9d9d9",
+  },
+  statsPinName: {
+    fontFamily: Fonts.regular,
+    fontSize: 13,
+    textAlign: "center",
+    marginTop: 15,
   },
   statsBar: {
     backgroundColor: "#243e36",
