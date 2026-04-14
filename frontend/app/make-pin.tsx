@@ -16,7 +16,6 @@ import {
   Alert,
   FlatList,
   Keyboard,
-  LogBox,
   NativeSyntheticEvent,
   Pressable,
   ScrollView,
@@ -111,8 +110,6 @@ export default function MakePin() {
   let originalPrivacy = false;
   let inserted_pin_id = 0;
   const { userCoords } = useLocation();
-
-  console.log(userCoords);
 
   const togglePrivacy = () => {
     setIsPrivate((previousState) => !previousState);
@@ -987,8 +984,6 @@ export default function MakePin() {
     return <LoadingPage />;
   }
 
-  LogBox.ignoreLogs(["VirtualizedLists should never be nested"]);
-
   return (
     <View style={{ flex: 1 }}>
       <View style={styles.topBar}>
@@ -1006,7 +1001,7 @@ export default function MakePin() {
       {/* This Pressable wrapper allows us to cancel text input by closing keyboard when clicking outside */}
       <KeyboardAwareScrollView
         style={{ flex: 1 }}
-        keyboardShouldPersistTaps="handled"
+        keyboardShouldPersistTaps={"handled"}
         ref={scrollRef}
       >
         <View style={styles.container}>
@@ -1057,6 +1052,7 @@ export default function MakePin() {
                     <GooglePlacesAutocomplete
                       placeholder="Name"
                       fetchDetails={true}
+                      disableScroll={true}
                       onPress={(data, details = null) => {
                         handleNameChange(data.structured_formatting.main_text);
                         handleAddressChange(details?.formatted_address ?? "");
@@ -1091,6 +1087,7 @@ export default function MakePin() {
                     <GooglePlacesAutocomplete
                       placeholder="Address"
                       fetchDetails={true}
+                      disableScroll={true}
                       onPress={(data, details = null) => {
                         const address = data.description;
                         handleAddressChange(address);
@@ -1504,6 +1501,7 @@ const styles = StyleSheet.create({
     height: "100%",
   },
   fields: {
+    zIndex: 10,
     flex: 1,
     gap: 8,
   },
