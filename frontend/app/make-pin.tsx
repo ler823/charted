@@ -1050,19 +1050,31 @@ export default function MakePin() {
                 />
                 <View style={styles.fields}>
                   <View style={styles.fields}>
-                    <TextInput
-                      style={[
-                        styles.input,
-                        nameError ? styles.inputError : null,
-                      ]}
+                    <GooglePlacesAutocomplete
                       placeholder="Name"
-                      placeholderTextColor="#aaaaaa"
-                      value={name}
-                      onChangeText={handleNameChange}
-                      maxLength={NAME_MAX + 1} // allow one extra so they see the error trigger
-                      onFocus={(event) =>
-                        scrollRef.current?.scrollToFocusedInput(event.target)
-                      }
+                      fetchDetails={true}
+                      onPress={(data, details = null) => {
+                        handleNameChange(data.structured_formatting.main_text);
+                        handleAddressChange(details?.formatted_address ?? "");
+                      }}
+                      query={{
+                        key: process.env.EXPO_PUBLIC_GOOGLE_PLACES_KEY,
+                        language: "en",
+                        types: "establishment",
+                      }}
+                      textInputProps={{
+                        placeholderTextColor: "#aaaaaa",
+                        value: name,
+                        onChangeText: handleNameChange,
+                        maxLength: NAME_MAX + 1,
+                        onFocus: (event: NativeSyntheticEvent<TargetedEvent>) =>
+                          scrollRef.current?.scrollToFocusedInput(event.target),
+                        style: [
+                          styles.input,
+                          nameError ? styles.inputError : null,
+                        ],
+                      }}
+                      styles={addressInputStyles}
                     />
                     {nameError ? (
                       <Text style={styles.errorText}>{nameError}</Text>
