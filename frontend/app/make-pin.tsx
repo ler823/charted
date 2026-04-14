@@ -962,6 +962,35 @@ export default function MakePin() {
     }
   };
 
+  const fetchNearestPlace = async () => {
+    if (!lat || !lng) return;
+
+    const url = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${lat},${lng}&rankby=distance&type=establishment&key=${process.env.EXPO_PUBLIC_GOOGLE_PLACES_KEY}`;
+
+    const res = await fetch(url);
+    const json = await res.json();
+
+    const nearest = json.results?.[0];
+    if (!nearest) return;
+
+    // Populate name
+    setName(nearest.name ?? "");
+
+    // Nearby search gives vicinity (e.g. "123 Main St, Los Angeles")
+    // For a cleaner formatted_address, do a details lookup:
+    const placeId = nearest.place_id;
+    const detailsUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&fields=formatted_address&key=${process.env.EXPO_PUBLIC_GOOGLE_PLACES_KEY}`;
+    const detailsRes = await fetch(detailsUrl);
+    const detailsJson = await detailsRes.json();
+
+    const formatted =
+      detailsJson.result?.formatted_address ?? nearest.vicinity ?? "";
+    const withoutCountry = formatted
+      .replace(/, USA$/, "")
+      .replace(/, United States$/, "");
+    setAddress(withoutCountry);
+  };
+
   // This will run on launch
   useEffect(() => {
     const loadData = async () => {
@@ -969,6 +998,8 @@ export default function MakePin() {
         // These two are loaded only when pins are edited
         await getPinInfo();
         await loadVisits();
+      } else {
+        fetchNearestPlace();
       }
       // These two are loaded for both adding and editing
       await cleanupUnusedTags();
