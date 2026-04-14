@@ -32,11 +32,18 @@ export default function Account() {
   const [userLoading, setUserLoading] = useState(true);
   const [favLoading, setFavLoading] = useState(true);
   const [visitLoading, setVisitLoading] = useState(true);
-  const loading = userLoading || favLoading || visitLoading;
+  const [activityLoading, setActivityLoading] = useState(true);
+  const loading = userLoading || favLoading || visitLoading || activityLoading;
   const [favorite, setFavorite] = useState<FavPin | null>(null);
   const [favPhoto, setFavPhoto] = useState<string | null>(null);
   const [visited, setVisited] = useState<VisPin | null>(null);
   const [visPhoto, setVisPhoto] = useState<string | null>(null);
+  const [recentVisit, setRecentVisit] = useState<string | null>(null);
+  const [recentFriend, setRecentFriend] = useState<string | null>(null);
+  const [recentPin, setRecentPin] = useState<string | null>(null);
+  const [recentVisitPhoto, setRecentVisitPhoto] = useState<string | null>(null);
+  const [recentFriendPhoto, setRecentFriendPhoto] = useState<string | null>(null);
+  const [recentPinPhoto, setRecentPinPhoto] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -153,6 +160,85 @@ export default function Account() {
 
     fetchVisPhoto();
   }, [visited]);
+
+  useEffect(() => {
+    async function fetchPinCoverUrl(pinId: number): Promise<string | null> {
+      const { data } = await supabase
+        .from("pins")
+        .select("pin_photos(photos(key), cover)")
+        .eq("pin_id", String(pinId))
+        .single();
+      if (!data?.pin_photos?.length) return null;
+      const coverEntry = (data.pin_photos as any[]).find((p) => p.cover);
+      const key = coverEntry?.photos?.key;
+      if (!key) return null;
+      const urls = await getPhotoUrl([key]);
+      return urls?.[0]?.url ?? null;
+    }
+
+    // Deala with Recent Activty fetching of data from Supabase DB
+    // For now, does practical queries such as most recent pins made and most recent user create
+    // Awaits multiple user integration in Sprint 3 to support accurate data
+    async function fetchActivity() {
+      const [visitRes, friendRes, pinRes] = await Promise.all([
+        supabase
+          .from("pin_visits")
+          .select("pin_id, visit_timestamp, pins(name)")
+          .order("visit_timestamp", { ascending: false })
+          .limit(1)
+          .maybeSingle(),
+        supabase
+          .from("users")
+          .select("username, photo_id")
+          .order("user_id", { ascending: false })
+          .limit(1)
+          .maybeSingle(),
+        supabase
+          .from("pins")
+          .select("pin_id, name")
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle(),
+      ]);
+
+      if (visitRes.data?.pins) {
+        setRecentVisit((visitRes.data.pins as any).name ?? null);
+      }
+      if (friendRes.data?.username) {
+        setRecentFriend(friendRes.data.username);
+      }
+      if (pinRes.data?.name) {
+        setRecentPin(pinRes.data.name);
+      }
+
+      const visitPinId = visitRes.data?.pin_id;
+      const newPinId = pinRes.data?.pin_id;
+      const friendPhotoId = friendRes.data?.photo_id;
+
+      // This sections supports the mini photos found in the Recent Activity box 
+      const [visitPhotoUrl, newPinPhotoUrl] = await Promise.all([
+        visitPinId ? fetchPinCoverUrl(visitPinId) : Promise.resolve(null),
+        newPinId ? fetchPinCoverUrl(newPinId) : Promise.resolve(null),
+      ]);
+      setRecentVisitPhoto(visitPhotoUrl);
+      setRecentPinPhoto(newPinPhotoUrl);
+
+      if (friendPhotoId) {
+        const { data: photoData } = await supabase
+          .from("photos")
+          .select("key")
+          .eq("photo_id", friendPhotoId)
+          .single();
+        if (photoData?.key) {
+          const urls = await getPhotoUrl([photoData.key]);
+          setRecentFriendPhoto(urls?.[0]?.url ?? null);
+        }
+      }
+
+      setActivityLoading(false);
+    }
+    fetchActivity();
+  }, []);
 
   if (loading) return <LoadingPage />;
 
@@ -297,7 +383,11 @@ export default function Account() {
           <Text style={styles.header}>Recent Activity</Text>
           <View style={[styles.infoWindow, { justifyContent: "center" }]}>
             <View style={styles.activityRow}>
-              <View style={styles.locAvatar} />
+              {recentVisitPhoto ? (
+                <Image source={{ uri: recentVisitPhoto }} style={styles.locAvatar} contentFit="cover" transition={300} />
+              ) : (
+                <View style={styles.locAvatar} />
+              )}
               <Text
                 style={{ fontFamily: Fonts.bold, fontSize: 14, marginLeft: 13 }}
               >
@@ -313,12 +403,16 @@ export default function Account() {
                 numberOfLines={1}
                 ellipsizeMode="tail"
               >
-                —
+                {recentVisit ?? "—"}
               </Text>
             </View>
             <View style={styles.divider} />
             <View style={styles.activityRow}>
-              <View style={styles.locAvatar} />
+              {recentFriendPhoto ? (
+                <Image source={{ uri: recentFriendPhoto }} style={styles.locAvatar} contentFit="cover" transition={300} />
+              ) : (
+                <View style={styles.locAvatar} />
+              )}
               <Text
                 style={{ fontFamily: Fonts.bold, fontSize: 14, marginLeft: 13 }}
               >
@@ -334,12 +428,16 @@ export default function Account() {
                 numberOfLines={1}
                 ellipsizeMode="tail"
               >
-                —
+                {recentFriend ?? "—"}
               </Text>
             </View>
             <View style={styles.divider} />
             <View style={styles.activityRow}>
-              <View style={styles.locAvatar} />
+              {recentPinPhoto ? (
+                <Image source={{ uri: recentPinPhoto }} style={styles.locAvatar} contentFit="cover" transition={300} />
+              ) : (
+                <View style={styles.locAvatar} />
+              )}
               <Text
                 style={{ fontFamily: Fonts.bold, fontSize: 14, marginLeft: 13 }}
               >
@@ -355,7 +453,7 @@ export default function Account() {
                 numberOfLines={1}
                 ellipsizeMode="tail"
               >
-                —
+                {recentPin ?? "—"}
               </Text>
             </View>
           </View>
