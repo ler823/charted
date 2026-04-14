@@ -183,19 +183,24 @@ export default function Account() {
       const [visitRes, friendRes, pinRes] = await Promise.all([
         supabase
           .from("pin_visits")
-          .select("pin_id, visit_timestamp, pins(name)")
+          .select("pin_id, visit_timestamp, pins!inner(name)")
+          .eq("pins.private", false)
           .order("visit_timestamp", { ascending: false })
           .limit(1)
           .maybeSingle(),
+        // exclude users who have set their account to not discoverable
         supabase
           .from("users")
           .select("username, photo_id")
+          .eq("discoverable", true)
           .order("user_id", { ascending: false })
           .limit(1)
           .maybeSingle(),
+        // exclude private/deleted pins
         supabase
           .from("pins")
           .select("pin_id, name")
+          .eq("private", false)
           .order("created_at", { ascending: false })
           .limit(1)
           .maybeSingle(),
