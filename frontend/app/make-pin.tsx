@@ -16,6 +16,7 @@ import {
   Alert,
   FlatList,
   Keyboard,
+  LogBox,
   NativeSyntheticEvent,
   Pressable,
   ScrollView,
@@ -41,7 +42,7 @@ type PhotoItem = {
 type ListType = {
   name: string;
   privacy: number;
-}
+};
 
 export default function MakePin() {
   const router = useRouter();
@@ -83,14 +84,15 @@ export default function MakePin() {
   const [visits, setVisits] = useState<string[]>([]);
   const [newVisit, setNewVisit] = useState("");
   const [originalVisits, setOriginalVisits] = useState<string[]>([]);
-  const [newTag, setNewTag] = useState<ListType>({name: "", privacy: 1});
-  const [newList, setNewList] = useState<ListType>({name: "", privacy: 1});
+  const [newTag, setNewTag] = useState<ListType>({ name: "", privacy: 1 });
+  const [newList, setNewList] = useState<ListType>({ name: "", privacy: 1 });
   const [newListPrivacy, setNewListPrivacy] = useState(0);
   const [dataLoaded, setDataLoaded] = useState(false);
   const [isPrivate, setIsPrivate] = useState(false);
   const privateDescription = "Only you can view this pin";
   const publicDescription = "All of your friends can view this pin";
-  const [privacyDescription, setPrivacyDescription] = useState(publicDescription);
+  const [privacyDescription, setPrivacyDescription] =
+    useState(publicDescription);
   const [notesHeight, setNotesHeight] = useState(100);
   const [coverPhotoChanged, setCoverPhotoChanged] = useState(false);
   const [coverPhotoModalVisible, setCoverPhotoModalVisible] = useState(false);
@@ -397,7 +399,7 @@ export default function MakePin() {
     return data.map((tag: { name: string }) => tag.name);
   };
 
-   const getUserLists = async () => {
+  const getUserLists = async () => {
     const { data, error } = await supabase
       .from("lists")
       .select(
@@ -444,7 +446,7 @@ export default function MakePin() {
     let tagToAdd = {
       user_id: userId[0].user_id,
       name: newTag.name,
-      privacy: newTag.privacy
+      privacy: newTag.privacy,
     };
 
     const { error: addTagError } = await supabase.from("tags").insert(tagToAdd);
@@ -476,10 +478,12 @@ export default function MakePin() {
     let listToAdd = {
       user_id: userId[0].user_id,
       name: newList.name,
-      privacy: newList.privacy
+      privacy: newList.privacy,
     };
 
-    const { error: addListError } = await supabase.from("lists").insert(listToAdd);
+    const { error: addListError } = await supabase
+      .from("lists")
+      .insert(listToAdd);
     if (addListError) {
       Alert.alert(
         "This list has already been added",
@@ -979,6 +983,8 @@ export default function MakePin() {
     return <LoadingPage />;
   }
 
+  LogBox.ignoreLogs(["VirtualizedLists should never be nested"]);
+
   return (
     <View style={{ flex: 1 }}>
       <View style={styles.topBar}>
@@ -1074,6 +1080,7 @@ export default function MakePin() {
                         language: "en",
                         types: "address",
                       }}
+                      listViewDisplayed={false}
                       textInputProps={{
                         placeholderTextColor: "#aaaaaa",
                         value: address,
@@ -1156,8 +1163,10 @@ export default function MakePin() {
 
               <View style={styles.tagsContainer}>
                 {tags.length == 0 && (
-                <Text style={styles.emptyTagLabel}>You have not created any tags</Text>
-              )}
+                  <Text style={styles.emptyTagLabel}>
+                    You have not created any tags
+                  </Text>
+                )}
                 {tags.map((tag) => (
                   <Pressable
                     key={tag}
@@ -1178,7 +1187,13 @@ export default function MakePin() {
                         />
                       )}
                     </View>
-                    <Text style={styles.tagLabel} numberOfLines={1} ellipsizeMode="tail">{tag}</Text>
+                    <Text
+                      style={styles.tagLabel}
+                      numberOfLines={1}
+                      ellipsizeMode="tail"
+                    >
+                      {tag}
+                    </Text>
                   </Pressable>
                 ))}
                 <AddTagOrList
@@ -1206,9 +1221,11 @@ export default function MakePin() {
               </View>
 
               <View style={styles.tagsContainer}>
-              {lists.length == 0 && (
-                <Text style={styles.emptyTagLabel}>You have not created any lists</Text>
-              )}
+                {lists.length == 0 && (
+                  <Text style={styles.emptyTagLabel}>
+                    You have not created any lists
+                  </Text>
+                )}
                 {lists.map((list) => (
                   <Pressable
                     key={list}
@@ -1229,7 +1246,13 @@ export default function MakePin() {
                         />
                       )}
                     </View>
-                    <Text style={styles.tagLabel} numberOfLines={1} ellipsizeMode="tail">{list}</Text>
+                    <Text
+                      style={styles.tagLabel}
+                      numberOfLines={1}
+                      ellipsizeMode="tail"
+                    >
+                      {list}
+                    </Text>
                   </Pressable>
                 ))}
                 <AddTagOrList
@@ -1255,7 +1278,9 @@ export default function MakePin() {
               </View>
               <View style={[styles.tagsContainer, { minHeight: 100 }]}>
                 {visits.length == 0 && (
-                  <Text style={styles.emptyTagLabel}>You have no visits entered</Text>
+                  <Text style={styles.emptyTagLabel}>
+                    You have no visits entered
+                  </Text>
                 )}
                 <ScrollView>
                   {visits.map((visit) => {
@@ -1290,7 +1315,9 @@ export default function MakePin() {
               </View>
               <View style={[styles.tagsContainer, { minHeight: 100 }]}>
                 {photoList.length == 0 && (
-                  <Text style={styles.emptyTagLabel}>You have no photos yet</Text>
+                  <Text style={styles.emptyTagLabel}>
+                    You have no photos yet
+                  </Text>
                 )}
                 <FlatList
                   horizontal
@@ -1624,10 +1651,10 @@ const styles = StyleSheet.create({
   photoCarousel: {
     width: 90,
     height: 90,
-    borderRadius: 12
+    borderRadius: 12,
   },
   emptyTagLabel: {
     fontFamily: Fonts.regular,
     paddingVertical: 10,
-  }
+  },
 });

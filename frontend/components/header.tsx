@@ -50,7 +50,7 @@ export default function Header({
   return (
     <>
       {/* Full-screen backdrop to catch outside taps */}
-      {showSuggestions && (
+      {isFocused && (
         <TouchableWithoutFeedback
           onPress={() => {
             Keyboard.dismiss();
