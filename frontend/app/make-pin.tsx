@@ -260,10 +260,10 @@ export default function MakePin() {
   ) => {
     if (key == "") {
       //remove from the list
-      setPhotoList(photoList.filter((photo) => photo.url != url));
+      setPhotoList(photoList.filter((photo) => photo.url !== url));
     } else {
       //remove from db
-      setPhotoList(photoList.filter((photo) => photo.url != url));
+      setPhotoList(photoList.filter((photo) => photo.url !== url));
       setPhotosToDelete((prev) => [
         ...prev,
         { key: key, url: url, changed: true },
@@ -357,7 +357,7 @@ export default function MakePin() {
     }
 
     const { error: pinPhotoError } = await supabase.from("pin_photos").insert({
-      pin_id: inserted_pin_id == 0 ? pinId : inserted_pin_id,
+      pin_id: inserted_pin_id === 0 ? pinId : inserted_pin_id,
       photo_id: data!.photo_id,
       cover: cover,
     });
@@ -1214,7 +1214,7 @@ export default function MakePin() {
               </View>
 
               <View style={styles.tagsContainer}>
-                {tags.length == 0 && (
+                {tags.length === 0 && (
                   <Text style={styles.emptyTagLabel}>
                     You have not created any tags
                   </Text>
