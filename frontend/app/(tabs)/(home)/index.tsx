@@ -1,7 +1,7 @@
 import PinMarker from "@/components/pin-marker";
 import { supabase } from "@/lib/supabase";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 import ClusteredMapView from "react-native-map-clustering";
 import { Marker } from "react-native-maps";
@@ -16,10 +16,9 @@ import PinOverlay from "@/components/pin-overlay";
 import { useDroppingPin } from "@/context/DroppingPinContext";
 import { useLocation } from "@/hooks/use-location";
 import { Coords, Pin, ViewMode, ViewOption } from "@/types/types";
-import { useFocusEffect, useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams } from "expo-router";
 import { setPinChanged } from "../../../lib/pin_refresh_data";
 
-// CSULB is default region if user does not share location
 const CSULB = {
   latitude: 33.7838,
   longitude: -118.1141,
@@ -36,81 +35,84 @@ const VIEW_OPTIONS: ViewOption[] = [
 ];
 
 type Friend = {
-    user_id: string;
-  }
+  user_id: string;
+};
 
 export default function Home() {
-  const { viewMode: incomingViewMode } = useLocalSearchParams<{ viewMode?: ViewMode }>();
+  const { viewMode: incomingViewMode } = useLocalSearchParams<{
+    viewMode?: ViewMode;
+  }>();
   const { isDroppingPin, setIsDroppingPin } = useDroppingPin();
   const [viewMode, setViewMode] = useState<ViewMode>(incomingViewMode ?? "map");
   const [selectedPin, setSelectedPin] = useState<Pin | null>(null);
   const [pins, setPins] = useState<Pin[]>([]);
   const [pinCoords, setPinCoords] = useState<Coords | null>(null);
   const mapRef = useRef<any>(null);
-  const { userCoords, permissionStatus, fetchUserLocation } = useLocation();
+  const { permissionStatus } = useLocation();
   const [region, setRegion] = useState(INITIAL_REGION);
   const [friends, setFriends] = useState<Friend[]>([]);
 
-  // This fetches data from the 'pins' table in Supabase. Also has error handling if unable to fetch
-  useEffect(
-    useCallback(() => {
-      async function fetchFriends() {
-        const { data, error } = await supabase
+  useEffect(() => {
+    async function fetchFriends() {
+      const { data, error } = await supabase
         .from("user_relationships")
         .select("*")
         .eq("is_friend", true)
         .or("requester_id.eq.4,target_id.eq.4");
 
-        if (error) {
-          console.log("Failed to fetch friends:", error.message);
-          return;
-        }
-
-        const user_ids = new Set<string>();
-
-        data.forEach((relation: any) => {
-          user_ids.add(relation.requester_id);
-          user_ids.add(relation.target_id);
-        });
-
-        // Convert the set back to an array
-        const uniqueUserIds = Array.from(user_ids).map(user_id => ({ user_id }));
-        
-        setFriends(uniqueUserIds);
-        fetchSharedPins(uniqueUserIds);
+      if (error) {
+        console.log("Failed to fetch friends:", error.message);
+        return;
       }
 
-      async function fetchSharedPins(userIds: Friend[]) {
-        const { data, error } = await supabase
-          .from("pin_clusters")
-          .select("*")
-          .overlaps("user_ids", userIds.map(friend => Number(friend.user_id)))
+      const user_ids = new Set<string>();
 
-        if (error) {
-          console.error("Failed to fetch shared pins:", error.message);
-          return;
-        }
+      data.forEach((relation: any) => {
+        user_ids.add(relation.requester_id);
+        user_ids.add(relation.target_id);
+      });
 
-        const formattedPins: Pin[] = data.map((cluster: any) => ({
-          id: String(cluster.cluster_id),
-          latitude: cluster.latitude,
-          longitude: cluster.longitude,
-          address: cluster.address,
-          name: cluster.name,
-          user_id: cluster.user_ids?.[0]?.toString() ?? "",
-          isShared: cluster.is_shared,
-          pinCount: cluster.pin_count,
-          pinIds: cluster.pin_ids,
-          userIds: cluster.user_ids,
-        }));
+      const uniqueUserIds = Array.from(user_ids).map((user_id) => ({
+        user_id,
+      }));
 
-        setPins(formattedPins);
+      setFriends(uniqueUserIds);
+      fetchSharedPins(uniqueUserIds);
+    }
+
+    async function fetchSharedPins(userIds: Friend[]) {
+      const { data, error } = await supabase
+        .from("pin_clusters")
+        .select("*")
+        .overlaps(
+          "user_ids",
+          userIds.map((friend) => Number(friend.user_id)),
+        );
+
+      if (error) {
+        console.error("Failed to fetch shared pins:", error.message);
+        return;
       }
-      setPinChanged(true);
-      fetchFriends();
-    }, [])
-  )
-  
+
+      const formattedPins: Pin[] = data.map((cluster: any) => ({
+        id: String(cluster.cluster_id),
+        latitude: cluster.latitude,
+        longitude: cluster.longitude,
+        address: cluster.address,
+        name: cluster.name,
+        user_id: cluster.user_ids?.[0]?.toString() ?? "",
+        isShared: cluster.is_shared,
+        pinCount: cluster.pin_count,
+        pinIds: cluster.pin_ids,
+        userIds: cluster.user_ids,
+      }));
+
+      setPins(formattedPins);
+    }
+
+    setPinChanged(true);
+    fetchFriends();
+  }, []); // ✅ useEffect now correctly receives the empty array
 
   return (
     <View style={styles.container}>
@@ -133,6 +135,7 @@ export default function Home() {
           viewMode={viewMode}
           setViewMode={setViewMode}
           viewOptions={VIEW_OPTIONS}
+          pins={pins}
         />
       )}
 
@@ -181,14 +184,16 @@ export default function Home() {
                 onPress={() => setSelectedPin(pin)}
                 tracksViewChanges={false}
               >
-              {pin.isShared ? (
-                <SharedPinMarkers users_id={pin.userIds!} number_shared={pin.pinCount!} />
-              ) : pin.user_id === "4" ? (
-                <PinMarker />
-              ) : (
-                <PinMarkers users_id={Number(pin.user_id)} />
-              )
-              }
+                {pin.isShared ? (
+                  <SharedPinMarkers
+                    users_id={pin.userIds!}
+                    number_shared={pin.pinCount!}
+                  />
+                ) : pin.user_id === "4" ? (
+                  <PinMarker />
+                ) : (
+                  <PinMarkers users_id={Number(pin.user_id)} />
+                )}
               </Marker>
             ))}
         </ClusteredMapView>
@@ -196,7 +201,7 @@ export default function Home() {
 
       {viewMode === "list" && (
         <View style={styles.cardsContainer}>
-          <PinListView pins={pins}/>
+          <PinListView pins={pins} />
         </View>
       )}
       {viewMode === "grid" && (
@@ -204,15 +209,14 @@ export default function Home() {
           <PinGridView pins={pins} />
         </View>
       )}
-      {/* 
-        PIN OVERLAY
-      */}
+
       {selectedPin && (
         <PinOverlay selectedPin={selectedPin} setSelectedPin={setSelectedPin} />
       )}
 
-      {/* Dropping pin overlay */}
-      {isDroppingPin && <DroppingPinOverlay coords={pinCoords} viewMode={viewMode}/>}
+      {isDroppingPin && (
+        <DroppingPinOverlay coords={pinCoords} viewMode={viewMode} />
+      )}
     </View>
   );
 }
@@ -222,17 +226,14 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     flex: 1,
   },
-
   cardsContainer: {
     flex: 1,
   },
-
   placeholder: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
   },
-
   plusButton: {
     position: "absolute",
     bottom: 115,
@@ -250,7 +251,6 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
     elevation: 4,
   },
-
   map: {
     width: "100%",
     height: "100%",
