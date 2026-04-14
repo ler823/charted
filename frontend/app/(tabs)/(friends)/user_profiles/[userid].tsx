@@ -1,7 +1,9 @@
 import LoadingPage from "@/components/loading-page";
 import { Fonts } from "@/constants/theme";
+import { getPhotoUrl } from "@/lib/photo-utils";
 import { supabase } from "@/lib/supabase";
 import { Ionicons } from "@expo/vector-icons";
+import { Image } from "expo-image";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
@@ -11,11 +13,15 @@ type Friend = {
   username: string;
   location: string | null;
   bio: string | null;
+  photos: {
+    key: string | null;
+  }[];
 };
 
 export default function FriendProfilePage() {
   const { userid } = useLocalSearchParams();
   const [friend, setFriend] = useState<Friend | null>(null);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [requestSent, setRequestSent] = useState(false);
 
@@ -23,9 +29,15 @@ export default function FriendProfilePage() {
       async function fetchUsers() {
         const { data } = await supabase
           .from("users")
-          .select("user_id, username, location, bio")
+          .select("user_id, username, location, bio, photos:photo_id( key )")
           .eq("user_id", Number(userid))
           .single();
+        if (data?.photos?.key) {
+          const key = data?.photos?.key ?? null;
+          if (!key) return;
+          const urls = await getPhotoUrl([key]);
+          setAvatarUrl(urls[0].url);
+        }
         setFriend(data);
         setLoading(false);
       }
@@ -52,16 +64,21 @@ export default function FriendProfilePage() {
         </Pressable>
       </View>
       {/* Profile Picture */}
-      {/* NOTE: will need to adjust later once pfp est: move the lower pfp into the upper one and replace the .username? check with .pfp? check */}
       <View style={styles.container}>
-        {!friend?.username && (
-          <View style={styles.avatar} />
-        )}
-        {friend?.username && (
-          <View style={styles.avatar}>
-            <Text style={styles.avatarInitial}>{friend.username?.[0]?.toUpperCase()}</Text>
-          </View>
-        )}
+        {avatarUrl ? (
+          <Image
+            source={{ uri: avatarUrl }}
+            style={styles.avatar}
+            transition={300}
+          />
+          ) : !friend?.username ? (
+              <View style={styles.avatar} />
+            ) : friend?.username && (
+              <View style={styles.avatar}>
+                <Text style={styles.avatarInitial}>{friend.username?.[0]?.toUpperCase()}</Text>
+              </View>
+            )
+        }
 
         {/* Username and Bio */}
         <Text style={styles.username}>{friend?.username ?? "Username Unavailable"}</Text>
@@ -80,24 +97,7 @@ export default function FriendProfilePage() {
             </Text>
           </Pressable>
         </View>
-        <View style={{ marginTop: 250}}>
-          <Pressable
-            style={styles.requestUnsendButton}
-            onPress={() => {
-              router.push({
-              pathname: "/friend_profiles/[friendid]",
-              params: {
-                friendid: `${friend?.user_id}`
-              }})
-            }}
-          >
-            <Text
-              style={{ fontFamily: Fonts.bold, color: "#fefbea", fontSize: 15 }}
-            >
-              For testing: see profile
-            </Text>
-          </Pressable>
-        </View>
+
       </View>
     </>
   );
@@ -120,16 +120,21 @@ export default function FriendProfilePage() {
         </Pressable>
       </View>
       {/* Profile Picture */}
-      {/* NOTE: will need to adjust later once pfp est: move the lower pfp into the upper one and replace the .username? check with .pfp? check */}
       <View style={styles.container}>
-        {!friend?.username && (
-          <View style={styles.avatar} />
-        )}
-        {friend?.username && (
-          <View style={styles.avatar}>
-            <Text style={styles.avatarInitial}>{friend.username?.[0]?.toUpperCase()}</Text>
-          </View>
-        )}
+        {avatarUrl ? (
+          <Image
+            source={{ uri: avatarUrl }}
+            style={styles.avatar}
+            transition={300}
+          />
+          ) : !friend?.username ? (
+              <View style={styles.avatar} />
+            ) : friend?.username && (
+              <View style={styles.avatar}>
+                <Text style={styles.avatarInitial}>{friend.username?.[0]?.toUpperCase()}</Text>
+              </View>
+            )
+        }
 
         {/* Username and Bio */}
         <Text style={styles.username}>{friend?.username ?? "Username Unavailable"}</Text>

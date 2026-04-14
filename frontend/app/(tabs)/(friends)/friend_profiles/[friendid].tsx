@@ -11,14 +11,8 @@ import ClusteredMapView from "react-native-map-clustering";
 import { Pin } from "@/types/types";
 import { Marker } from "react-native-maps";
 import PinMarkers from "@/components/pin-markers";
-
-
-type Friend = {
-  user_id: number;
-  username: string;
-  location: string | null;
-  bio: string | null;
-};
+import { getPhotoUrl } from "@/lib/photo-utils";
+import { Image } from "expo-image";
 
 // CSULB is default region if user does not share location
 const CSULB = {
@@ -26,6 +20,29 @@ const CSULB = {
   longitude: -118.1141,
   latitudeDelta: 0.015,
   longitudeDelta: 0.015,
+};
+
+type Friend = {
+  user_id: number;
+  username: string;
+  location: string | null;
+  bio: string | null;
+  photos: {
+    key: string | null;
+  }[];
+};
+
+type PinRow = {
+  pin_id: number;
+  name: string;
+  address: string;
+  location_id: number;
+  user_id: number;
+  locations?: {
+    id: number;
+    latitude: number;
+    longitude: number;
+  }[] | null;
 };
 
 type FavPin = {
@@ -47,13 +64,16 @@ type VisPin = {
 export default function FriendProfilePage() {
   const { friendid } = useLocalSearchParams();
   const [friend, setFriend] = useState<Friend | null>(null);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [pinLoading, setPinLoading] = useState(true);
   const [userLoading, setUserLoading] = useState(true);
   const [favLoading, setFavLoading] = useState(true);
   const [visitLoading, setVisitLoading] = useState(true);
   const loading = pinLoading || userLoading || favLoading || visitLoading;
   const [favorite, setFavorite] = useState<FavPin | null>(null);
+  const [favPhoto, setFavPhoto] = useState<string | null>(null);
   const [visited, setVisited] = useState<VisPin | null>(null);
+  const [visPhoto, setVisPhoto] = useState<string | null>(null);
   const [pins, setPins] = useState<Pin[]>([]);
   const mapRef = useRef<any>(null);
 
@@ -70,32 +90,28 @@ export default function FriendProfilePage() {
             .eq("user_id", Number(friendid))
             .order("pin_id", { ascending: true })
             .eq("private", false);
+          
           if (error) {
             console.error("Failed to fetch locations:", error.message);
             return;
           }
   
-          const typedData = data as unknown as {
-            pin_id: number;
-            name: string;
-            address: string;
-            location_id: number;
-            user_id: number;
-            locations?: {
-              id: number;
-              latitude: number;
-              longitude: number;
-            } | null;
-          }[];
-  
+          const typedData = data as PinRow[];
+          
           setPins(
-            typedData.map((row) => ({
-              id: String(row.pin_id),
-              name: row.name,
-              address: row.address,
-              latitude: row.locations?.latitude ?? 0,
-              longitude: row.locations?.longitude ?? 0,
-            })),
+            typedData.map((row) => {
+              const loc = Array.isArray(row.locations)
+                ? row.locations[0]
+                : row.locations;
+
+              return {
+                id: String(row.pin_id),
+                name: row.name,
+                address: row.address,
+                latitude: loc?.latitude ?? 0,
+                longitude: loc?.longitude ?? 0,
+                user_id: String(row.user_id),
+              }}),
           );
           setPinLoading(false);
         }
@@ -111,13 +127,20 @@ export default function FriendProfilePage() {
       async function fetchUsers() {
         const { data, error } = await supabase
           .from("users")
-          .select("user_id, username, location, bio")
+          .select("user_id, username, location, bio, photos:photo_id( key )")
           .eq("user_id", Number(friendid))
           .single();
+
         if (error) {
             console.error("Failed to fetch user:", error.message);
             return;
           }
+        if (data?.photos?.key) {
+          const key = data?.photos?.key ?? null;
+          if (!key) return;
+          const urls = await getPhotoUrl([key]);
+          setAvatarUrl(urls[0].url);
+        }
         setFriend(data);
         setUserLoading(false);
       }
@@ -167,6 +190,54 @@ export default function FriendProfilePage() {
     }
     fetchTopVisited();
   }, []);
+  
+  useEffect(() => {
+    setFavPhoto(null);
+    if (!favorite?.pin_id) return;
+
+    async function fetchFavPhoto() {
+      const { data } = await supabase
+        .from("pins")
+        .select("pin_photos(photos(key), cover)")
+        .eq("pin_id", String(favorite?.pin_id))
+        .single();
+
+      if (!data?.pin_photos?.length) return;
+
+      const coverEntry = data.pin_photos.find((p: any) => p.cover);
+      const key = coverEntry?.photos?.key;
+      if (!key) return;
+
+      const urls = await getPhotoUrl([key]);
+      if (urls?.[0]?.url) setFavPhoto(urls[0].url);
+    }
+
+    fetchFavPhoto();
+  }, [favorite]);
+
+  useEffect(() => {
+    setVisPhoto(null);
+    if (!visited?.pin_id) return;
+
+    async function fetchVisPhoto() {
+      const { data } = await supabase
+        .from("pins")
+        .select("pin_photos(photos(key), cover)")
+        .eq("pin_id", String(visited?.pin_id))
+        .single();
+
+      if (!data?.pin_photos?.length) return;
+
+      const coverEntry = data.pin_photos.find((p: any) => p.cover);
+      const key = coverEntry?.photos?.key;
+      if (!key) return;
+
+      const urls = await getPhotoUrl([key]);
+      if (urls?.[0]?.url) setVisPhoto(urls[0].url);
+    }
+
+    fetchVisPhoto();
+  }, [visited]);
 
   if (loading) return <LoadingPage />;
 
@@ -198,16 +269,21 @@ export default function FriendProfilePage() {
         </Pressable>
       </View>
       {/* Profile Picture */}
-      {/* NOTE: will need to adjust later once pfp est: move the lower pfp into the upper one and replace the .username? check with .pfp? check */}
       <View style={styles.container}>
-        {!friend?.username && (
-          <View style={styles.avatar} />
-        )}
-        {friend?.username && (
-          <View style={styles.avatar}>
-            <Text style={styles.avatarInitial}>{friend.username?.[0]?.toUpperCase()}</Text>
-          </View>
-        )}
+        {avatarUrl ? (
+          <Image
+            source={{ uri: avatarUrl }}
+            style={styles.avatar}
+            transition={300}
+          />
+          ) : !friend?.username ? (
+              <View style={styles.avatar} />
+            ) : friend?.username && (
+              <View style={styles.avatar}>
+                <Text style={styles.avatarInitial}>{friend.username?.[0]?.toUpperCase()}</Text>
+              </View>
+            )
+        }
 
         {/* Username, Location, and Bio */}
         <Text style={styles.username}>{friend?.username ?? "Username Unavailable"}</Text>
@@ -270,34 +346,91 @@ export default function FriendProfilePage() {
         <View style={styles.infoBox}>
           <Text style={styles.header}>Statistics</Text>
           <View style={[styles.statsRow, {gap: 20}]}>
-            <View style={[styles.infoWindow, {width: "42%", alignItems: "center"}]}>
+            <Pressable style={[styles.infoWindow, {width: "42%", alignItems: "center"}]} onPress={() => {router.push({
+                pathname: "/pins/[pinid]",
+                params: { pinid: String(favorite?.pin_id) },
+              })}}>
               <Text style={styles.subHeader}>Favorite</Text>
               <View style={styles.statsWindows}>
-                <Text style={{fontFamily: Fonts.regular, fontSize: 13, textAlign: "center", marginTop: 15}}>
-                  {favorite?.name ?? "This user has no pins yet."}
-                </Text>
+                {favPhoto && (
+                  <Image
+                    source={
+                      favPhoto
+                        ? { uri: favPhoto }
+                        : require("@/assets/images/no_image_default.png")
+                    }
+                    style={styles.image}
+                    contentFit="cover"
+                    transition={300}
+                    placeholder="blur"
+                  />
+                )}
+                {!favPhoto && (
+                  <Text style={{fontFamily: Fonts.bold, fontSize: 13, textAlign: "center", marginTop: 15, marginHorizontal: 2}}>
+                    {favorite?.name ? (
+                      <>
+                        {favorite.name}
+                        {"\n"}
+                        <Text style={{ fontFamily: Fonts.regular_i, fontSize: 11 }}>
+                          No photo set
+                        </Text>
+                      </>
+                    ) : (
+                      "This user has no pins yet."
+                    )}
+                  </Text>
+                )}
               </View>
               <View style={styles.statsBar}>
                 <View style={{flexDirection: "row", gap: 1, justifyContent: "center"}}>
                   <Stars starnum={favorite?.user_rating ?? 0}/>
                 </View>
               </View>
-            </View>
-            <View style={[styles.infoWindow, {width: "42%", alignItems: "center"}]}>
+            </Pressable>
+            <Pressable style={[styles.infoWindow, {width: "42%", alignItems: "center"}]} onPress={() => {router.push({
+                pathname: "/pins/[pinid]",
+                params: { pinid: String(visited?.pin_id) },
+              })}}>
               <Text style={styles.subHeader}>Top Visited</Text>
               <View style={styles.statsWindows}>
-                <Text style={{fontFamily: Fonts.regular, fontSize: 13, textAlign: "center", marginTop: 15}}>
-                  {visited?.name ?? "This user has no pins yet."}
-                </Text>
+                {visPhoto && (
+                  <Image
+                    source={
+                      visPhoto
+                        ? { uri: visPhoto }
+                        : require("@/assets/images/no_image_default.png")
+                    }
+                    style={styles.image}
+                    contentFit="cover"
+                    transition={300}
+                    placeholder="blur"
+                  />
+                )}
+                {!visPhoto && (
+                  <Text style={{fontFamily: Fonts.bold, fontSize: 13, textAlign: "center", marginTop: 15, marginHorizontal: 2}}>
+                    {visited?.name ? (
+                      <>
+                        {visited.name}
+                        {"\n"}
+                        <Text style={{ fontFamily: Fonts.regular_i, fontSize: 11 }}>
+                          No photo set
+                        </Text>
+                      </>
+                    ) : (
+                      "This user has no pins yet."
+                    )}
+                  </Text>
+                )}
               </View>
               <View style={styles.statsBar}>
                 <Text style={{ fontFamily: Fonts.regular, fontSize: 16, color: "#fefbea", marginHorizontal: 7, flexShrink: 1 }}
                       numberOfLines={1}
                       ellipsizeMode="tail">
-                  {visited?.visit_count ?? "0"} Visits
+                  {visited?.visit_count ?? "-"}{" "}
+                  {visited?.visit_count === 1 ? "Visit" : "Visits"}
                 </Text>
               </View>
-            </View>
+            </Pressable>
           </View>
         </View>
 
@@ -484,6 +617,10 @@ const styles = StyleSheet.create({
     borderColor: "#7CA982",
     marginVertical: 10,
     alignItems: "center",
+  },
+  image: {
+    width: "100%",
+    height: "100%",
   },
   mapExpand: {
     backgroundColor: "#7ca982",

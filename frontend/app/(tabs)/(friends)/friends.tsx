@@ -1,15 +1,18 @@
 import { supabase } from "@/lib/supabase";
-import { Ionicons } from "@expo/vector-icons";
+import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter, Stack } from "expo-router";
 import React, { useEffect, useState } from "react";
 import { FlatList, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { Colors, Fonts } from "../../../constants/theme";
 import LoadingPage from "@/components/loading-page";
+import { getPhotoUrl } from "@/lib/photo-utils";
+import { Image } from "expo-image";
 
 type Friend = {
   user_id: number;
   username: string;
   location: string | null;
+  avatarUrl?: string | null;
 };
 
 export default function Friends() {
@@ -31,8 +34,29 @@ export default function Friends() {
     async function fetchUsers() {
       const { data } = await supabase
         .from("users")
-        .select("user_id, username, location");
-      setFriends(data ?? []);
+        .select("user_id, username, location, photos:photo_id(key)");
+
+      if (!data) return;
+
+
+      const enriched = await Promise.all(
+        data.map(async (user) => {
+          const key = user.photos?.key;
+
+          let avatarUrl = null;
+          if (key) {
+            const urls = await getPhotoUrl([key]);
+            avatarUrl = urls?.[0]?.url ?? null;
+          }
+
+          return {
+            ...user,
+            avatarUrl,
+          };
+        })
+      );
+
+      setFriends(enriched);
       setLoading(false);
     }
     fetchUsers();
@@ -48,28 +72,14 @@ export default function Friends() {
       Looks a little small so might need to tweak the sizing a bit
       Pressable components for future interaction implmenetation
       */}
+      <Pressable style={styles.plusButton} onPress={() => {router.push({
+              pathname: "/user_profiles/[userid]",
+              params: {
+                userid: 1
+              }})}}>
+        <MaterialCommunityIcons name="plus" size={45} color="#fefbea" />
+      </Pressable>
       <View style={styles.header}>
-        <Pressable style={styles.addFriendBtn}>
-          <Ionicons name="add-circle-outline" size={20} color="#FEFBEA" />
-          <Text style={styles.addFriendText}>Add Friend</Text>
-        </Pressable>
-        {/* CHECK: This bell looks a little off when loaded*/}
-        <Pressable style={styles.notifBtn} onPress={() => router.push("./friend-notifications")}>
-          <Ionicons
-            name="notifications-outline"
-            size={33}
-            color={Colors.light.background}
-          />
-          <View style={styles.notifBadge} />
-        </Pressable>
-      </View>
-
-      <View style={{ borderBottomColor: Colors.light.background, borderBottomWidth: 1, marginHorizontal: 16 }} />
-
-      {/*  
-      Deals with the serach row and sort button 
-      */}
-      <View style={styles.searchRow}>
         <View style={styles.searchBar}>
           <TextInput
             style={styles.searchText}
@@ -83,6 +93,15 @@ export default function Friends() {
         <Pressable style={styles.sortBtn}>
           <Text style={styles.sortText}>Sort</Text>
           <Ionicons name="chevron-down" size={14} color={"#fefbea"} />
+        </Pressable>
+        {/* CHECK: This bell looks a little off when loaded*/}
+        <Pressable style={styles.notifBtn} onPress={() => router.push("./friend-notifications")}>
+          <Ionicons
+            name="notifications-outline"
+            size={33}
+            color={Colors.light.background}
+          />
+          <View style={styles.notifBadge} />
         </Pressable>
       </View>
 
@@ -102,13 +121,19 @@ export default function Friends() {
               params: {
                 friendid: `${item.user_id}`
               }})}>
-            {/* 
-            Placeholder cirlce for now. 
-            PIcture will be added once figured out how to load pictures from cloud/db
-            Later implement: display uploaded photo or default initial for no photo 
-            */}
             <View style={styles.avatar}>
-              <Text style={styles.avatarInitial}>{item.username?.[0]?.toUpperCase()}</Text>
+              {item.avatarUrl ? (
+                <Image
+                  source={{ uri: item.avatarUrl }}
+                  style={StyleSheet.absoluteFill}
+                  contentFit="cover"
+                  transition={300}
+                />
+              ) : (
+                <Text style={styles.avatarInitial}>
+                  {item.username?.[0]?.toUpperCase()}
+                </Text>
+              )}
             </View>
             <View style={styles.cardInfo}>
               <Text style={styles.username}>{item.username}</Text>
@@ -131,28 +156,29 @@ export default function Friends() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
   },
   /* 
   Styling for the add button and notification button
   */
   header: {
-    paddingTop: 55,
+    paddingTop: 64,
     paddingBottom: 18,
     paddingHorizontal: 16,
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
   },
-  addFriendBtn: {
-    flex: 1,
-    flexDirection: "row",
+  plusButton: {
+    position: "absolute",
+    bottom: 115,
+    right: 25,
+    zIndex: 20,
+    width: 50,
+    height: 50,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: Colors.light.background,
-    paddingVertical: 13,
-    borderRadius: 999,
-    gap: 8,
+    borderRadius: 100,
+    backgroundColor: "#243e36",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
@@ -258,6 +284,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#d8d8d8",
     alignItems: "center",
     justifyContent: "center",
+    overflow: "hidden",
   },
   avatarInitial: {
     fontSize: 28,

@@ -3,6 +3,8 @@ import { supabase } from "@/lib/supabase";
 import React, { useEffect, useState } from "react";
 import { StyleSheet, View, Text } from "react-native";
 import LoadingPage from "./loading-page";
+import { getPhotoUrl } from "@/lib/photo-utils";
+import { Image } from "expo-image";
 interface PinMarkerProps {
   color?: string;
   users_id: number;
@@ -14,6 +16,9 @@ type Friend = {
   username: string;
   location: string | null;
   bio: string | null;
+  photos: {
+    key: string | null;
+  }[];
 };
 
 const COLORS = [
@@ -53,19 +58,26 @@ export default function PinMarkers({
   users_id,
 }: PinMarkerProps) {
     const [friend, setFriend] = useState<Friend | null>(null);
+    const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
     
     useEffect(() => {
           async function fetchUsers() {
             const { data, error } = await supabase
               .from("users")
-              .select("user_id, username, location, bio")
+              .select("user_id, username, location, bio, photos:photo_id( key )")
               .eq("user_id", Number(users_id))
               .single();
             if (error) {
                 console.error("Failed to fetch users:", error.message);
                 return;
               }
+            if (data?.photos?.key) {
+              const key = data?.photos?.key ?? null;
+              if (!key) return;
+              const urls = await getPhotoUrl([key]);
+              setAvatarUrl(urls[0].url);
+            }
             setFriend(data);
             setLoading(false);
           }
@@ -81,14 +93,20 @@ export default function PinMarkers({
   return (
     <View style={styles.wrapper}>
       <View style={[styles.outer, { backgroundColor: user_color }]}>
-        {!friend?.username && (
-            <View style={styles.avatar} />
-        )}
-        {friend?.username && (
-            <View style={styles.avatar}>
+        {avatarUrl ? (
+          <Image
+            source={{ uri: avatarUrl }}
+            style={styles.avatar}
+            transition={300}
+          />
+          ) : !friend?.username ? (
+              <View style={styles.avatar} />
+            ) : friend?.username && (
+              <View style={styles.avatar}>
                 <Text style={styles.avatarInitial}>{friend.username?.[0]?.toUpperCase()}</Text>
-            </View>
-        )}
+              </View>
+            )
+        }
       </View>
       <View style={styles.stem} />
       <View style={{height: 62}}/>
