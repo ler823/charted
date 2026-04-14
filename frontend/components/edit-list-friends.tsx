@@ -231,7 +231,12 @@ const styles = StyleSheet.create({
         justifyContent: "center"
     },
     cancelBtn: {
-        padding: 16,
+        // padding: 16,
+        height: 40,
+        paddingHorizontal: 16,
+        flexDirection: "row",
+        justifyContent: "center",
+        alignItems: "center",
         backgroundColor: Colors.light.error,
         borderRadius: 999,
         shadowColor: "#000",
@@ -247,7 +252,12 @@ const styles = StyleSheet.create({
         fontFamily: Fonts.bold
     },
     saveBtn: {
-        padding: 16,
+        // padding: 16,
+        height: 40,
+        paddingHorizontal: 16,
+        flexDirection: "row",
+        justifyContent: "center",
+        alignItems: "center",
         backgroundColor: "#243e36",
         borderRadius: 999,
         shadowColor: "#000",

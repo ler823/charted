@@ -42,7 +42,7 @@ export default function CoverPhotoModal({ isVisible, onClose, onChooseFromLibrar
 
 const styles = StyleSheet.create({
   modalContent: {
-    height: 220,
+    //height: 220,
     width: 400,
     backgroundColor: '#ffffff',
     borderRadius: 18,
@@ -90,7 +90,12 @@ const styles = StyleSheet.create({
     justifyContent: "center"
   },
   cancelBtn: {
-    padding: 16,
+    // padding: 16,
+    height: 40,
+    paddingHorizontal: 16,
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
     marginVertical: 8,
     marginHorizontal: 8,
     backgroundColor: Colors.light.error,
@@ -108,7 +113,12 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.bold,
   },
   saveBtn: {
-    padding: 16,
+    // padding: 16,
+    height: 40,
+    paddingHorizontal: 16,
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
     marginVertical: 8,
     marginHorizontal: 8,
     backgroundColor: "#243e36",
