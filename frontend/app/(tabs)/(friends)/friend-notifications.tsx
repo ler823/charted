@@ -1,7 +1,7 @@
 import { Colors, Fonts } from "@/constants/theme";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
 // temp data just like Figma design
@@ -23,11 +23,37 @@ function Avatar({ username }: { username: string }) {
   );
 }
 
+const dismissed = new Set<number>();
+
 export default function FriendNotifications() {
   const router = useRouter();
   const [accepted, setAccepted] = useState<Set<number>>(new Set());
   const [rejected, setRejected] = useState<Set<number>>(new Set());
   const [unsent, setUnsent] = useState<Set<number>>(new Set());
+
+  useEffect(() => {
+    return () => {
+      accepted.forEach((id) => dismissed.add(id));
+      rejected.forEach((id) => dismissed.add(id));
+      unsent.forEach((id) => dismissed.add(id));
+    };
+  }, [accepted, rejected, unsent]);
+
+  // Filter out already-dismissed cards on every mount
+  const visibleReceived = MOCK_RECEIVED.filter((u) => !dismissed.has(u.id));
+  const visibleSent = MOCK_SENT.filter((u) => !dismissed.has(u.id));
+
+  const handleAccept = (id: number) => {
+    setAccepted((prev) => new Set(prev).add(id));
+  };
+
+  const handleReject = (id: number) => {
+    setRejected((prev) => new Set(prev).add(id));
+  };
+
+  const handleUnsend = (id: number) => {
+    setUnsent((prev) => new Set(prev).add(id));
+  };
 
   return (
     <View style={styles.container}>
@@ -47,10 +73,10 @@ export default function FriendNotifications() {
 
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         <Text style={styles.sectionTitle}>Received Friend Requests</Text>
-        {/* 
-        Received Friend Requests Section with Temp Data
-        */}
-        {MOCK_RECEIVED.map((user) => (
+        {visibleReceived.length === 0 && (
+          <Text style={styles.emptyText}>No received friend requests.</Text>
+        )}
+        {visibleReceived.map((user) => (
           <View key={user.id} style={styles.card}>
             <Avatar username={user.username} />
             <Text style={styles.username}>{user.username}</Text>
@@ -64,10 +90,10 @@ export default function FriendNotifications() {
               </View>
             ) : (
               <View style={styles.actions}>
-                <Pressable style={styles.acceptBtn} onPress={() => setAccepted(prev => new Set(prev).add(user.id))}>
+                <Pressable style={styles.acceptBtn} onPress={() => handleAccept(user.id)}>
                   <Text style={styles.acceptText}>Accept</Text>
                 </Pressable>
-                <Pressable style={styles.rejectBtn} onPress={() => setRejected(prev => new Set(prev).add(user.id))}>
+                <Pressable style={styles.rejectBtn} onPress={() => handleReject(user.id)}>
                   <Text style={styles.rejectText}>Reject</Text>
                 </Pressable>
               </View>
@@ -78,17 +104,16 @@ export default function FriendNotifications() {
         <View style={styles.divider} />
 
         <Text style={styles.sectionTitle}>Sent Friend Requests</Text>
-
-        {/* 
-        Sent Friend Requests Section with Temp Data
-        */}
-        {MOCK_SENT.map((user) => (
+        {visibleSent.length === 0 && (
+          <Text style={styles.emptyText}>No sent friend requests.</Text>
+        )}
+        {visibleSent.map((user) => (
           <View key={user.id} style={styles.card}>
             <Avatar username={user.username} />
             <Text style={styles.username}>{user.username}</Text>
             <Pressable
               style={unsent.has(user.id) ? styles.unsentBtn : styles.unsendBtn}
-              onPress={() => !unsent.has(user.id) && setUnsent(prev => new Set(prev).add(user.id))}
+              onPress={() => handleUnsend(user.id)}
             >
               <Text style={styles.unsendText}>
                 {unsent.has(user.id) ? "Unsent" : "Unsend Request"}
@@ -136,6 +161,13 @@ const styles = StyleSheet.create({
     paddingTop: 20,
     paddingBottom: 40,
     width: "100%",
+  },
+  emptyText: {
+    fontFamily: Fonts.regular,
+    fontSize: 14,
+    color: "#888",
+    width: "92%",
+    marginBottom: 8,
   },
   sectionTitle: {
     fontFamily: Fonts.bold,
