@@ -8,6 +8,7 @@ deploy:
 
 frontend:
 	@cd frontend && \
+	npm install && \
 	until npx expo start -c --tunnel; do \
 		echo "Expo failed. Restarting..."; \
 	done
