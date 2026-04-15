@@ -17,7 +17,6 @@ import {
 //import { AutoSkeletonView } from "react-native-auto-skeleton";
 import LoadingPage from "@/components/loading-page";
 import { getPhotoUrl } from "@/lib/photo-utils";
-import { getPinChanged, setPinChanged } from "@/lib/pin_refresh_data";
 
 type Friend = {
   user_id: number;
@@ -34,6 +33,9 @@ type Pin = {
   user_note: string | null;
   name: string | null;
   address: string | null;
+  users: {
+    username: string | null;
+  } | null;
   pin_tags:
     | {
         tags: {
@@ -71,7 +73,7 @@ type Pin = {
 type Cluster = {
   pin_ids: number[];
   user_ids: number[];
-}
+};
 
 type Notes = {
   user_id: number;
@@ -101,6 +103,7 @@ export default function PinPage() {
           .from("pins")
           .select(
             `*,
+            users(username),
             pin_tags(tags( tag_id, name )),
             pin_lists(lists( list_id, name )),
             pin_visits( visit_id, visit_timestamp ),
@@ -138,20 +141,17 @@ export default function PinPage() {
         setCoverPhoto(coverPhotoUri);
         setPhotoList(otherPhotoUris);
       }
-      if (getPinChanged()) {
-        setPinChanged(false);
-        fetchPin();
-      }
+      fetchPin();
     }, [pinid]),
   );
 
   useEffect(() => {
     async function fetchSharedPins() {
       const { data, error } = await supabase
-      .from("pin_clusters")
-      .select("pin_ids, user_ids")
-      .contains("pin_ids", [Number(pinid)])
-      .single();
+        .from("pin_clusters")
+        .select("pin_ids, user_ids")
+        .contains("pin_ids", [Number(pinid)])
+        .single();
 
       if (error) {
         console.log(error.message);
@@ -161,14 +161,15 @@ export default function PinPage() {
       setCluster(data);
     }
     fetchSharedPins();
-  }, []);
+  }, [pinid]);
 
   useEffect(() => {
     async function fetchUsers() {
       if (!cluster || !pin) return;
       if (!cluster?.user_ids?.length) return;
 
-      const filteredUserIds = cluster?.user_ids?.filter((id) => id !== pin?.user_id) ?? [];
+      const filteredUserIds =
+        cluster?.user_ids?.filter((id) => id !== pin?.user_id) ?? [];
 
       const { data, error } = await supabase
         .from("users")
@@ -203,7 +204,8 @@ export default function PinPage() {
     async function fetchUserNotes() {
       if (!cluster?.pin_ids?.length) return;
 
-      const filteredPinIds = cluster?.pin_ids?.filter((id) => id !== pin?.pin_id) ?? [];
+      const filteredPinIds =
+        cluster?.pin_ids?.filter((id) => id !== pin?.pin_id) ?? [];
 
       const { data, error } = await supabase
         .from("pins")
@@ -272,6 +274,14 @@ export default function PinPage() {
           placeholderContentFit="cover"
         />
 
+        {pin.user_id !== 4 && (
+          <View style={{backgroundColor: "#243e36", padding: 7, paddingRight: 14, alignSelf: "flex-start", borderTopRightRadius: 16, top: 167, position: "absolute"}}>
+            <Text style={{ fontFamily: Fonts.bold_i, color: "#d9d9d9", fontSize: 16, marginLeft: 3 }}>
+              {pin.users?.username || "No username available"}'s Pin
+            </Text>
+          </View>
+        )}
+
         <View style={{ marginHorizontal: 16 }}>
           {/* Title */}
           <View
@@ -311,22 +321,24 @@ export default function PinPage() {
           <Text style={styles.subtitle}>Friends Who Have Visited</Text>
           <View style={{ marginHorizontal: -16 }}>
             {friends?.length === 0 && (
-                <View style={[styles.cardFullRow, {width: "92%", alignSelf: "center"}]}>
-                  <Text style={styles.boxText}>
-                    None of your friends share this pin yet
-                  </Text>
-                </View>
-              )}
+              <View
+                style={[
+                  styles.cardFullRow,
+                  { width: "92%", alignSelf: "center" },
+                ]}
+              >
+                <Text style={styles.boxText}>
+                  None of your friends share this pin yet
+                </Text>
+              </View>
+            )}
             <ScrollView
               horizontal
               style={styles.cardRow}
               contentContainerStyle={{ paddingHorizontal: 16, gap: 10 }}
             >
               {friends?.map((friend) => (
-                <Pressable
-                  key={friend?.user_id}
-                  style={styles.cardPartialRow}
-                >
+                <Pressable key={friend?.user_id} style={styles.cardPartialRow}>
                   <View
                     style={{
                       flexDirection: "column",
@@ -383,9 +395,7 @@ export default function PinPage() {
           {notes?.length! > 0 && (
             <FlatList
               data={notes}
-              keyExtractor={(item, index) =>
-                `${item.user_id}-${index}`
-              }
+              keyExtractor={(item, index) => `${item.user_id}-${index}`}
               scrollEnabled={false}
               contentContainerStyle={{ gap: 10 }}
               renderItem={({ item }) => (
@@ -412,7 +422,7 @@ export default function PinPage() {
                       {item.users?.username ?? "Unknown user"}
                     </Text>
 
-                    <Text style={[styles.boxText, {marginLeft: 15}]}>
+                    <Text style={[styles.boxText, { marginLeft: 15 }]}>
                       {item.user_note || "No note added"}
                     </Text>
                   </View>
