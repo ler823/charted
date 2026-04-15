@@ -3,6 +3,8 @@ import { supabase } from "@/lib/supabase";
 import React, { useEffect, useState } from "react";
 import { StyleSheet, View, Text } from "react-native";
 import LoadingPage from "./loading-page";
+import Svg, { Path } from "react-native-svg";
+
 interface PinMarkerProps {
   color?: string;
   users_id: number[];
@@ -27,14 +29,34 @@ const COLORS = [
         "#5a3a23"
     ]
 
-function getUserColor(userId: string | number): string {
+function getUserColor(userId: string | number, defaultColor: string): string {
   const str = String(userId);
+
+  if (userId === 4) return defaultColor;
+
   let hash = 0;
   for (let i = 0; i < str.length; i++) {
     hash = str.charCodeAt(i) + ((hash << 5) - hash);
   }
 
   return COLORS[Math.abs(hash) % COLORS.length];
+}
+
+function createSlicePath(cx: number, cy: number, r: number, startAngle: number, endAngle: number) {
+  const rad = (deg: number) => (deg * Math.PI) / 180;
+
+  const x1 = cx + r * Math.cos(rad(startAngle));
+  const y1 = cy + r * Math.sin(rad(startAngle));
+
+  const x2 = cx + r * Math.cos(rad(endAngle));
+  const y2 = cy + r * Math.sin(rad(endAngle));
+
+  return `
+    M ${cx} ${cy}
+    L ${x1} ${y1}
+    A ${r} ${r} 0 0 1 ${x2} ${y2}
+    Z
+  `;
 }
 
 /**
@@ -46,39 +68,100 @@ export default function SharedPinMarkers({
   users_id,
   number_shared,
 }: PinMarkerProps) {
-    const [friend, setFriend] = useState(0);
+    const [friend, setFriend] = useState<number[]>([]);
     
     useEffect(() => {
       if (users_id?.length) {
-        setFriend(users_id[0]);
+        setFriend(users_id);
       }
     }, [users_id]);
     
-    const user_color = friend !== 0
-        ? getUserColor(String(friend))
-        : color;
+    const userColors = friend.map((id) => getUserColor(id, color));
   
-  return (
-    <View style={styles.wrapper}>
-      <View style={[styles.outer, { backgroundColor: user_color }]}>
-        <View style={styles.avatar}>
-            <Text style={styles.avatarInitial}>{number_shared}</Text>
+  if (users_id.length === 2) {
+    return (
+      <View style={styles.wrapper}>
+        <View style={styles.pinRow}>
+          <View style={[styles.leftHalf, { backgroundColor: userColors[0] ?? color }]} />
+          <View style={[styles.rightHalf, { backgroundColor: userColors[1] ?? color }]} />
+            <View style={styles.avatar}>
+              <Text style={styles.avatarInitial}>{number_shared}</Text>
+            </View>
         </View>
+        <View style={styles.stem} />
+        <View style={{height: 62}}/>
       </View>
-      <View style={styles.stem} />
-      <View style={{height: 62}}/>
-    </View>
-  );
+    );
+  }
+
+  else if (users_id.length === 3) {
+    const size = 42;
+    const r = size / 2;
+    const cx = r;
+    const cy = r;
+
+    return (
+      <View style={styles.wrapper}>
+        <View style={{ width: size, height: size }}>
+          <Svg width={size} height={size} style={{ transform: [{ rotate: "-90deg" }] }}>
+            <Path d={createSlicePath(cx, cy, r, 0, 120)} fill={userColors[0] ?? color} />
+            <Path d={createSlicePath(cx, cy, r, 120, 240)} fill={userColors[1] ?? color} />
+            <Path d={createSlicePath(cx, cy, r, 240, 360)} fill={userColors[2] ?? color} />
+          </Svg>
+
+          <View style={styles.avatar}>
+            <Text style={styles.avatarInitial}>{number_shared}</Text>
+          </View>
+        </View>
+
+        <View style={styles.stem} />
+        <View style={{ height: 62 }} />
+      </View>
+    );
+  }
+
+  else {
+    return (
+      <View style={styles.wrapper}>
+        <View style={styles.pinQuarterRow}>
+          <View style={[styles.leftTop, { backgroundColor: userColors[0] ?? color }]} />
+          <View style={[styles.rightTop, { backgroundColor: userColors[1] ?? color }]} />
+          <View style={styles.quarterAvatar}>
+            <Text style={styles.avatarInitial}>{number_shared}</Text>
+          </View>
+        </View>
+        <View style={styles.pinQuarterRow}>
+          <View style={[styles.leftBottom, { backgroundColor: userColors[2] ?? color }]} />
+          <View style={[styles.rightBottom, { backgroundColor: userColors[3] ?? color }]} />
+        </View>
+        <View style={styles.stem} />
+        <View style={{height: 62}}/>
+      </View>
+    );
+  }
 }
 
-/**
- * Not sure if the sizing is right.
- * NOTE: Pin looks bigger on actual Expo app
- */
+
 const styles = StyleSheet.create({
   wrapper: {
     alignItems: "center",
     justifyContent: "flex-end",
+  },
+  pinRow: {
+    flexDirection: "row",
+    width: 42,
+    height: 42,
+    position: "relative",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  pinQuarterRow: {
+    flexDirection: "row",
+    width: 21,
+    height: 21,
+    position: "relative",
+    alignItems: "center",
+    justifyContent: "center",
   },
   outer: {
     width: 42,
@@ -87,6 +170,63 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  leftHalf: {
+    width: 21,
+    height: 42,
+    borderTopLeftRadius: 22,
+    borderBottomLeftRadius: 22,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  rightHalf: {
+    width: 21,
+    height: 42,
+    borderTopRightRadius: 22,
+    borderBottomRightRadius: 22,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  leftTop: {
+    width: 21,
+    height: 21,
+    borderTopLeftRadius: 22,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  rightTop: {
+    width: 21,
+    height: 21,
+    borderTopRightRadius: 22,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  leftBottom: {
+    width: 21,
+    height: 21,
+    borderBottomLeftRadius: 22,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  rightBottom: {
+    width: 21,
+    height: 21,
+    borderBottomRightRadius: 22,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  slice: {
+    position: "absolute",
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    overflow: "hidden",
+  },
+  half: {
+    position: "absolute",
+    width: 21,
+    height: 42,
+    right: 0,
+  },
   avatar: {
     width: 30,
     height: 30,
@@ -94,6 +234,21 @@ const styles = StyleSheet.create({
     backgroundColor: "#fefbea",
     alignItems: "center",
     justifyContent: "center",
+    position: "absolute",
+    top: 6,
+    left: 6,
+    zIndex: 22,
+  },
+  quarterAvatar: {
+    width: 30,
+    height: 30,
+    borderRadius: 16,
+    backgroundColor: "#fefbea",
+    alignItems: "center",
+    justifyContent: "center",
+    position: "absolute",
+    top: 6,
+    zIndex: 22,
   },
   stem: {
     width: 4,

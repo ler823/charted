@@ -33,6 +33,9 @@ type Pin = {
   user_note: string | null;
   name: string | null;
   address: string | null;
+  users: {
+    username: string | null;
+  } | null;
   pin_tags:
     | {
         tags: {
@@ -100,6 +103,7 @@ export default function PinPage() {
           .from("pins")
           .select(
             `*,
+            users(username),
             pin_tags(tags( tag_id, name )),
             pin_lists(lists( list_id, name )),
             pin_visits( visit_id, visit_timestamp ),
@@ -269,6 +273,14 @@ export default function PinPage() {
           placeholder={"blur"}
           placeholderContentFit="cover"
         />
+
+        {pin.user_id !== 4 && (
+          <View style={{backgroundColor: "#243e36", padding: 7, paddingRight: 14, alignSelf: "flex-start", borderTopRightRadius: 16, top: 167, position: "absolute"}}>
+            <Text style={{ fontFamily: Fonts.bold_i, color: "#d9d9d9", fontSize: 16, marginLeft: 3 }}>
+              {pin.users?.username || "No username available"}'s Pin
+            </Text>
+          </View>
+        )}
 
         <View style={{ marginHorizontal: 16 }}>
           {/* Title */}
