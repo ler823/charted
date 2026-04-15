@@ -189,7 +189,7 @@ export default function Lists() {
         <View style={styles.searchBar}>
           <TextInput
             style={styles.searchText}
-            placeholder="Search"
+            placeholder="Find a list"
             placeholderTextColor="#fefbea"
             value={searchQuery}
             onChangeText={setSearchQuery}
@@ -338,6 +338,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 12,
     margin: 15,
+    marginTop: 6,
   },
   button: {
     backgroundColor: "#243e36",
@@ -356,14 +357,14 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     fontFamily: Fonts.bold,
-    color: "#d9d9d9",
+    color: "#fefbea",
     fontSize: 16
   },
   searchRow: {
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingVertical: 10,
     gap: 10,
 
   },
@@ -373,6 +374,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: Colors.light.accent,
     borderRadius: 999,
+    height: 40,
     paddingHorizontal: 14,
     paddingVertical: 9,
     gap: 8,
@@ -384,7 +386,7 @@ const styles = StyleSheet.create({
   },
   searchText: {
     flex: 1,
-    fontSize: 15,
+    fontSize: 16,
     color: "#fefbea",
     fontFamily: Fonts.bold,
   },
@@ -393,6 +395,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: Colors.light.accent,
     borderRadius: 999,
+    height: 40,
     paddingHorizontal: 14,
     paddingVertical: 9,
     gap: 5,
@@ -403,7 +406,7 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   sortText: {
-    fontSize: 14,
+    fontSize: 16,
     fontFamily: Fonts.bold,
     color: "#fefbea",
   },

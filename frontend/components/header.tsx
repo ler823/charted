@@ -69,7 +69,7 @@ export default function Header({
             <TextInput
               style={styles.searchInput}
               placeholder="Find a place"
-              placeholderTextColor="#fefbea99"
+              placeholderTextColor="#fefbea"
               value={query}
               onChangeText={setQuery}
               onFocus={() => setIsFocused(true)}

@@ -83,7 +83,7 @@ export default function Friends() {
         <View style={styles.searchBar}>
           <TextInput
             style={styles.searchText}
-            placeholder="Search"
+            placeholder="Find a friend"
             placeholderTextColor="#fefbea"
             value={searchQuery}
             onChangeText={setSearchQuery}
@@ -98,7 +98,7 @@ export default function Friends() {
         <Pressable style={styles.notifBtn} onPress={() => router.push("./friend-notifications")}>
           <Ionicons
             name="notifications-outline"
-            size={33}
+            size={36}
             color={Colors.light.background}
           />
           <View style={styles.notifBadge} />
@@ -161,7 +161,7 @@ const styles = StyleSheet.create({
   Styling for the add button and notification button
   */
   header: {
-    paddingTop: 64,
+    paddingTop: 60,
     paddingBottom: 18,
     paddingHorizontal: 16,
     flexDirection: "row",
@@ -197,8 +197,8 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: 0,
     right: 0,
-    width: 11,
-    height: 11,
+    width: 13,
+    height: 13,
     borderRadius: 999,
     backgroundColor: "#e53935",
     borderWidth: 1.5,
@@ -221,6 +221,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.light.accent,
     borderRadius: 999,
     paddingHorizontal: 14,
+    height: 40,
     paddingVertical: 9,
     gap: 8,
     shadowColor: "#000",
@@ -231,7 +232,7 @@ const styles = StyleSheet.create({
   },
   searchText: {
     flex: 1,
-    fontSize: 15,
+    fontSize: 16,
     color: "#fefbea",
     fontFamily: Fonts.bold,
   },
@@ -248,9 +249,10 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 2,
     elevation: 4,
+    height: 40,
   },
   sortText: {
-    fontSize: 14,
+    fontSize: 16,
     fontFamily: Fonts.bold,
     color: "#fefbea",
   },
