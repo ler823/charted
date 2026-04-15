@@ -338,7 +338,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 12,
     margin: 15,
-    marginTop: 6,
+    marginTop: 5,
   },
   button: {
     backgroundColor: "#243e36",

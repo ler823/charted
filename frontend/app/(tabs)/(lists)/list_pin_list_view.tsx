@@ -185,7 +185,7 @@ export default function ListPinListView() {
         data={filteredPins}
         keyExtractor={(item) => item.id}
         ListEmptyComponent={(
-          <Text style={styles.text}>You have not added any pins to this list</Text>
+          <Text style={styles.text}>There are no pins in this list</Text>
         )}
         contentContainerStyle={styles.listContent}
         renderItem={({ item }) => (
@@ -263,7 +263,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 0,
     position: "relative",
-    paddingVertical: 15,
+    paddingVertical: 5,
     paddingRight: 16,
     paddingLeft: 16,
     zIndex: 10,
@@ -277,7 +277,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingVertical: 10,
     gap: 10,
 
   },
@@ -287,6 +287,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: Colors.light.accent,
     borderRadius: 999,
+    height: 40,
     paddingHorizontal: 14,
     paddingVertical: 9,
     gap: 8,
@@ -298,7 +299,7 @@ const styles = StyleSheet.create({
   },
   searchText: {
     flex: 1,
-    fontSize: 15,
+    fontSize: 16,
     color: "#fefbea",
     fontFamily: Fonts.bold,
   },
@@ -307,6 +308,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: Colors.light.accent,
     borderRadius: 999,
+    height: 40,
     paddingHorizontal: 14,
     paddingVertical: 9,
     gap: 5,
@@ -317,7 +319,7 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   sortText: {
-    fontSize: 14,
+    fontSize: 16,
     fontFamily: Fonts.bold,
     color: "#fefbea",
   },
