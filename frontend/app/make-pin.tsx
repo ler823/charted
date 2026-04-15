@@ -1596,6 +1596,7 @@ const styles = StyleSheet.create({
     gap: 8,
     width: "33.33%",
     paddingVertical: 6,
+    paddingRight: 8,
   },
   checkbox: {
     width: 20,
@@ -1615,7 +1616,7 @@ const styles = StyleSheet.create({
     color: "#333",
     textTransform: "capitalize",
     fontFamily: Fonts.regular,
-    maxWidth: 90,
+    flex: 1,
   },
   starRow: {
     flexDirection: "row",
