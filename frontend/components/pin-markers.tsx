@@ -25,18 +25,12 @@ const COLORS = [
         "#d47eaa",
         "#8c4067",
         "#d54c4c",
-        "#7f2020",
         "#ec9055",
-        "#aa5823",
-        "#d3c777",
         "#b19e24",
         "#3c6844",
         "#7ed4d1",
         "#2c716f",
         "#b87ed4",
-        "#6a3a81",
-        "#8c694f",
-        "#5a3a23"
     ]
 
 function getUserColor(userId: string | number): string {

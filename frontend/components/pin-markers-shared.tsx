@@ -11,7 +11,8 @@ interface PinMarkerProps {
   number_shared: number;
 }
 
-const COLORS = [
+{/* Old colors:
+  const COLORS = [
         "#d47eaa",
         "#8c4067",
         "#d54c4c",
@@ -27,6 +28,19 @@ const COLORS = [
         "#6a3a81",
         "#8c694f",
         "#5a3a23"
+    ]
+ */}
+
+const COLORS = [
+        "#d47eaa",
+        "#8c4067",
+        "#d54c4c",
+        "#ec9055",
+        "#b19e24",
+        "#3c6844",
+        "#7ed4d1",
+        "#2c716f",
+        "#b87ed4",
     ]
 
 function getUserColor(userId: string | number, defaultColor: string): string {
