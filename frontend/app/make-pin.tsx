@@ -11,7 +11,7 @@ import { supabase } from "@/lib/supabase";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Alert,
   FlatList,
@@ -70,6 +70,7 @@ export default function MakePin() {
   const ADDRESS_MAX = 100;
   const [nameError, setNameError] = useState("");
   const [addressError, setAddressError] = useState("");
+  const [duplicateAddressError, setDuplicateAddressError] = useState("");
   const [coverPhotoUrl, setCoverPhotoUrl] = useState("");
   const [coverPhotoKey, setCoverPhotoKey] = useState("");
   const [rating, setRating] = useState(0);
@@ -103,6 +104,9 @@ export default function MakePin() {
   const [photoToDelete, setPhotoToDelete] = useState<PhotoItem | null>(null);
   const [photosToDelete, setPhotosToDelete] = useState<PhotoItem[]>([]);
   const scrollRef = React.useRef<KeyboardAwareScrollView>(null);
+  const duplicateCheckTimer = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
   let originalName = "";
   let originalAddress = "";
   let originalRating = 0;
@@ -110,6 +114,63 @@ export default function MakePin() {
   let originalPrivacy = false;
   let inserted_pin_id = 0;
   const { userCoords } = useLocation();
+
+  // Check if the user already has a pin saved with the given address.
+  // Excludes the current pin when editing so the existing address doesn't
+  // trigger a false positive on itself.
+  const checkDuplicateAddress = async (addressToCheck: string) => {
+    if (!addressToCheck.trim()) {
+      setDuplicateAddressError("");
+      return;
+    }
+
+    const { data: userData, error: userError } = await supabase
+      .from("users")
+      .select("user_id")
+      .eq("username", "TimTimTim")
+      .single();
+
+    if (userError || !userData) return;
+
+    let query = supabase
+      .from("pins")
+      .select("name, pin_id")
+      .eq("user_id", userData.user_id)
+      .eq("address", addressToCheck);
+
+    // When editing, exclude the current pin so its own address doesn't trigger
+    if (isEdit && pinId) {
+      query = query.neq("pin_id", pinId);
+    }
+
+    const { data, error } = await query.limit(1);
+
+    if (error) return;
+
+    if (data && data.length > 0) {
+      setDuplicateAddressError(
+        `You already have this address saved as: ${data[0].name}`,
+      );
+    } else {
+      setDuplicateAddressError("");
+    }
+  };
+
+  // Debounce duplicate address checks so we don't fire on every keystroke
+  useEffect(() => {
+    if (duplicateCheckTimer.current) {
+      clearTimeout(duplicateCheckTimer.current);
+    }
+    duplicateCheckTimer.current = setTimeout(() => {
+      checkDuplicateAddress(address);
+    }, 400);
+
+    return () => {
+      if (duplicateCheckTimer.current) {
+        clearTimeout(duplicateCheckTimer.current);
+      }
+    };
+  }, [address]);
 
   const togglePrivacy = () => {
     setIsPrivate((previousState) => !previousState);
@@ -1015,6 +1076,8 @@ export default function MakePin() {
     return <LoadingPage />;
   }
 
+  const saveDisabled = !name || !!duplicateAddressError;
+
   return (
     <View style={{ flex: 1 }}>
       <View style={styles.topBar}>
@@ -1023,8 +1086,12 @@ export default function MakePin() {
         </Pressable>
 
         <Pressable
-          style={styles.saveBtn}
-          onPress={() => (isEdit ? updatePin() : createPin())}
+          style={[styles.saveBtn, saveDisabled && styles.saveBtnDisabled]}
+          onPress={() => {
+            if (!saveDisabled) {
+              isEdit ? updatePin() : createPin();
+            }
+          }}
         >
           <Text style={styles.saveText}>Save</Text>
         </Pressable>
@@ -1142,7 +1209,9 @@ export default function MakePin() {
                           scrollRef.current?.scrollToFocusedInput(event.target),
                         style: [
                           styles.input,
-                          addressError ? styles.inputError : null,
+                          addressError || duplicateAddressError
+                            ? styles.inputError
+                            : null,
                         ],
                       }}
                       styles={addressInputStyles}
@@ -1150,6 +1219,11 @@ export default function MakePin() {
 
                     {addressError ? (
                       <Text style={styles.errorText}>{addressError}</Text>
+                    ) : null}
+                    {duplicateAddressError ? (
+                      <Text style={styles.errorText}>
+                        {duplicateAddressError}
+                      </Text>
                     ) : null}
                   </View>
                 </View>
@@ -1514,6 +1588,11 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 2,
     elevation: 4,
+  },
+  saveBtnDisabled: {
+    backgroundColor: "#888",
+    shadowOpacity: 0,
+    elevation: 0,
   },
   saveText: {
     color: "#fff",
