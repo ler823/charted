@@ -173,8 +173,10 @@ export default function PinPage() {
 
   useEffect(() => {
     async function fetchUsers() {
-      if (!cluster || !pin) return;
+      if (!cluster || !pin?.user_id) return;
       if (!cluster?.user_ids?.length) return;
+
+      setFriends(null);
 
       const filteredUserIds =
         cluster?.user_ids?.filter((id) => id !== pin?.user_id) ?? [];
@@ -187,7 +189,9 @@ export default function PinPage() {
       if (!data) return;
       
       const enriched = await Promise.all(
-        data.map(async (user) => {
+        data
+        .filter((user) => user.user_id !== pin.user_id)
+        .map(async (user) => {
           const key = user.photos?.key;
 
           let avatarUrl = null;
@@ -206,11 +210,14 @@ export default function PinPage() {
       setFriends(enriched);
     }
     fetchUsers();
-  }, [cluster, pin]);
+  }, [cluster, pin?.user_id]);
 
   useEffect(() => {
     async function fetchUserNotes() {
       if (!cluster?.pin_ids?.length) return;
+      if (!cluster || !pin?.user_id) return;
+
+      setNotes(null);
 
       const filteredPinIds =
         cluster?.pin_ids?.filter((id) => id !== pin?.pin_id) ?? [];
@@ -220,21 +227,23 @@ export default function PinPage() {
         .select("user_id, user_note, users:user_id( username, photos:photo_id(key) )")
         .in("pin_id", filteredPinIds ?? []);
 
-        const normalized = (data ?? []).map((row) => {
-          const user = Array.isArray(row.users)
-            ? row.users[0]
-            : row.users;
+        const normalized = (data ?? [])
+          .filter((row) => row.user_id !== pin.user_id)
+          .map((row) => {
+            const user = Array.isArray(row.users)
+              ? row.users[0]
+              : row.users;
 
-          const key = user?.photos?.key ?? null;
+            const key = user?.photos?.key ?? null;
 
-          return {
-            user_id: row.user_id,
-            user_note: row.user_note,
-            users: user ?? null,
-            avatarKey: key,
-            avatarUrl: null,
-          };
-        });
+            return {
+              user_id: row.user_id,
+              user_note: row.user_note,
+              users: user ?? null,
+              avatarKey: key,
+              avatarUrl: null,
+            };
+          });
 
       const enriched = await Promise.all(
         normalized.map(async (item) => {
@@ -259,7 +268,7 @@ export default function PinPage() {
       }
     }
     fetchUserNotes();
-  }, [cluster, pin]);
+  }, [cluster, pin?.user_id]);
 
   if (!pin || !friends) {
     return <LoadingPage />;
