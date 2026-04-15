@@ -5,6 +5,7 @@ import { FlatList, Pressable, StyleSheet, View, Text } from "react-native";
 import ListCard from "../(tabs)/(home)/list_card";
 import { Ionicons } from "@expo/vector-icons";
 import { supabase } from "@/lib/supabase";
+import LoadingPage from "@/components/loading-page";
 
 type Props = {
   pins: Pin[];
@@ -25,6 +26,7 @@ export default function ClusterSelect() {
     const { selectid, userIds, name } = useLocalSearchParams();
     const router = useRouter();
     const [clusterPins, setClusterPins] = useState<Pin[]>([]);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
     async function fetchClusterPins() {
@@ -53,10 +55,13 @@ export default function ClusterSelect() {
         }));
 
         setClusterPins(formattedPins);
+        setLoading(false);
     }
 
     fetchClusterPins();
     }, [selectid]);
+  
+  if (loading) return <LoadingPage />;
 
   return (
     <View>
