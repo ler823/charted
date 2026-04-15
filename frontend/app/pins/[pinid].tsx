@@ -471,7 +471,7 @@ export default function PinPage() {
             style={[
               styles.cardFullRow,
               {
-                height: 200,
+                //height: 200,
                 flexDirection: "column",
                 alignItems: "flex-start",
               },
@@ -479,7 +479,7 @@ export default function PinPage() {
           >
             <ScrollView>
               {pin.pin_visits?.length === 0 && (
-                <Text style={[styles.boxText, { marginTop: 10 }]}>
+                <Text style={[styles.boxText, { marginTop: 20 }]}>
                   You have no logged visits
                 </Text>
               )}
