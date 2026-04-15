@@ -34,7 +34,7 @@ export default function PinListView({ pins }: Props) {
               })
             }
           >
-            <ListCard pinId={String(item.pinIds?.[0])} name={item.name} loc={item.address} />
+            <ListCard pinId={String(item.pinIds?.[0])} name={item.name} loc={item.address} userIds={item.userIds} />
           </Pressable>
         )}
         ListEmptyComponent={

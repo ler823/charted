@@ -11,8 +11,58 @@ type Props = {
   pins: Pin[];
 };
 
+type FriendAvatar = {
+  user_id: number;
+  username: string;
+  avatarUrl?: string | null;
+};
+
 function GridCard({ item }: { item: Pin }) {
   const [coverPhoto, setCoverPhoto] = useState<string | null>(null);
+  const [friendAvatars, setFriendAvatars] = useState<FriendAvatar[]>([]);
+
+  useEffect(() => {
+    async function fetchFriendAvatars() {
+      if (!item.userIds?.length) {
+        setFriendAvatars([]);
+        return;
+      }
+
+      if (item.userIds.length === 1 && item.userIds[0] === 4) {
+        setFriendAvatars([]);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from("users")
+        .select("user_id, username, photos:photo_id(key)")
+        .in("user_id", item.userIds)
+        .limit(5);
+
+      if (error || !data) return;
+
+      const enriched = await Promise.all(
+        data.map(async (user) => {
+          const key = user.photos?.key;
+
+          let avatarUrl = null;
+          if (key) {
+            const urls = await getPhotoUrl([key]);
+            avatarUrl = urls?.[0]?.url ?? null;
+          }
+
+          return {
+            ...user,
+            avatarUrl,
+          };
+        })
+      );
+
+      setFriendAvatars(enriched);
+    }
+
+    fetchFriendAvatars();
+  }, [item.userIds]);
 
   useEffect(() => {
     setCoverPhoto(null);
@@ -49,7 +99,7 @@ function GridCard({ item }: { item: Pin }) {
             })
           }
         >
-          <View style={styles.imgPlaceholder}>
+          <View style={[styles.imgPlaceholder, { position: "relative" }]}>
             <Image
               source={
                 coverPhoto
@@ -61,6 +111,25 @@ function GridCard({ item }: { item: Pin }) {
               transition={300}
               placeholder="blur"
             />
+            {friendAvatars.length > 0 && (
+              <View style={styles.friendsRow}>
+                {friendAvatars.map((friend) => (
+                  <View key={friend.user_id} style={styles.friendAvatar}>
+                    {friend.avatarUrl ? (
+                      <Image
+                        source={{ uri: friend.avatarUrl }}
+                        style={StyleSheet.absoluteFill}
+                        contentFit="cover"
+                      />
+                    ) : (
+                      <Text style={styles.friendInitial}>
+                        {friend.username?.[0]?.toUpperCase()}
+                      </Text>
+                    )}
+                  </View>
+                ))}
+              </View>
+            )}
           </View>
 
           <View style={styles.textContainer}>
@@ -112,6 +181,33 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     marginBottom: 12,
     paddingHorizontal: 5,
+  },
+
+  friendsRow: {
+    position: "absolute",
+    bottom: 5,
+    right: 5,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+
+  friendAvatar: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: "#d8d8d8",
+    borderWidth: 1.5,
+    borderColor: "#fff",
+    alignItems: "center",
+    justifyContent: "center",
+    overflow: "hidden",
+    marginLeft: -6,
+  },
+
+  friendInitial: {
+    fontSize: 9,
+    fontFamily: Fonts.regular,
+    color: "#000",
   },
 
   shadowWrapper: {

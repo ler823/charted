@@ -229,6 +229,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     overflow: "hidden",
+    marginLeft: -6,
   },
   friendInitial: {
     fontSize: 10,
