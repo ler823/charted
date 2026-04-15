@@ -16,7 +16,7 @@ import PinOverlay from "@/components/pin-overlay";
 import { useDroppingPin } from "@/context/DroppingPinContext";
 import { useLocation } from "@/hooks/use-location";
 import { Coords, Pin, ViewMode, ViewOption } from "@/types/types";
-import { useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams, useFocusEffect } from "expo-router";
 import { setPinChanged } from "../../../lib/pin_refresh_data";
 
 const CSULB = {
@@ -52,7 +52,7 @@ export default function Home() {
   const [region, setRegion] = useState(INITIAL_REGION);
   const [friends, setFriends] = useState<Friend[]>([]);
 
-  useEffect(() => {
+  useFocusEffect(() => {
     async function fetchFriends() {
       const { data, error } = await supabase
         .from("user_relationships")
@@ -112,7 +112,7 @@ export default function Home() {
 
     setPinChanged(true);
     fetchFriends();
-  }, []); // ✅ useEffect now correctly receives the empty array
+  });
 
   return (
     <View style={styles.container}>
