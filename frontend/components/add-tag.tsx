@@ -196,18 +196,19 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
   },
   titleContainer: {
-    height: '16%',
+    //height: '16%',
     backgroundColor: '#ffffff',
     borderRadius: 10,
     paddingHorizontal: 20,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    margin: 16,
   },
   title: {
     color: '#000000',
     fontSize: 16,
-    fontFamily: Fonts.regular
+    fontFamily: Fonts.regular,
   },
   modalOverlay: {
     flex: 1,
@@ -228,6 +229,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 2,
     elevation: 4,
+    marginBottom: 16,
   },
   dismissArea: {
     flex: 1,
@@ -242,7 +244,7 @@ const styles = StyleSheet.create({
     padding: "5%"
   },
   inputContainer: {
-    flex: 1,
+    //flex: 1,
     justifyContent: "center"
   },
   cancelBtn: {

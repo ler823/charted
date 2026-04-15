@@ -135,7 +135,8 @@ export default function AddPinToList({ isVisible, onClose, onSave, listId, pinsI
 
 const styles = StyleSheet.create({
   modalContent: {
-    height: "85%",
+    //height: "85%",
+    flex: 0.75,
     width: "95%",
     backgroundColor: '#ffffff',
     borderRadius: 18,
