@@ -123,7 +123,8 @@ export default function PinPage() {
         if (
           myPin == null ||
           myPin.pin_photos?.[0] == null ||
-          myPin.pin_photos?.[0].photos?.key == ""
+          myPin.pin_photos?.[0].photos?.key == "" ||
+          myPin.pin_photos.length === 0
         ) {
           setCoverPhoto("");
           return;
@@ -134,6 +135,13 @@ export default function PinPage() {
         const otherPhotoKeys = myPin.pin_photos
           ?.filter((pin_photo) => !pin_photo.cover)
           .flatMap((pin_photo) => pin_photo.photos?.key);
+
+        if (!coverPhotoKey.length) {
+          setCoverPhoto(null);
+          setPhotoList([]);
+          return;
+        }
+
         const coverPhotoUri = (await getPhotoUrl(coverPhotoKey))[0].url;
         const otherPhotoUris = (await getPhotoUrl(otherPhotoKeys)).flatMap(
           (otherPhoto) => otherPhoto.url,
@@ -253,7 +261,7 @@ export default function PinPage() {
     fetchUserNotes();
   }, [cluster, pin]);
 
-  if (!pin || !friends || coverPhoto == null) {
+  if (!pin || !friends) {
     return <LoadingPage />;
   }
 
