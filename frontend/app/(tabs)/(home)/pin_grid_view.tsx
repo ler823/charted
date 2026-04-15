@@ -20,6 +20,7 @@ type FriendAvatar = {
 function GridCard({ item }: { item: Pin }) {
   const [coverPhoto, setCoverPhoto] = useState<string | null>(null);
   const [friendAvatars, setFriendAvatars] = useState<FriendAvatar[]>([]);
+  const [extraCount, setExtraCount] = useState(0);
 
   useEffect(() => {
     async function fetchFriendAvatars() {
@@ -37,12 +38,15 @@ function GridCard({ item }: { item: Pin }) {
         .from("users")
         .select("user_id, username, photos:photo_id(key)")
         .in("user_id", item.userIds)
-        .limit(5);
+        .limit(3);
 
       if (error || !data) return;
 
+      const limitedData = data.slice(0, 3);
+      setExtraCount(Math.max(0, item.userIds.length - limitedData.length));
+
       const enriched = await Promise.all(
-        data.map(async (user) => {
+        limitedData.map(async (user) => {
           const key = user.photos?.key;
 
           let avatarUrl = null;
@@ -92,12 +96,26 @@ function GridCard({ item }: { item: Pin }) {
     <View style={styles.shadowWrapper}>
       <View style={styles.card}>
         <Pressable
-          onPress={() =>
-            router.push({
-              pathname: "/pins/[pinid]",
-              params: { pinid: String(item.pinIds?.[0]) },
-            })
-          }
+          onPress={() => {
+            const pinId = item.pinIds?.[0];
+            if (!pinId) return;
+
+            if (item.isShared) {
+              router.push({
+                pathname: "/select-pins/[selectid]",
+                params: {
+                  selectid: JSON.stringify(item.pinIds),
+                },
+              });
+            } else {
+              router.push({
+                pathname: "/pins/[pinid]",
+                params: {
+                  pinid: String(pinId),
+                },
+              });
+            }
+          }}
         >
           <View style={[styles.imgPlaceholder, { position: "relative" }]}>
             <Image
@@ -128,6 +146,11 @@ function GridCard({ item }: { item: Pin }) {
                     )}
                   </View>
                 ))}
+                {extraCount > 0 && (
+                  <View style={styles.moreAvatar}>
+                    <Text style={styles.moreText}>+{extraCount}</Text>
+                  </View>
+                )}
               </View>
             )}
           </View>
@@ -267,5 +290,21 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.regular,
     fontSize: 14,
     color: "#243e36",
+  },
+  moreAvatar: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: "#7CA982",
+    alignItems: "center",
+    justifyContent: "center",
+    marginLeft: -6,
+    borderWidth: 1.5,
+    borderColor: "#fff",
+  },
+  moreText: {
+    fontSize: 9,
+    color: "#fefbea",
+    fontFamily: Fonts.bold,
   },
 });

@@ -22,6 +22,7 @@ type FriendAvatar = {
 export default function ListCard({ pinId, name, loc, editList, userIds }: Props) {
   const [coverPhoto, setCoverPhoto] = useState<string | null>(null);
   const [friendAvatars, setFriendAvatars] = useState<FriendAvatar[]>([]);
+  const [extraCount, setExtraCount] = useState(0);
 
   useEffect(() => {
     async function fetchFriendAvatars() {
@@ -43,8 +44,11 @@ export default function ListCard({ pinId, name, loc, editList, userIds }: Props)
 
       if (!data) return;
 
+      const limitedData = data.slice(0, 3);
+      setExtraCount(Math.max(0, userIds.length - limitedData.length));
+
       const enriched = await Promise.all(
-        data.map(async (user) => {
+        limitedData.map(async (user) => {
           const key = user.photos?.key;
 
           let avatarUrl = null;
@@ -130,6 +134,11 @@ export default function ListCard({ pinId, name, loc, editList, userIds }: Props)
                   )}
                 </View>
               ))}
+              {extraCount > 0 && (
+                <View style={styles.moreAvatar}>
+                  <Text style={styles.moreText}>+{extraCount}</Text>
+                </View>
+              )}
             </View>
           )}
         </View>
@@ -146,7 +155,6 @@ const styles = StyleSheet.create({
     aspectRatio: 1,
     borderRadius: 9,
   },
-
   card: {
     backgroundColor: "#DEE9E0",
     padding: 12,
@@ -162,20 +170,17 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
     elevation: 4,
   },
-
   textContainer: {
     flex: 1,
     marginLeft: 15,
     justifyContent: "center",
   },
-
   cardTitle: {
     fontFamily: Fonts.bold,
     fontSize: 17,
     paddingBottom: 1,
     flexShrink: 1,
   },
-
   cardLoc: {
     fontFamily: Fonts.regular,
     fontSize: 12,
@@ -201,13 +206,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
   },
-
   friendsRow: {
     flexDirection: "row",
     alignItems: "center",
     marginLeft: 8,
   },
-
   friendAvatar: {
     width: 20,
     height: 20,
@@ -220,10 +223,25 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     marginLeft: -6,
   },
-
   friendInitial: {
     fontSize: 9,
     fontFamily: Fonts.regular,
     color: "#000",
+  },
+  moreAvatar: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: "#7CA982",
+    alignItems: "center",
+    justifyContent: "center",
+    marginLeft: -6,
+    borderWidth: 1.5,
+    borderColor: "#fff",
+  },
+  moreText: {
+    fontSize: 9,
+    color: "#fefbea",
+    fontFamily: Fonts.bold,
   },
 });

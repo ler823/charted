@@ -11,8 +11,6 @@ type Props = {
 
 export default function PinListView({ pins }: Props) {
   const router = useRouter();
-  // const {cards} = useCards()
-  // this is the context that should be set up with the database for viewing card locations. tutorial #22 i think for how to set it up
 
   return (
     <View>
@@ -22,21 +20,39 @@ export default function PinListView({ pins }: Props) {
         data={pins}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContent}
-        renderItem={({ item }) => (
-          <Pressable
-            style={styles.cards}
-            onPress={() =>
+        renderItem={({ item }) => {
+          const pinId = item.pinIds?.[0];
+          if (!pinId) return null;
+
+          const handlePress = () => {
+            if (item.isShared) {
+              router.push({
+                pathname: "/select-pins/[selectid]",
+                params: {
+                  selectid: JSON.stringify(item.pinIds),
+                },
+              });
+            } else {
               router.push({
                 pathname: "/pins/[pinid]",
                 params: {
-                  pinid: String(item.pinIds?.[0]),
+                  pinid: String(pinId),
                 },
-              })
+              });
             }
-          >
-            <ListCard pinId={String(item.pinIds?.[0])} name={item.name} loc={item.address} userIds={item.userIds} />
-          </Pressable>
-        )}
+          };
+
+          return (
+            <Pressable style={styles.cards} onPress={handlePress}>
+              <ListCard
+                pinId={String(pinId)}
+                name={item.name}
+                loc={item.address}
+                userIds={item.userIds}
+              />
+            </Pressable>
+          );
+        }}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
             <Text style={styles.emptyText}>No pins to display yet.</Text>

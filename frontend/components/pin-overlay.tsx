@@ -158,11 +158,24 @@ export default function PinOverlay({
           </View>
           <Pressable
             onPress={() => {
-              if (!selectedPin?.id) return;
-              router.push({
-                pathname: "/pins/[pinid]",
-                params: { pinid: String(selectedPin?.pinIds?.[0]) },
-              });
+              const pinId = selectedPin?.pinIds?.[0];
+              if (!pinId) return;
+  
+              if (selectedPin.isShared) {
+                router.push({
+                  pathname: "/select-pins/[selectid]",
+                  params: {
+                    selectid: JSON.stringify(selectedPin.pinIds),
+                  },
+                });
+              } else {
+                router.push({
+                  pathname: "/pins/[pinid]",
+                  params: {
+                    pinid: String(pinId),
+                  },
+                });
+              }
             }}
           >
             <Ionicons name="expand-outline" size={20} color="#555" />
