@@ -1,7 +1,7 @@
 import { Colors, Fonts } from "@/constants/theme";
 import { supabase } from "@/lib/supabase";
 import { router } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Keyboard,
@@ -15,16 +15,43 @@ import {
   View,
 } from "react-native";
 
+const MAX_ATTEMPTS = 5;
+const LOCKOUT_SECONDS = 5;
+
 export default function LoginScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [emailError, setEmailError] = useState("");
   const [credentialsError, setCredentialsError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [failedAttempts, setFailedAttempts] = useState(0);
+  const [lockoutUntil, setLockoutUntil] = useState<number | null>(null);
+  const [secondsLeft, setSecondsLeft] = useState(0);
+
+  useEffect(() => {
+    if (!lockoutUntil) return;
+
+    const interval = setInterval(() => {
+      const remaining = Math.ceil((lockoutUntil - Date.now()) / 1000);
+      if (remaining <= 0) {
+        setLockoutUntil(null);
+        setSecondsLeft(0);
+        setFailedAttempts(0);
+      } else {
+        setSecondsLeft(remaining);
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [lockoutUntil]);
+
+  const isLockedOut = lockoutUntil !== null && Date.now() < lockoutUntil;
 
   const isValidEmail = (val: string) => /\S+@\S+\.\S+/.test(val);
 
   const handleLogin = async () => {
+    if (isLockedOut) return;
+
     setEmailError("");
     setCredentialsError("");
 
@@ -41,13 +68,29 @@ export default function LoginScreen() {
     setLoading(false);
 
     if (error) {
-      if (error.message.toLowerCase().includes("invalid login credentials")) {
-        setCredentialsError("The email or password you entered is incorrect.");
+      const newAttempts = failedAttempts + 1;
+      setFailedAttempts(newAttempts);
+
+      if (newAttempts >= MAX_ATTEMPTS) {
+        const until = Date.now() + LOCKOUT_SECONDS * 1000;
+        setLockoutUntil(until);
+        setSecondsLeft(LOCKOUT_SECONDS);
+        setCredentialsError("");
+      } else if (
+        error.message.toLowerCase().includes("invalid login credentials")
+      ) {
+        const attemptsLeft = MAX_ATTEMPTS - newAttempts;
+        setCredentialsError(
+          `Incorrect email or password. ${attemptsLeft} attempt${attemptsLeft === 1 ? "" : "s"} remaining.`,
+        );
       } else {
         setEmailError(error.message);
       }
+    } else {
+      setFailedAttempts(0);
     }
   };
+
   return (
     <KeyboardAvoidingView
       style={{ flex: 1 }}
@@ -56,6 +99,7 @@ export default function LoginScreen() {
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <View style={styles.container}>
           <Text style={styles.title}>Welcome back</Text>
+
           <TextInput
             style={styles.input}
             placeholder="Enter email"
@@ -64,6 +108,7 @@ export default function LoginScreen() {
             keyboardType="email-address"
             value={email}
             onChangeText={setEmail}
+            editable={!isLockedOut}
           />
           {emailError ? (
             <Text style={styles.fieldError}>{emailError}</Text>
@@ -76,6 +121,7 @@ export default function LoginScreen() {
             secureTextEntry
             value={password}
             onChangeText={setPassword}
+            editable={!isLockedOut}
           />
           {credentialsError ? (
             <Text style={styles.fieldError}>{credentialsError}</Text>
@@ -88,10 +134,18 @@ export default function LoginScreen() {
             <Text style={styles.forgotPassword}>Forgot password?</Text>
           </TouchableOpacity>
 
+          {isLockedOut && (
+            <View style={styles.lockoutBanner}>
+              <Text style={styles.lockoutText}>
+                Too many failed attempts. Try again in {secondsLeft}s.
+              </Text>
+            </View>
+          )}
+
           <TouchableOpacity
-            style={styles.button}
+            style={[styles.button, isLockedOut && styles.buttonDisabled]}
             onPress={handleLogin}
-            disabled={loading}
+            disabled={loading || isLockedOut}
           >
             {loading ? (
               <ActivityIndicator color="#fff" />
@@ -149,6 +203,19 @@ const styles = StyleSheet.create({
     fontSize: 13,
     textDecorationLine: "underline",
   },
+  lockoutBanner: {
+    backgroundColor: "#fdecea",
+    borderRadius: 8,
+    padding: 12,
+    width: "100%",
+    marginBottom: 8,
+  },
+  lockoutText: {
+    color: "#c0392b",
+    fontSize: 13,
+    fontFamily: Fonts.regular,
+    textAlign: "center",
+  },
   button: {
     backgroundColor: Colors.light.background,
     borderRadius: 30,
@@ -156,6 +223,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     width: "100%",
     marginTop: 24,
+  },
+  buttonDisabled: {
+    opacity: 0.5,
   },
   buttonText: {
     color: "#fff",
