@@ -19,7 +19,7 @@ type UserCard = {
 
 export default function Friends() {
   const router = useRouter();
-  const { profile } = useAuth();
+  const { profile, loading: authLoading } = useAuth();
   const [friends, setFriends] = useState<UserCard[]>([]);
   const [discover, setDiscover] = useState<UserCard[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -29,10 +29,13 @@ export default function Friends() {
 
   useFocusEffect(
     useCallback(() => {
-      if (!profile) return;
+      if (!profile) {
+        if (!authLoading) setLoading(false);
+        return;
+      }
       fetchFriends();
       fetchPendingCount();
-    }, [profile])
+    }, [profile, authLoading])
   );
 
   const fetchFriends = async () => {
@@ -101,7 +104,8 @@ export default function Friends() {
   const fetchDiscover = async (query: string) => {
     if (!profile) return;
 
-    // Get all UUIDs already in a relationship with the current user
+    // Get all UUIDs already in a relationship with the current user (this is from user_ralationships1)
+    // By checking, we are able to display on the friends of the current logged in users
     const { data: relData } = await supabase
       .from("user_relationships1")
       .select("requester_id, target_id")

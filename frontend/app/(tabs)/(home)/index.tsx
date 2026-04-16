@@ -57,7 +57,7 @@ export default function Home() {
       const currentUserId = profile!.user_id;
       const currentUserUuid = profile!.id;
 
-      // Get accepted friends from user_relationships1
+      // Get accepted friends from user_relationships1. Gonna use this to decide what pins from DB to display
       const { data: relData, error: relError } = await supabase
         .from("user_relationships1")
         .select("requester_id, target_id")
@@ -68,14 +68,15 @@ export default function Home() {
         console.log("Failed to fetch friends:", relError.message);
       }
 
-      // Collect friend UUIDs (exclude self)
+      // Collect friend UUIDs 
       const friendUuids: string[] = [];
       (relData ?? []).forEach((r: any) => {
         const other = r.requester_id === currentUserUuid ? r.target_id : r.requester_id;
         friendUuids.push(other);
       });
 
-      // Convert friend UUIDs to integer user_ids
+      // Convert friend UUIDs to integer user_ids (profiles to users basically)
+      // THis is how the relationship is between 'profiles' and 'users' tables
       let allUserIds: number[] = [currentUserId];
       if (friendUuids.length > 0) {
         const { data: profileData } = await supabase

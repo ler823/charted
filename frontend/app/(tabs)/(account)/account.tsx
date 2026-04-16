@@ -28,7 +28,7 @@ type VisPin = {
 }
 
 export default function Account() {
-  const { profile } = useAuth();
+  const { profile, loading: authLoading } = useAuth();
   const [username, setUsername] = useState("");
   const [location, setLocation] = useState<string | null>(null);
   const [bio, setBio] = useState<string | null>(null);
@@ -54,7 +54,15 @@ export default function Account() {
 
   useEffect(() => {
     const loadUser = async () => {
-      if (!profile) return;
+      if (!profile) {
+        if (!authLoading) {
+          setUserLoading(false);
+          setFavLoading(false);
+          setVisitLoading(false);
+          setActivityLoading(false);
+        }
+        return;
+      }
       setUsername(profile.username);
       if (profile.avatar_key) {
         const urls = await getPhotoUrl([profile.avatar_key]);
@@ -72,7 +80,7 @@ export default function Account() {
       setUserLoading(false);
     };
     loadUser();
-  }, [profile]);
+  }, [profile, authLoading]);
 
   useEffect(() => {
     if (!profile) return;
@@ -283,7 +291,11 @@ export default function Account() {
             transition={300}
           />
         ) : (
-          <View style={styles.avatar} />
+          <View style={styles.avatar}>
+            {username ? (
+              <Text style={styles.avatarInitial}>{username[0].toUpperCase()}</Text>
+            ) : null}
+          </View>
         )}
 
         {/* Username, Location, Bio */}
@@ -530,6 +542,11 @@ const styles = StyleSheet.create({
     backgroundColor: "#d8d8d8",
     alignItems: "center",
     justifyContent: "center",
+  },
+  avatarInitial: {
+    fontSize: 65,
+    fontFamily: Fonts.regular,
+    color: "#000",
   },
   locAvatar: {
     width: 32,

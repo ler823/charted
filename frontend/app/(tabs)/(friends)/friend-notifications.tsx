@@ -36,21 +36,21 @@ export default function FriendNotifications() {
     if (!profile) return;
     const uuid = profile.id;
 
-    // Received: someone sent a request to the current user
+    // Received
     const { data: receivedData } = await supabase
       .from("user_relationships1")
       .select("id, requester_id")
       .eq("target_id", uuid)
       .eq("status", "pending");
 
-    // Sent: current user sent a request
+    // Sent
     const { data: sentData } = await supabase
       .from("user_relationships1")
       .select("id, target_id")
       .eq("requester_id", uuid)
       .eq("status", "pending");
 
-    // Look up usernames for requesters
+    // Look up usernames for requesters.
     const receivedUuids = (receivedData ?? []).map((r: any) => r.requester_id);
     const sentUuids = (sentData ?? []).map((r: any) => r.target_id);
     const allUuids = [...new Set([...receivedUuids, ...sentUuids])];

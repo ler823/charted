@@ -34,7 +34,7 @@ export default function UserProfilePage() {
   }, [userid, currentProfile]);
 
   const fetchProfile = async () => {
-    // userid param is the target's profile UUID
+    // THis part grabs the curent user's profile using UUID
     const { data: p } = await supabase
       .from("profiles")
       .select("username, avatar_key, user_id")
@@ -43,7 +43,7 @@ export default function UserProfilePage() {
 
     if (!p) { setLoading(false); return; }
 
-    // Get bio from users table
+    // Get bio from users table, users are associated via profiles
     const { data: u } = await supabase
       .from("users")
       .select("bio")
