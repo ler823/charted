@@ -9,6 +9,7 @@ import { useEffect, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import { supabase } from "@/lib/supabase";
+import { useAuth } from "@/context/AuthContext";
 
 type FavPin = {
   user_id: number;
@@ -27,6 +28,7 @@ type VisPin = {
 }
 
 export default function Account() {
+  const { profile } = useAuth();
   const [username, setUsername] = useState("");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [userLoading, setUserLoading] = useState(true);
@@ -49,35 +51,25 @@ export default function Account() {
   const [recentPinId, setRecentPinId] = useState<number | null>(null);
 
   useEffect(() => {
-    const fetchUser = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (user) {
-        const { data } = await supabase
-          .from("profiles")
-          .select("username, avatar_key")
-          .eq("id", user.id)
-          .single();
-        if (data) {
-          setUsername(data.username);
-          if (data.avatar_key) {
-            const urls = await getPhotoUrl([data.avatar_key]);
-            setAvatarUrl(urls[0].url);
-          }
-        }
+    const loadUser = async () => {
+      if (!profile) return;
+      setUsername(profile.username);
+      if (profile.avatar_key) {
+        const urls = await getPhotoUrl([profile.avatar_key]);
+        setAvatarUrl(urls[0].url);
       }
       setUserLoading(false);
     };
-    fetchUser();
-  }, []);
+    loadUser();
+  }, [profile]);
 
   useEffect(() => {
+    if (!profile) return;
     async function fetchFavorite() {
       const { data, error } = await supabase
         .from("pins_with_last_visit")
         .select("*")
-        .eq("user_id", Number(2))
+        .eq("user_id", profile!.user_id)
         .eq("private", false)
         .order("user_rating", { ascending: false })
         .order("last_visited", { ascending: false })
@@ -87,19 +79,20 @@ export default function Account() {
         console.error("Failed to fetch favorite pin:", error.message);
         return;
       }
-      
-      setFavorite(data);    
+
+      setFavorite(data);
       setFavLoading(false);
     }
     fetchFavorite();
-  }, []);
+  }, [profile]);
 
   useEffect(() => {
+    if (!profile) return;
     async function fetchTopVisited() {
       const { data, error } = await supabase
         .from("pins_with_visit_count")
         .select("*")
-        .eq("user_id", Number(2))
+        .eq("user_id", profile!.user_id)
         .eq("private", false)
         .order("visit_count", { ascending: false })
         .order("last_visited", { ascending: false })
@@ -109,12 +102,12 @@ export default function Account() {
         console.error("Failed to fetch most visited pin:", error.message);
         return;
       }
-      
-      setVisited(data);    
+
+      setVisited(data);
       setVisitLoading(false);
     }
     fetchTopVisited();
-  }, []);
+  }, [profile]);
   
   useEffect(() => {
     setFavPhoto(null);

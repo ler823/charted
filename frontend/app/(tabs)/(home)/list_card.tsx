@@ -1,6 +1,7 @@
 import { Fonts } from "@/constants/theme";
 import { getPhotoUrl } from "@/lib/photo-utils";
 import { supabase } from "@/lib/supabase";
+import { useAuth } from "@/context/AuthContext";
 import { Image } from "expo-image";
 import React, { useEffect, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
@@ -20,6 +21,7 @@ type FriendAvatar = {
 };
 
 export default function ListCard({ pinId, name, loc, editList, userIds }: Props) {
+  const { profile } = useAuth();
   const [coverPhoto, setCoverPhoto] = useState<string | null>(null);
   const [friendAvatars, setFriendAvatars] = useState<FriendAvatar[]>([]);
   const [extraCount, setExtraCount] = useState(0);
@@ -31,7 +33,7 @@ export default function ListCard({ pinId, name, loc, editList, userIds }: Props)
         return;
       }
 
-      if (userIds.length === 1 && userIds[0] === 4) {
+      if (userIds.length === 1 && userIds[0] === profile?.user_id) {
         setFriendAvatars([]);
         return;
       }

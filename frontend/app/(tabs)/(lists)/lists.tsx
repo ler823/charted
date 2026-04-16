@@ -3,6 +3,7 @@ import LoadingPage from "@/components/loading-page";
 import Sort from "@/components/sort-lists";
 import { Colors, Fonts } from "@/constants/theme";
 import { supabase } from "@/lib/supabase";
+import { useAuth } from "@/context/AuthContext";
 import { Pin } from "@/types/types";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useFocusEffect, useRouter } from "expo-router";
@@ -24,6 +25,7 @@ type listItems = {
 
 export default function Lists() {
   const router = useRouter();
+  const { profile } = useAuth();
   const [lists, setLists] = useState<listItems[]>([]);
   const [pins, setPins] = useState<Pin[]>([]);
   const [addListModalVisible, setAddListModalVisible] = useState(false)
@@ -63,18 +65,11 @@ export default function Lists() {
       Alert.alert("Missing field", "Please enter a name for the new list");
       return;
     }
-    const { data: userId, error: userIdError } = await supabase
-      .from("users")
-      .select("user_id")
-      .eq("username", "TimTimTim");
-    if (userIdError) {
-      Alert.alert("Error", userIdError.message);
-      return;
-    }
+    if (!profile) return;
     let listToAdd = {
-      user_id: userId[0].user_id,
+      user_id: profile.user_id,
       name: newList.name,
-      privacy: newList.privacy
+      privacy: newList.privacy,
     };
 
     const { error: addListError } = await supabase.from("lists").insert(listToAdd);
@@ -91,27 +86,18 @@ export default function Lists() {
   };
 
   const getUserLists = async () => {
+    if (!profile) return;
     const { data, error } = await supabase
       .from("lists")
-      .select(
-        `
-        list_id,
-        name,
-        created_at,
-        users!lists_user_id_fkey (
-          username
-        )
-      `,
-      )
-      .eq("users.username", "TimTimTim");
+      .select("list_id, name, created_at")
+      .eq("user_id", profile.user_id);
 
     if (error) {
       Alert.alert("Error", error.message);
       return;
     }
-    const userLists = data.map((list: any) =>  ({ listId: list.list_id, name: list.name, username: null, date: list.created_at }))
-    handleSort(userLists)
-    //return data.map((list: any) => ({ listId: list.list_id, name: list.name, username: null }));
+    const userLists = data.map((list: any) => ({ listId: list.list_id, name: list.name, username: null, date: list.created_at }));
+    handleSort(userLists);
   };
 
   const getFriendLists = async () => {
@@ -131,7 +117,7 @@ export default function Lists() {
         )
       `,
       )
-      .eq("viewer_id", 4)
+      .eq("viewer_id", profile?.user_id ?? 0)
 
     if (error) {
       Alert.alert("Error", error.message);

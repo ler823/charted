@@ -14,6 +14,7 @@ import PinMarkers from "@/components/pin-markers";
 import SharedPinMarkers from "@/components/pin-markers-shared";
 import PinOverlay from "@/components/pin-overlay";
 import { useDroppingPin } from "@/context/DroppingPinContext";
+import { useAuth } from "@/context/AuthContext";
 import { useLocation } from "@/hooks/use-location";
 import { Coords, Pin, ViewMode, ViewOption } from "@/types/types";
 import { useLocalSearchParams, useFocusEffect } from "expo-router";
@@ -34,15 +35,12 @@ const VIEW_OPTIONS: ViewOption[] = [
   { mode: "grid", icon: "grid" },
 ];
 
-type Friend = {
-  user_id: string;
-};
-
 export default function Home() {
   const { viewMode: incomingViewMode } = useLocalSearchParams<{
     viewMode?: ViewMode;
   }>();
   const { isDroppingPin, setIsDroppingPin } = useDroppingPin();
+  const { profile } = useAuth();
   const [viewMode, setViewMode] = useState<ViewMode>(incomingViewMode ?? "map");
   const [selectedPin, setSelectedPin] = useState<Pin | null>(null);
   const [pins, setPins] = useState<Pin[]>([]);
@@ -50,47 +48,55 @@ export default function Home() {
   const mapRef = useRef<any>(null);
   const { permissionStatus } = useLocation();
   const [region, setRegion] = useState(INITIAL_REGION);
-  const [friends, setFriends] = useState<Friend[]>([]);
 
   useFocusEffect(() => {
-    async function fetchFriends() {
-      const { data, error } = await supabase
-        .from("user_relationships")
-        .select("*")
-        .eq("is_friend", true)
-        .or("requester_id.eq.4,target_id.eq.4");
+    if (!profile) return;
 
-      if (error) {
-        console.log("Failed to fetch friends:", error.message);
-        return;
+    async function fetchPins() {
+      const currentUserId = profile!.user_id;
+      const currentUserUuid = profile!.id;
+
+      // Get accepted friends from user_relationships1
+      const { data: relData, error: relError } = await supabase
+        .from("user_relationships1")
+        .select("requester_id, target_id")
+        .eq("status", "accepted")
+        .or(`requester_id.eq.${currentUserUuid},target_id.eq.${currentUserUuid}`);
+
+      if (relError) {
+        console.log("Failed to fetch friends:", relError.message);
       }
 
-      const user_ids = new Set<string>();
-
-      data.forEach((relation: any) => {
-        user_ids.add(relation.requester_id);
-        user_ids.add(relation.target_id);
+      // Collect friend UUIDs (exclude self)
+      const friendUuids: string[] = [];
+      (relData ?? []).forEach((r: any) => {
+        const other = r.requester_id === currentUserUuid ? r.target_id : r.requester_id;
+        friendUuids.push(other);
       });
 
-      const uniqueUserIds = Array.from(user_ids).map((user_id) => ({
-        user_id,
-      }));
+      // Convert friend UUIDs to integer user_ids
+      let allUserIds: number[] = [currentUserId];
+      if (friendUuids.length > 0) {
+        const { data: profileData } = await supabase
+          .from("profiles")
+          .select("user_id")
+          .in("id", friendUuids);
+        if (profileData) {
+          const friendIds = profileData
+            .map((p: any) => p.user_id)
+            .filter((id: any) => id != null) as number[];
+          allUserIds = [...allUserIds, ...friendIds];
+        }
+      }
 
-      setFriends(uniqueUserIds);
-      fetchSharedPins(uniqueUserIds);
-    }
-
-    async function fetchSharedPins(userIds: Friend[]) {
+      // Fetch pin clusters that overlap with any of these user_ids
       const { data, error } = await supabase
         .from("pin_clusters")
         .select("*")
-        .overlaps(
-          "user_ids",
-          userIds.map((friend) => Number(friend.user_id)),
-        );
+        .overlaps("user_ids", allUserIds);
 
       if (error) {
-        console.error("Failed to fetch shared pins:", error.message);
+        console.error("Failed to fetch pins:", error.message);
         return;
       }
 
@@ -111,7 +117,7 @@ export default function Home() {
     }
 
     setPinChanged(true);
-    fetchFriends();
+    fetchPins();
   });
 
   return (
@@ -189,7 +195,7 @@ export default function Home() {
                     users_id={pin.userIds!}
                     number_shared={pin.pinCount!}
                   />
-                ) : pin.user_id === "4" ? (
+                ) : Number(pin.user_id) === profile?.user_id ? (
                   <PinMarker />
                 ) : (
                   <PinMarkers users_id={Number(pin.user_id)} />

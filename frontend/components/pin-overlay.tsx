@@ -2,6 +2,7 @@
 import { Colors, Fonts } from "@/constants/theme";
 import { getPhotoUrl } from "@/lib/photo-utils";
 import { supabase } from "@/lib/supabase";
+import { useAuth } from "@/context/AuthContext";
 import { Pin } from "@/types/types";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
@@ -25,6 +26,7 @@ export default function PinOverlay({
   setSelectedPin,
 }: PinOverlayProps) {
   const router = useRouter();
+  const { profile } = useAuth();
   const [coverPhoto, setCoverPhoto] = useState<string | null>(null);
   const [friendAvatars, setFriendAvatars] = useState<FriendAvatar[]>([]);
 
@@ -62,7 +64,7 @@ export default function PinOverlay({
         return;
       }
 
-      if (selectedPin?.userIds?.length === 1 && selectedPin.userIds[0] === 4) {
+      if (selectedPin?.userIds?.length === 1 && selectedPin.userIds[0] === profile?.user_id) {
         setFriendAvatars([]);
         return;
       }

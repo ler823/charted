@@ -1,6 +1,7 @@
 import { Fonts } from "@/constants/theme";
 import { getPhotoUrl } from "@/lib/photo-utils";
 import { supabase } from "@/lib/supabase";
+import { useAuth } from "@/context/AuthContext";
 import { Pin } from "@/types/types";
 import { Image } from "expo-image";
 import { router } from "expo-router";
@@ -18,6 +19,7 @@ type FriendAvatar = {
 };
 
 function GridCard({ item }: { item: Pin }) {
+  const { profile } = useAuth();
   const [coverPhoto, setCoverPhoto] = useState<string | null>(null);
   const [friendAvatars, setFriendAvatars] = useState<FriendAvatar[]>([]);
   const [extraCount, setExtraCount] = useState(0);
@@ -29,7 +31,7 @@ function GridCard({ item }: { item: Pin }) {
         return;
       }
 
-      if (item.userIds.length === 1 && item.userIds[0] === 4) {
+      if (item.userIds.length === 1 && item.userIds[0] === profile?.user_id) {
         setFriendAvatars([]);
         return;
       }

@@ -1,126 +1,240 @@
+import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/lib/supabase";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
-import { useRouter, Stack } from "expo-router";
-import React, { useEffect, useState } from "react";
+import { useFocusEffect, useRouter, Stack } from "expo-router";
+import React, { useCallback, useState } from "react";
 import { FlatList, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { Colors, Fonts } from "../../../constants/theme";
 import LoadingPage from "@/components/loading-page";
 import { getPhotoUrl } from "@/lib/photo-utils";
 import { Image } from "expo-image";
 
-type Friend = {
-  user_id: number;
+type UserCard = {
+  profileId: string;   // UUID
+  user_id: number;     // integer for friend_profiles routing
   username: string;
   location: string | null;
   avatarUrl?: string | null;
 };
 
 export default function Friends() {
-  const [friends, setFriends] = useState<Friend[]>([]);
+  const router = useRouter();
+  const { profile } = useAuth();
+  const [friends, setFriends] = useState<UserCard[]>([]);
+  const [discover, setDiscover] = useState<UserCard[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [mode, setMode] = useState<"friends" | "discover">("friends");
   const [loading, setLoading] = useState(true);
-  const router = useRouter()
+  const [pendingCount, setPendingCount] = useState(0);
 
-  // Searching Implementation
+  useFocusEffect(
+    useCallback(() => {
+      if (!profile) return;
+      fetchFriends();
+      fetchPendingCount();
+    }, [profile])
+  );
+
+  const fetchFriends = async () => {
+    if (!profile) return;
+    setLoading(true);
+
+    // Get accepted relationships
+    const { data: relData } = await supabase
+      .from("user_relationships1")
+      .select("requester_id, target_id")
+      .eq("status", "accepted")
+      .or(`requester_id.eq.${profile.id},target_id.eq.${profile.id}`);
+
+    const friendUuids = (relData ?? []).map((r: any) =>
+      r.requester_id === profile.id ? r.target_id : r.requester_id
+    );
+
+    if (friendUuids.length === 0) {
+      setFriends([]);
+      setLoading(false);
+      return;
+    }
+
+    const { data: profileData } = await supabase
+      .from("profiles")
+      .select("id, user_id, username, avatar_key")
+      .in("id", friendUuids);
+
+    const enriched = await Promise.all(
+      (profileData ?? []).map(async (p: any) => {
+        let avatarUrl = null;
+        if (p.avatar_key) {
+          const urls = await getPhotoUrl([p.avatar_key]);
+          avatarUrl = urls?.[0]?.url ?? null;
+        }
+        // get location from users table
+        const { data: userData } = await supabase
+          .from("users")
+          .select("location")
+          .eq("user_id", p.user_id)
+          .single();
+        return {
+          profileId: p.id,
+          user_id: p.user_id,
+          username: p.username,
+          location: userData?.location ?? null,
+          avatarUrl,
+        };
+      })
+    );
+
+    setFriends(enriched);
+    setLoading(false);
+  };
+
+  const fetchPendingCount = async () => {
+    if (!profile) return;
+    const { count } = await supabase
+      .from("user_relationships1")
+      .select("id", { count: "exact", head: true })
+      .eq("target_id", profile.id)
+      .eq("status", "pending");
+    setPendingCount(count ?? 0);
+  };
+
+  const fetchDiscover = async (query: string) => {
+    if (!profile) return;
+
+    // Get all UUIDs already in a relationship with the current user
+    const { data: relData } = await supabase
+      .from("user_relationships1")
+      .select("requester_id, target_id")
+      .or(`requester_id.eq.${profile.id},target_id.eq.${profile.id}`);
+
+    const excludedUuids = new Set<string>([profile.id]);
+    (relData ?? []).forEach((r: any) => {
+      excludedUuids.add(r.requester_id);
+      excludedUuids.add(r.target_id);
+    });
+
+    let q = supabase
+      .from("profiles")
+      .select("id, user_id, username, avatar_key")
+      .neq("id", profile.id);
+
+    if (query.trim()) {
+      q = q.ilike("username", `%${query.trim()}%`);
+    }
+
+    const { data } = await q.limit(30);
+
+    const filtered = (data ?? []).filter((p: any) => !excludedUuids.has(p.id));
+
+    const enriched = await Promise.all(
+      filtered.map(async (p: any) => {
+        let avatarUrl = null;
+        if (p.avatar_key) {
+          const urls = await getPhotoUrl([p.avatar_key]);
+          avatarUrl = urls?.[0]?.url ?? null;
+        }
+        return {
+          profileId: p.id,
+          user_id: p.user_id,
+          username: p.username,
+          location: null,
+          avatarUrl,
+        };
+      })
+    );
+
+    setDiscover(enriched);
+  };
+
+  const handleSearchChange = (text: string) => {
+    setSearchQuery(text);
+    if (mode === "discover") {
+      fetchDiscover(text);
+    }
+  };
+
+  const enterDiscover = () => {
+    setMode("discover");
+    setSearchQuery("");
+    fetchDiscover("");
+  };
+
+  const exitDiscover = () => {
+    setMode("friends");
+    setSearchQuery("");
+  };
+
   const filteredFriends = friends.filter((f) =>
     f.username.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  /*
-  This chunk queries the database for 'users' table in Supabase
-  photo_id is left out for once we start dealing with photos, for now there is a white circle
-  */
-  useEffect(() => {
-    async function fetchUsers() {
-      const { data } = await supabase
-        .from("users")
-        .select("user_id, username, location, photos:photo_id(key)");
+  const displayList = mode === "friends" ? filteredFriends : discover;
 
-      if (!data) return;
-
-
-      const enriched = await Promise.all(
-        data.map(async (user) => {
-          const key = user.photos?.key;
-
-          let avatarUrl = null;
-          if (key) {
-            const urls = await getPhotoUrl([key]);
-            avatarUrl = urls?.[0]?.url ?? null;
-          }
-
-          return {
-            ...user,
-            avatarUrl,
-          };
-        })
-      );
-
-      setFriends(enriched);
-      setLoading(false);
-    }
-    fetchUsers();
-  }, []);
-
-  if (loading) return <LoadingPage />;
+  if (loading && mode === "friends") return <LoadingPage />;
 
   return (
     <View style={styles.container}>
       <Stack.Screen options={{ title: "Friends" }} />
-      {/* 
-      Deals with the Add Button at the top of the screen.
-      Looks a little small so might need to tweak the sizing a bit
-      Pressable components for future interaction implmenetation
-      */}
-      <Pressable style={styles.plusButton} onPress={() => {router.push({
-              pathname: "/user_profiles/[userid]",
-              params: {
-                userid: 1
-              }})}}>
-        <MaterialCommunityIcons name="plus" size={45} color="#fefbea" />
-      </Pressable>
+
+      {mode === "friends" ? (
+        <Pressable style={styles.plusButton} onPress={enterDiscover}>
+          <MaterialCommunityIcons name="plus" size={45} color="#fefbea" />
+        </Pressable>
+      ) : (
+        <Pressable style={styles.plusButton} onPress={exitDiscover}>
+          <MaterialCommunityIcons name="close" size={36} color="#fefbea" />
+        </Pressable>
+      )}
+
       <View style={styles.header}>
         <View style={styles.searchBar}>
           <TextInput
             style={styles.searchText}
-            placeholder="Find a friend"
+            placeholder={mode === "friends" ? "Find a friend" : "Search people…"}
             placeholderTextColor="#fefbea"
             value={searchQuery}
-            onChangeText={setSearchQuery}
+            onChangeText={handleSearchChange}
           />
           <Ionicons name="search" size={16} color={"#fefbea"} />
         </View>
-        <Pressable style={styles.sortBtn}>
-          <Text style={styles.sortText}>Sort</Text>
-          <Ionicons name="chevron-down" size={14} color={"#fefbea"} />
-        </Pressable>
-        {/* CHECK: This bell looks a little off when loaded*/}
-        <Pressable style={styles.notifBtn} onPress={() => router.push("./friend-notifications")}>
-          <Ionicons
-            name="notifications-outline"
-            size={36}
-            color={Colors.light.background}
-          />
-          <View style={styles.notifBadge} />
-        </Pressable>
+        {mode === "friends" && (
+          <Pressable style={styles.notifBtn} onPress={() => router.push("./friend-notifications")}>
+            <Ionicons name="notifications-outline" size={36} color={Colors.light.background} />
+            {pendingCount > 0 && <View style={styles.notifBadge} />}
+          </Pressable>
+        )}
       </View>
 
-      {/* 
-      Deals with the friends cards and the list of the friends cards
-      */}
+      {mode === "discover" && (
+        <Text style={styles.discoverLabel}>Find People to Add</Text>
+      )}
+
       <FlatList
-        data={filteredFriends}
-        keyExtractor={(item) => String(item.user_id)}
+        data={displayList}
+        keyExtractor={(item) => item.profileId}
         contentContainerStyle={styles.list}
-        // Handling if user has no friends/if not data fetched from DB
-        ListEmptyComponent={<Text style={styles.emptyText}>No Friends Available</Text>}
+        ListEmptyComponent={
+          <Text style={styles.emptyText}>
+            {mode === "friends" ? "No friends yet. Tap + to find people." : "No users found."}
+          </Text>
+        }
         renderItem={({ item }) => (
-          <Pressable style={styles.card} onPress={() => 
-            router.push({
-              pathname: "/friend_profiles/[friendid]",
-              params: {
-                friendid: `${item.user_id}`
-              }})}>
+          <Pressable
+            style={styles.card}
+            onPress={() => {
+              if (mode === "friends") {
+                router.push({
+                  pathname: "/friend_profiles/[friendid]",
+                  params: { friendid: String(item.user_id) },
+                });
+              } else {
+                router.push({
+                  pathname: "/user_profiles/[userid]",
+                  params: { userid: item.profileId },
+                });
+              }
+            }}
+          >
             <View style={styles.avatar}>
               {item.avatarUrl ? (
                 <Image
@@ -137,29 +251,23 @@ export default function Friends() {
             </View>
             <View style={styles.cardInfo}>
               <Text style={styles.username}>{item.username}</Text>
-              <View style={styles.locationRow}>
-                <Ionicons name="location-sharp" size={13} color="#111" />
-                <Text style={[styles.location, { paddingLeft: 2 }]}>
-                  {item.location}
-                </Text>
-              </View>
+              {item.location ? (
+                <View style={styles.locationRow}>
+                  <Ionicons name="location-sharp" size={13} color="#111" />
+                  <Text style={[styles.location, { paddingLeft: 2 }]}>{item.location}</Text>
+                </View>
+              ) : null}
             </View>
           </Pressable>
         )}
       />
-      <View style={{ height: 80 }}>
-      </View>
+      <View style={{ height: 80 }} />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  /* 
-  Styling for the add button and notification button
-  */
+  container: { flex: 1 },
   header: {
     paddingTop: 60,
     paddingBottom: 18,
@@ -185,14 +293,7 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
     elevation: 4,
   },
-  addFriendText: {
-    color: "#fefbea",
-    fontFamily: Fonts.bold,
-    fontSize: 20,
-  },
-  notifBtn: {
-    position: "relative",
-  },
+  notifBtn: { position: "relative" },
   notifBadge: {
     position: "absolute",
     top: 0,
@@ -203,16 +304,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#e53935",
     borderWidth: 1.5,
     borderColor: "#fff",
-  },
-  /* 
-  Styling for the search bar and the sort button
-   */
-  searchRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    gap: 10,
   },
   searchBar: {
     flex: 1,
@@ -236,34 +327,14 @@ const styles = StyleSheet.create({
     color: "#fefbea",
     fontFamily: Fonts.bold,
   },
-  sortBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: Colors.light.accent,
-    borderRadius: 999,
-    paddingHorizontal: 14,
-    paddingVertical: 9,
-    gap: 5,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 2,
-    elevation: 4,
-    height: 40,
-  },
-  sortText: {
-    fontSize: 16,
+  discoverLabel: {
     fontFamily: Fonts.bold,
-    color: "#fefbea",
+    fontSize: 16,
+    color: "#243e36",
+    paddingHorizontal: 20,
+    paddingBottom: 8,
   },
-  /* 
-  Styling for the friend cards
-  Mostly taken from list_card.tsx
-  */
-  list: {
-    alignItems: "center",
-    paddingBottom: 20,
-  },
+  list: { alignItems: "center", paddingBottom: 20 },
   card: {
     backgroundColor: "#DEE9E0",
     padding: 12,
@@ -293,9 +364,7 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.regular,
     color: "#000",
   },
-  cardInfo: {
-    flex: 1,
-  },
+  cardInfo: { flex: 1 },
   username: {
     fontFamily: Fonts.bold,
     fontSize: 17,
@@ -307,14 +376,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingLeft: 15,
   },
-  location: {
-    fontFamily: Fonts.regular,
-    fontSize: 12,
-  },
+  location: { fontFamily: Fonts.regular, fontSize: 12 },
   emptyText: {
     fontFamily: Fonts.regular,
     fontSize: 16,
     color: "#888",
     marginTop: 40,
+    textAlign: "center",
+    paddingHorizontal: 30,
   },
 });

@@ -1,19 +1,15 @@
 import { Colors, Fonts } from "@/constants/theme";
+import { useAuth } from "@/context/AuthContext";
+import { supabase } from "@/lib/supabase";
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import { useFocusEffect, useRouter } from "expo-router";
+import { useCallback, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
-// temp data just like Figma design
-// impement real data once auth is set up
-const MOCK_RECEIVED = [
-  { id: 1, username: "Preston" },
-  { id: 2, username: "TimTimTim" },
-];
-
-const MOCK_SENT = [
-  { id: 3, username: "Sage_123" },
-];
+type FriendRequest = {
+  id: string;
+  username: string;
+};
 
 function Avatar({ username }: { username: string }) {
   return (
@@ -23,36 +19,86 @@ function Avatar({ username }: { username: string }) {
   );
 }
 
-const dismissed = new Set<number>();
-
 export default function FriendNotifications() {
   const router = useRouter();
-  const [accepted, setAccepted] = useState<Set<number>>(new Set());
-  const [rejected, setRejected] = useState<Set<number>>(new Set());
-  const [unsent, setUnsent] = useState<Set<number>>(new Set());
+  const { profile } = useAuth();
+  const [received, setReceived] = useState<FriendRequest[]>([]);
+  const [sent, setSent] = useState<FriendRequest[]>([]);
 
-  useEffect(() => {
-    return () => {
-      accepted.forEach((id) => dismissed.add(id));
-      rejected.forEach((id) => dismissed.add(id));
-      unsent.forEach((id) => dismissed.add(id));
-    };
-  }, [accepted, rejected, unsent]);
+  useFocusEffect(
+    useCallback(() => {
+      if (!profile) return;
+      fetchRequests();
+    }, [profile])
+  );
 
-  // Filter out already-dismissed cards on every mount
-  const visibleReceived = MOCK_RECEIVED.filter((u) => !dismissed.has(u.id));
-  const visibleSent = MOCK_SENT.filter((u) => !dismissed.has(u.id));
+  const fetchRequests = async () => {
+    if (!profile) return;
+    const uuid = profile.id;
 
-  const handleAccept = (id: number) => {
-    setAccepted((prev) => new Set(prev).add(id));
+    // Received: someone sent a request to the current user
+    const { data: receivedData } = await supabase
+      .from("user_relationships1")
+      .select("id, requester_id")
+      .eq("target_id", uuid)
+      .eq("status", "pending");
+
+    // Sent: current user sent a request
+    const { data: sentData } = await supabase
+      .from("user_relationships1")
+      .select("id, target_id")
+      .eq("requester_id", uuid)
+      .eq("status", "pending");
+
+    // Look up usernames for requesters
+    const receivedUuids = (receivedData ?? []).map((r: any) => r.requester_id);
+    const sentUuids = (sentData ?? []).map((r: any) => r.target_id);
+    const allUuids = [...new Set([...receivedUuids, ...sentUuids])];
+
+    let usernameMap: Record<string, string> = {};
+    if (allUuids.length > 0) {
+      const { data: profileData } = await supabase
+        .from("profiles")
+        .select("id, username")
+        .in("id", allUuids);
+      (profileData ?? []).forEach((p: any) => {
+        usernameMap[p.id] = p.username;
+      });
+    }
+
+    setReceived(
+      (receivedData ?? []).map((r: any) => ({
+        id: r.id,
+        username: usernameMap[r.requester_id] ?? r.requester_id,
+      }))
+    );
+    setSent(
+      (sentData ?? []).map((r: any) => ({
+        id: r.id,
+        username: usernameMap[r.target_id] ?? r.target_id,
+      }))
+    );
   };
 
-  const handleReject = (id: number) => {
-    setRejected((prev) => new Set(prev).add(id));
+  const handleAccept = async (id: string) => {
+    await supabase
+      .from("user_relationships1")
+      .update({ status: "accepted" })
+      .eq("id", id);
+    setReceived((prev) => prev.filter((r) => r.id !== id));
   };
 
-  const handleUnsend = (id: number) => {
-    setUnsent((prev) => new Set(prev).add(id));
+  const handleReject = async (id: string) => {
+    await supabase
+      .from("user_relationships1")
+      .update({ status: "rejected" })
+      .eq("id", id);
+    setReceived((prev) => prev.filter((r) => r.id !== id));
+  };
+
+  const handleUnsend = async (id: string) => {
+    await supabase.from("user_relationships1").delete().eq("id", id);
+    setSent((prev) => prev.filter((r) => r.id !== id));
   };
 
   return (
@@ -73,51 +119,36 @@ export default function FriendNotifications() {
 
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         <Text style={styles.sectionTitle}>Received Friend Requests</Text>
-        {visibleReceived.length === 0 && (
+        {received.length === 0 && (
           <Text style={styles.emptyText}>No received friend requests.</Text>
         )}
-        {visibleReceived.map((user) => (
+        {received.map((user) => (
           <View key={user.id} style={styles.card}>
             <Avatar username={user.username} />
             <Text style={styles.username}>{user.username}</Text>
-            {accepted.has(user.id) ? (
-              <View style={styles.acceptedBtn}>
-                <Text style={styles.acceptedText}>Accepted</Text>
-              </View>
-            ) : rejected.has(user.id) ? (
-              <View style={styles.rejectedBtn}>
-                <Text style={styles.acceptedText}>Rejected</Text>
-              </View>
-            ) : (
-              <View style={styles.actions}>
-                <Pressable style={styles.acceptBtn} onPress={() => handleAccept(user.id)}>
-                  <Text style={styles.acceptText}>Accept</Text>
-                </Pressable>
-                <Pressable style={styles.rejectBtn} onPress={() => handleReject(user.id)}>
-                  <Text style={styles.rejectText}>Reject</Text>
-                </Pressable>
-              </View>
-            )}
+            <View style={styles.actions}>
+              <Pressable style={styles.acceptBtn} onPress={() => handleAccept(user.id)}>
+                <Text style={styles.acceptText}>Accept</Text>
+              </Pressable>
+              <Pressable style={styles.rejectBtn} onPress={() => handleReject(user.id)}>
+                <Text style={styles.rejectText}>Reject</Text>
+              </Pressable>
+            </View>
           </View>
         ))}
 
         <View style={styles.divider} />
 
         <Text style={styles.sectionTitle}>Sent Friend Requests</Text>
-        {visibleSent.length === 0 && (
+        {sent.length === 0 && (
           <Text style={styles.emptyText}>No sent friend requests.</Text>
         )}
-        {visibleSent.map((user) => (
+        {sent.map((user) => (
           <View key={user.id} style={styles.card}>
             <Avatar username={user.username} />
             <Text style={styles.username}>{user.username}</Text>
-            <Pressable
-              style={unsent.has(user.id) ? styles.unsentBtn : styles.unsendBtn}
-              onPress={() => handleUnsend(user.id)}
-            >
-              <Text style={styles.unsendText}>
-                {unsent.has(user.id) ? "Unsent" : "Unsend Request"}
-              </Text>
+            <Pressable style={styles.unsendBtn} onPress={() => handleUnsend(user.id)}>
+              <Text style={styles.unsendText}>Unsend</Text>
             </Pressable>
           </View>
         ))}
@@ -150,11 +181,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 2,
     elevation: 4,
-  },
-  backText: {
-    color: "#fefbea",
-    fontFamily: Fonts.bold,
-    fontSize: 14,
   },
   scroll: {
     alignItems: "center",
@@ -215,48 +241,6 @@ const styles = StyleSheet.create({
   actions: {
     flexDirection: "row",
     gap: 8,
-  },
-  acceptedBtn: {
-    backgroundColor: "rgba(36, 62, 54, 0.6)",
-    paddingVertical: 8,
-    width: 152,
-    alignItems: "center",
-    borderRadius: 999,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 2,
-    elevation: 4,
-  },
-  rejectedBtn: {
-    backgroundColor: "rgba(124, 169, 130, 0.8)",
-    paddingVertical: 8,
-    width: 152,
-    alignItems: "center",
-    borderRadius: 999,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 2,
-    elevation: 4,
-  },
-  acceptedText: {
-    color: "#fff",
-    fontFamily: Fonts.bold,
-    fontSize: 13,
-  },
-  unsentBtn: {
-    backgroundColor: "#8a9a8e",
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 999,
-    minWidth: 130,
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 2,
-    elevation: 4,
   },
   acceptBtn: {
     backgroundColor: Colors.light.background,
