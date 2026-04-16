@@ -26,9 +26,6 @@ type Friend = {
   username: string;
   location: string | null;
   bio: string | null;
-  photos: {
-    key: string | null;
-  }[];
 };
 
 type PinRow = {
@@ -149,7 +146,7 @@ export default function FriendProfilePage() {
     async function fetchUsers() {
       const { data, error } = await supabase
         .from("users")
-        .select("user_id, username, location, bio, photos:photo_id( key )")
+        .select("user_id, username, location, bio")
         .eq("user_id", Number(friendid))
         .single();
 
@@ -157,14 +154,19 @@ export default function FriendProfilePage() {
         console.error("Failed to fetch user:", error.message);
         return;
       }
-      if (data?.photos?.key) {
-        const key = data?.photos?.key ?? null;
-        if (!key) return;
-        const urls = await getPhotoUrl([key]);
-        setAvatarUrl(urls[0].url);
-      }
       setFriend(data);
       setUserLoading(false);
+
+      const { data: profileData } = await supabase
+        .from("profiles")
+        .select("avatar_key")
+        .eq("user_id", Number(friendid))
+        .single();
+
+      if (profileData?.avatar_key) {
+        const urls = await getPhotoUrl([profileData.avatar_key]);
+        setAvatarUrl(urls[0]?.url ?? null);
+      }
     }
     fetchUsers();
   }, []);

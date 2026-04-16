@@ -1,7 +1,7 @@
 import PinMarker from "@/components/pin-marker";
 import { supabase } from "@/lib/supabase";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 import ClusteredMapView from "react-native-map-clustering";
 import { Marker } from "react-native-maps";
@@ -49,7 +49,8 @@ export default function Home() {
   const { permissionStatus } = useLocation();
   const [region, setRegion] = useState(INITIAL_REGION);
 
-  useFocusEffect(() => {
+  useFocusEffect(
+    useCallback(() => {
     if (!profile) return;
 
     async function fetchPins() {
@@ -118,7 +119,8 @@ export default function Home() {
 
     setPinChanged(true);
     fetchPins();
-  });
+  }, [profile])
+  );
 
   return (
     <View style={styles.container}>

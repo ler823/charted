@@ -39,8 +39,8 @@ export default function ListCard({ pinId, name, loc, editList, userIds }: Props)
       }
 
       const { data } = await supabase
-        .from("users")
-        .select("user_id, username, photos:photo_id(key)")
+        .from("profiles")
+        .select("user_id, username, avatar_key")
         .in("user_id", userIds)
         .limit(3);
 
@@ -51,14 +51,11 @@ export default function ListCard({ pinId, name, loc, editList, userIds }: Props)
 
       const enriched = await Promise.all(
         limitedData.map(async (user) => {
-          const key = user.photos?.key;
-
           let avatarUrl = null;
-          if (key) {
-            const urls = await getPhotoUrl([key]);
+          if (user.avatar_key) {
+            const urls = await getPhotoUrl([user.avatar_key]);
             avatarUrl = urls?.[0]?.url ?? null;
           }
-
           return { ...user, avatarUrl };
         })
       );

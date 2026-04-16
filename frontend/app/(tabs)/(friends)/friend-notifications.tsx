@@ -89,10 +89,7 @@ export default function FriendNotifications() {
   };
 
   const handleReject = async (id: string) => {
-    await supabase
-      .from("user_relationships1")
-      .update({ status: "rejected" })
-      .eq("id", id);
+    await supabase.from("user_relationships1").delete().eq("id", id);
     setReceived((prev) => prev.filter((r) => r.id !== id));
   };
 

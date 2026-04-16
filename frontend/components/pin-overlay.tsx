@@ -70,32 +70,26 @@ export default function PinOverlay({
       }
 
       const { data, error } = await supabase
-        .from("users")
-        .select("user_id, username, photos:photo_id(key)")
+        .from("profiles")
+        .select("user_id, username, avatar_key")
         .in("user_id", selectedPin.userIds)
         .limit(10);
-      
-        if (error) {
-          console.log(error.message);
-          return;
-        }
 
-        const enriched = await Promise.all(
-          data.map(async (user) => {
-            const key = user.photos?.key;
-  
-            let avatarUrl = null;
-            if (key) {
-              const urls = await getPhotoUrl([key]);
-              avatarUrl = urls?.[0]?.url ?? null;
-            }
-  
-            return {
-              ...user,
-              avatarUrl,
-            };
-          })
-        );
+      if (error) {
+        console.log(error.message);
+        return;
+      }
+
+      const enriched = await Promise.all(
+        data.map(async (user) => {
+          let avatarUrl = null;
+          if (user.avatar_key) {
+            const urls = await getPhotoUrl([user.avatar_key]);
+            avatarUrl = urls?.[0]?.url ?? null;
+          }
+          return { ...user, avatarUrl };
+        })
+      );
 
       setFriendAvatars(enriched);
     }

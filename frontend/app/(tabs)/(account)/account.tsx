@@ -30,6 +30,8 @@ type VisPin = {
 export default function Account() {
   const { profile } = useAuth();
   const [username, setUsername] = useState("");
+  const [location, setLocation] = useState<string | null>(null);
+  const [bio, setBio] = useState<string | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [userLoading, setUserLoading] = useState(true);
   const [favLoading, setFavLoading] = useState(true);
@@ -58,6 +60,15 @@ export default function Account() {
         const urls = await getPhotoUrl([profile.avatar_key]);
         setAvatarUrl(urls[0].url);
       }
+
+      const { data: userData } = await supabase
+        .from("users")
+        .select("location, bio")
+        .eq("user_id", profile.user_id)
+        .single();
+
+      setLocation(userData?.location ?? null);
+      setBio(userData?.bio ?? null);
       setUserLoading(false);
     };
     loadUser();
@@ -186,10 +197,9 @@ export default function Account() {
           .maybeSingle(),
         // exclude users who have set their account to not discoverable
         supabase
-          .from("users")
-          .select("user_id, username, photo_id")
-          .eq("discoverable", true)
-          .order("user_id", { ascending: false })
+          .from("profiles")
+          .select("user_id, username, avatar_key")
+          .order("created_at", { ascending: false })
           .limit(1)
           .maybeSingle(),
         // exclude private/deleted pins
@@ -214,13 +224,13 @@ export default function Account() {
 
       const visitPinId = visitRes.data?.pin_id ?? null;
       const newPinId = pinRes.data?.pin_id ?? null;
-      const friendPhotoId = friendRes.data?.photo_id ?? null;
+      const friendAvatarKey = friendRes.data?.avatar_key ?? null;
 
       setRecentVisitPinId(visitPinId);
       setRecentPinId(newPinId);
       setRecentFriendId(friendRes.data?.user_id ?? null);
 
-      // This sections supports the mini photos found in the Recent Activity box 
+      // This sections supports the mini photos found in the Recent Activity box
       const [visitPhotoUrl, newPinPhotoUrl] = await Promise.all([
         visitPinId ? fetchPinCoverUrl(visitPinId) : Promise.resolve(null),
         newPinId ? fetchPinCoverUrl(newPinId) : Promise.resolve(null),
@@ -228,16 +238,9 @@ export default function Account() {
       setRecentVisitPhoto(visitPhotoUrl);
       setRecentPinPhoto(newPinPhotoUrl);
 
-      if (friendPhotoId) {
-        const { data: photoData } = await supabase
-          .from("photos")
-          .select("key")
-          .eq("photo_id", friendPhotoId)
-          .single();
-        if (photoData?.key) {
-          const urls = await getPhotoUrl([photoData.key]);
-          setRecentFriendPhoto(urls?.[0]?.url ?? null);
-        }
+      if (friendAvatarKey) {
+        const urls = await getPhotoUrl([friendAvatarKey]);
+        setRecentFriendPhoto(urls?.[0]?.url ?? null);
       }
 
       setActivityLoading(false);
@@ -287,9 +290,9 @@ export default function Account() {
         <Text style={styles.username}>{username}</Text>
         <View style={styles.locationRow}>
           <Ionicons name="location-sharp" size={17} color="#333" />
-          <Text style={[styles.location, { paddingLeft: 2 }]}>Long Beach</Text>
+          <Text style={[styles.location, { paddingLeft: 2 }]}>{location ?? "No location set"}</Text>
         </View>
-        <Text style={styles.bio}>Charted Developer</Text>
+        <Text style={styles.bio}>{bio ?? ""}</Text>
 
         {/* Stats */}
           <View style={styles.infoBox}>
