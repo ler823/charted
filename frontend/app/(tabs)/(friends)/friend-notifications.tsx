@@ -1,7 +1,9 @@
 import { Colors, Fonts } from "@/constants/theme";
 import { useAuth } from "@/context/AuthContext";
+import { getPhotoUrl } from "@/lib/photo-utils";
 import { supabase } from "@/lib/supabase";
 import { Ionicons } from "@expo/vector-icons";
+import { Image } from "expo-image";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
@@ -9,12 +11,17 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 type FriendRequest = {
   id: string;
   username: string;
+  avatarUrl?: string | null;
 };
 
-function Avatar({ username }: { username: string }) {
+function Avatar({ username, avatarUrl }: { username: string; avatarUrl?: string | null }) {
   return (
     <View style={styles.avatar}>
-      <Text style={styles.avatarInitial}>{username?.[0]?.toUpperCase()}</Text>
+      {avatarUrl ? (
+        <Image source={{ uri: avatarUrl }} style={StyleSheet.absoluteFill} contentFit="cover" transition={300} />
+      ) : (
+        <Text style={styles.avatarInitial}>{username?.[0]?.toUpperCase()}</Text>
+      )}
     </View>
   );
 }
@@ -55,27 +62,37 @@ export default function FriendNotifications() {
     const sentUuids = (sentData ?? []).map((r: any) => r.target_id);
     const allUuids = [...new Set([...receivedUuids, ...sentUuids])];
 
-    let usernameMap: Record<string, string> = {};
+    let profileMap: Record<string, { username: string; avatarUrl: string | null }> = {};
     if (allUuids.length > 0) {
       const { data: profileData } = await supabase
         .from("profiles")
-        .select("id, username")
+        .select("id, username, avatar_key")
         .in("id", allUuids);
-      (profileData ?? []).forEach((p: any) => {
-        usernameMap[p.id] = p.username;
-      });
+
+      await Promise.all(
+        (profileData ?? []).map(async (p: any) => {
+          let avatarUrl = null;
+          if (p.avatar_key) {
+            const urls = await getPhotoUrl([p.avatar_key]);
+            avatarUrl = urls?.[0]?.url ?? null;
+          }
+          profileMap[p.id] = { username: p.username, avatarUrl };
+        })
+      );
     }
 
     setReceived(
       (receivedData ?? []).map((r: any) => ({
         id: r.id,
-        username: usernameMap[r.requester_id] ?? r.requester_id,
+        username: profileMap[r.requester_id]?.username ?? r.requester_id,
+        avatarUrl: profileMap[r.requester_id]?.avatarUrl ?? null,
       }))
     );
     setSent(
       (sentData ?? []).map((r: any) => ({
         id: r.id,
-        username: usernameMap[r.target_id] ?? r.target_id,
+        username: profileMap[r.target_id]?.username ?? r.target_id,
+        avatarUrl: profileMap[r.target_id]?.avatarUrl ?? null,
       }))
     );
   };
@@ -121,7 +138,7 @@ export default function FriendNotifications() {
         )}
         {received.map((user) => (
           <View key={user.id} style={styles.card}>
-            <Avatar username={user.username} />
+            <Avatar username={user.username} avatarUrl={user.avatarUrl} />
             <Text style={styles.username}>{user.username}</Text>
             <View style={styles.actions}>
               <Pressable style={styles.acceptBtn} onPress={() => handleAccept(user.id)}>
@@ -142,7 +159,7 @@ export default function FriendNotifications() {
         )}
         {sent.map((user) => (
           <View key={user.id} style={styles.card}>
-            <Avatar username={user.username} />
+            <Avatar username={user.username} avatarUrl={user.avatarUrl} />
             <Text style={styles.username}>{user.username}</Text>
             <Pressable style={styles.unsendBtn} onPress={() => handleUnsend(user.id)}>
               <Text style={styles.unsendText}>Unsend</Text>
@@ -223,6 +240,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#d8d8d8",
     alignItems: "center",
     justifyContent: "center",
+    overflow: "hidden",
   },
   avatarInitial: {
     fontSize: 28,
