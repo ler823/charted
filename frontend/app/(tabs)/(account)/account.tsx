@@ -195,36 +195,61 @@ export default function Account() {
     // For now, does practical queries such as most recent pins made and most recent user create
     // Awaits multiple user integration in Sprint 3 to support accurate data
     async function fetchActivity() {
-      const [visitRes, friendRes, pinRes] = await Promise.all([
+      if (!profile) return;
+
+      const [visitRes, pinRes] = await Promise.all([
+        // Most recently visited pin by this user
         supabase
-          .from("pin_visits")
-          .select("pin_id, visit_timestamp, pins!inner(name)")
-          .eq("pins.private", false)
-          .order("visit_timestamp", { ascending: false })
+          .from("pins_with_last_visit")
+          .select("pin_id, name, last_visited")
+          .eq("user_id", profile.user_id)
+          .eq("private", false)
+          .not("last_visited", "is", null)
+          .order("last_visited", { ascending: false })
           .limit(1)
           .maybeSingle(),
-        // exclude users who have set their account to not discoverable
-        supabase
-          .from("profiles")
-          .select("user_id, username, avatar_key")
-          .order("created_at", { ascending: false })
-          .limit(1)
-          .maybeSingle(),
-        // exclude private/deleted pins
+        // Most recently created pin by this user
         supabase
           .from("pins")
           .select("pin_id, name")
+          .eq("user_id", profile.user_id)
           .eq("private", false)
           .order("created_at", { ascending: false })
           .limit(1)
           .maybeSingle(),
       ]);
 
-      if (visitRes.data?.pins) {
-        setRecentVisit((visitRes.data.pins as any).name ?? null);
+      // Most recently accepted friend from user_relationships1
+      const { data: relData } = await supabase
+        .from("user_relationships1")
+        .select("requester_id, target_id")
+        .eq("status", "accepted")
+        .or(`requester_id.eq.${profile.id},target_id.eq.${profile.id}`)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      let friendUsername: string | null = null;
+      let friendAvatarKey: string | null = null;
+      let friendUserId: number | null = null;
+
+      if (relData) {
+        const friendUuid = relData.requester_id === profile.id ? relData.target_id : relData.requester_id;
+        const { data: friendProfile } = await supabase
+          .from("profiles")
+          .select("user_id, username, avatar_key")
+          .eq("id", friendUuid)
+          .single();
+        friendUsername = friendProfile?.username ?? null;
+        friendAvatarKey = friendProfile?.avatar_key ?? null;
+        friendUserId = friendProfile?.user_id ?? null;
       }
-      if (friendRes.data?.username) {
-        setRecentFriend(friendRes.data.username);
+
+      if (visitRes.data?.name) {
+        setRecentVisit(visitRes.data.name);
+      }
+      if (friendUsername) {
+        setRecentFriend(friendUsername);
       }
       if (pinRes.data?.name) {
         setRecentPin(pinRes.data.name);
@@ -232,11 +257,10 @@ export default function Account() {
 
       const visitPinId = visitRes.data?.pin_id ?? null;
       const newPinId = pinRes.data?.pin_id ?? null;
-      const friendAvatarKey = friendRes.data?.avatar_key ?? null;
 
       setRecentVisitPinId(visitPinId);
       setRecentPinId(newPinId);
-      setRecentFriendId(friendRes.data?.user_id ?? null);
+      setRecentFriendId(friendUserId);
 
       // This sections supports the mini photos found in the Recent Activity box
       const [visitPhotoUrl, newPinPhotoUrl] = await Promise.all([
@@ -254,7 +278,7 @@ export default function Account() {
       setActivityLoading(false);
     }
     fetchActivity();
-  }, []);
+  }, [profile]);
 
   if (loading) return <LoadingPage />;
 
@@ -432,7 +456,7 @@ export default function Account() {
             <View style={styles.divider} />
             <Pressable
               style={styles.activityRow}
-              onPress={() => recentFriendId && router.push({ pathname: "/friend_profiles/[friendid]", params: { friendid: String(recentFriendId) } })}
+              onPress={() => recentFriendId && router.push({ pathname: "/friend_profiles/[friendid]", params: { friendid: String(recentFriendId), from: "account" } })}
             >
               {recentFriendPhoto ? (
                 <Image source={{ uri: recentFriendPhoto }} style={styles.locAvatar} contentFit="cover" transition={300} />

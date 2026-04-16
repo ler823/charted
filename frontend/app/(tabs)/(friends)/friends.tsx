@@ -10,8 +10,8 @@ import { getPhotoUrl } from "@/lib/photo-utils";
 import { Image } from "expo-image";
 
 type UserCard = {
-  profileId: string;   // UUID
-  user_id: number;     // integer for friend_profiles routing
+  profileId: string;
+  user_id: number;
   username: string;
   location: string | null;
   avatarUrl?: string | null;
@@ -21,9 +21,7 @@ export default function Friends() {
   const router = useRouter();
   const { profile, loading: authLoading } = useAuth();
   const [friends, setFriends] = useState<UserCard[]>([]);
-  const [discover, setDiscover] = useState<UserCard[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
-  const [mode, setMode] = useState<"friends" | "discover">("friends");
   const [loading, setLoading] = useState(true);
   const [pendingCount, setPendingCount] = useState(0);
 
@@ -42,7 +40,6 @@ export default function Friends() {
     if (!profile) return;
     setLoading(true);
 
-    // Get accepted relationships
     const { data: relData } = await supabase
       .from("user_relationships1")
       .select("requester_id, target_id")
@@ -71,7 +68,6 @@ export default function Friends() {
           const urls = await getPhotoUrl([p.avatar_key]);
           avatarUrl = urls?.[0]?.url ?? null;
         }
-        // get location from users table
         const { data: userData } = await supabase
           .from("users")
           .select("location")
@@ -101,143 +97,53 @@ export default function Friends() {
     setPendingCount(count ?? 0);
   };
 
-  const fetchDiscover = async (query: string) => {
-    if (!profile) return;
-
-    // Get all UUIDs already in a relationship with the current user (this is from user_ralationships1)
-    // By checking, we are able to display on the friends of the current logged in users
-    const { data: relData } = await supabase
-      .from("user_relationships1")
-      .select("requester_id, target_id")
-      .or(`requester_id.eq.${profile.id},target_id.eq.${profile.id}`);
-
-    const excludedUuids = new Set<string>([profile.id]);
-    (relData ?? []).forEach((r: any) => {
-      excludedUuids.add(r.requester_id);
-      excludedUuids.add(r.target_id);
-    });
-
-    let q = supabase
-      .from("profiles")
-      .select("id, user_id, username, avatar_key")
-      .neq("id", profile.id);
-
-    if (query.trim()) {
-      q = q.ilike("username", `%${query.trim()}%`);
-    }
-
-    const { data } = await q.limit(30);
-
-    const filtered = (data ?? []).filter((p: any) => !excludedUuids.has(p.id));
-
-    const enriched = await Promise.all(
-      filtered.map(async (p: any) => {
-        let avatarUrl = null;
-        if (p.avatar_key) {
-          const urls = await getPhotoUrl([p.avatar_key]);
-          avatarUrl = urls?.[0]?.url ?? null;
-        }
-        return {
-          profileId: p.id,
-          user_id: p.user_id,
-          username: p.username,
-          location: null,
-          avatarUrl,
-        };
-      })
-    );
-
-    setDiscover(enriched);
-  };
-
-  const handleSearchChange = (text: string) => {
-    setSearchQuery(text);
-    if (mode === "discover") {
-      fetchDiscover(text);
-    }
-  };
-
-  const enterDiscover = () => {
-    setMode("discover");
-    setSearchQuery("");
-    fetchDiscover("");
-  };
-
-  const exitDiscover = () => {
-    setMode("friends");
-    setSearchQuery("");
-  };
-
   const filteredFriends = friends.filter((f) =>
     f.username.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const displayList = mode === "friends" ? filteredFriends : discover;
-
-  if (loading && mode === "friends") return <LoadingPage />;
+  if (loading) return <LoadingPage />;
 
   return (
     <View style={styles.container}>
       <Stack.Screen options={{ title: "Friends" }} />
 
-      {mode === "friends" ? (
-        <Pressable style={styles.plusButton} onPress={enterDiscover}>
-          <MaterialCommunityIcons name="plus" size={45} color="#fefbea" />
-        </Pressable>
-      ) : (
-        <Pressable style={styles.plusButton} onPress={exitDiscover}>
-          <MaterialCommunityIcons name="close" size={36} color="#fefbea" />
-        </Pressable>
-      )}
+      <Pressable style={styles.plusButton} onPress={() => router.push("./add-friends")}>
+        <MaterialCommunityIcons name="plus" size={45} color="#fefbea" />
+      </Pressable>
 
       <View style={styles.header}>
         <View style={styles.searchBar}>
           <TextInput
             style={styles.searchText}
-            placeholder={mode === "friends" ? "Find a friend" : "Search people…"}
+            placeholder="Find a friend"
             placeholderTextColor="#fefbea"
             value={searchQuery}
-            onChangeText={handleSearchChange}
+            onChangeText={setSearchQuery}
           />
           <Ionicons name="search" size={16} color={"#fefbea"} />
         </View>
-        {mode === "friends" && (
-          <Pressable style={styles.notifBtn} onPress={() => router.push("./friend-notifications")}>
-            <Ionicons name="notifications-outline" size={36} color={Colors.light.background} />
-            {pendingCount > 0 && <View style={styles.notifBadge} />}
-          </Pressable>
-        )}
+        <Pressable style={styles.notifBtn} onPress={() => router.push("./friend-notifications")}>
+          <Ionicons name="notifications-outline" size={36} color={Colors.light.background} />
+          {pendingCount > 0 && <View style={styles.notifBadge} />}
+        </Pressable>
       </View>
 
-      {mode === "discover" && (
-        <Text style={styles.discoverLabel}>Find People to Add</Text>
-      )}
-
       <FlatList
-        data={displayList}
+        data={filteredFriends}
         keyExtractor={(item) => item.profileId}
         contentContainerStyle={styles.list}
         ListEmptyComponent={
-          <Text style={styles.emptyText}>
-            {mode === "friends" ? "No friends yet. Tap + to find people." : "No users found."}
-          </Text>
+          <Text style={styles.emptyText}>No friends yet. Tap + to find people.</Text>
         }
         renderItem={({ item }) => (
           <Pressable
             style={styles.card}
-            onPress={() => {
-              if (mode === "friends") {
-                router.push({
-                  pathname: "/friend_profiles/[friendid]",
-                  params: { friendid: String(item.user_id) },
-                });
-              } else {
-                router.push({
-                  pathname: "/user_profiles/[userid]",
-                  params: { userid: item.profileId },
-                });
-              }
-            }}
+            onPress={() =>
+              router.push({
+                pathname: "/friend_profiles/[friendid]",
+                params: { friendid: String(item.user_id) },
+              })
+            }
           >
             <View style={styles.avatar}>
               {item.avatarUrl ? (
@@ -330,13 +236,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#fefbea",
     fontFamily: Fonts.bold,
-  },
-  discoverLabel: {
-    fontFamily: Fonts.bold,
-    fontSize: 16,
-    color: "#243e36",
-    paddingHorizontal: 20,
-    paddingBottom: 8,
   },
   list: { alignItems: "center", paddingBottom: 20 },
   card: {

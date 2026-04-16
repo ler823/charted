@@ -76,7 +76,7 @@ type RecentPin = {
 };
 
 export default function FriendProfilePage() {
-  const { friendid } = useLocalSearchParams();
+  const { friendid, from } = useLocalSearchParams<{ friendid: string; from?: string }>();
   const [friend, setFriend] = useState<Friend | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [pinLoading, setPinLoading] = useState(true);
@@ -334,7 +334,11 @@ export default function FriendProfilePage() {
         <Pressable
           style={styles.backButton}
           onPress={() => {
-            router.back();
+            if (from === "account") {
+              router.replace("/(tabs)/(account)/account");
+            } else {
+              router.back();
+            }
           }}
         >
           <Ionicons name="chevron-back" size={20} color="#d9d9d9" />
@@ -431,7 +435,7 @@ export default function FriendProfilePage() {
               style={styles.mapExpand}
               onPress={() =>
                 router.push({
-                  pathname: "../friend_maps/[friendmap]",
+                  pathname: "/friend_maps/[friendmap]",
                   params: {
                     friendmap: `${friendid}`,
                   },
