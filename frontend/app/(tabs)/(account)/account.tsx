@@ -9,6 +9,7 @@ import { useEffect, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import { supabase } from "@/lib/supabase";
+import { useAuth } from "@/context/AuthContext";
 
 type FavPin = {
   user_id: number;
@@ -27,7 +28,10 @@ type VisPin = {
 }
 
 export default function Account() {
+  const { profile, loading: authLoading } = useAuth();
   const [username, setUsername] = useState("");
+  const [location, setLocation] = useState<string | null>(null);
+  const [bio, setBio] = useState<string | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [userLoading, setUserLoading] = useState(true);
   const [favLoading, setFavLoading] = useState(true);
@@ -49,35 +53,42 @@ export default function Account() {
   const [recentPinId, setRecentPinId] = useState<number | null>(null);
 
   useEffect(() => {
-    const fetchUser = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (user) {
-        const { data } = await supabase
-          .from("profiles")
-          .select("username, avatar_key")
-          .eq("id", user.id)
-          .single();
-        if (data) {
-          setUsername(data.username);
-          if (data.avatar_key) {
-            const urls = await getPhotoUrl([data.avatar_key]);
-            setAvatarUrl(urls[0].url);
-          }
+    const loadUser = async () => {
+      if (!profile) {
+        if (!authLoading) {
+          setUserLoading(false);
+          setFavLoading(false);
+          setVisitLoading(false);
+          setActivityLoading(false);
         }
+        return;
       }
+      setUsername(profile.username);
+      if (profile.avatar_key) {
+        const urls = await getPhotoUrl([profile.avatar_key]);
+        setAvatarUrl(urls[0].url);
+      }
+
+      const { data: userData } = await supabase
+        .from("users")
+        .select("location, bio")
+        .eq("user_id", profile.user_id)
+        .single();
+
+      setLocation(userData?.location ?? null);
+      setBio(userData?.bio ?? null);
       setUserLoading(false);
     };
-    fetchUser();
-  }, []);
+    loadUser();
+  }, [profile, authLoading]);
 
   useEffect(() => {
+    if (!profile) return;
     async function fetchFavorite() {
       const { data, error } = await supabase
         .from("pins_with_last_visit")
         .select("*")
-        .eq("user_id", Number(2))
+        .eq("user_id", profile!.user_id)
         .eq("private", false)
         .order("user_rating", { ascending: false })
         .order("last_visited", { ascending: false })
@@ -87,19 +98,20 @@ export default function Account() {
         console.error("Failed to fetch favorite pin:", error.message);
         return;
       }
-      
-      setFavorite(data);    
+
+      setFavorite(data);
       setFavLoading(false);
     }
     fetchFavorite();
-  }, []);
+  }, [profile]);
 
   useEffect(() => {
+    if (!profile) return;
     async function fetchTopVisited() {
       const { data, error } = await supabase
         .from("pins_with_visit_count")
         .select("*")
-        .eq("user_id", Number(2))
+        .eq("user_id", profile!.user_id)
         .eq("private", false)
         .order("visit_count", { ascending: false })
         .order("last_visited", { ascending: false })
@@ -109,12 +121,12 @@ export default function Account() {
         console.error("Failed to fetch most visited pin:", error.message);
         return;
       }
-      
-      setVisited(data);    
+
+      setVisited(data);
       setVisitLoading(false);
     }
     fetchTopVisited();
-  }, []);
+  }, [profile]);
   
   useEffect(() => {
     setFavPhoto(null);
@@ -193,10 +205,9 @@ export default function Account() {
           .maybeSingle(),
         // exclude users who have set their account to not discoverable
         supabase
-          .from("users")
-          .select("user_id, username, photo_id")
-          .eq("discoverable", true)
-          .order("user_id", { ascending: false })
+          .from("profiles")
+          .select("user_id, username, avatar_key")
+          .order("created_at", { ascending: false })
           .limit(1)
           .maybeSingle(),
         // exclude private/deleted pins
@@ -221,13 +232,13 @@ export default function Account() {
 
       const visitPinId = visitRes.data?.pin_id ?? null;
       const newPinId = pinRes.data?.pin_id ?? null;
-      const friendPhotoId = friendRes.data?.photo_id ?? null;
+      const friendAvatarKey = friendRes.data?.avatar_key ?? null;
 
       setRecentVisitPinId(visitPinId);
       setRecentPinId(newPinId);
       setRecentFriendId(friendRes.data?.user_id ?? null);
 
-      // This sections supports the mini photos found in the Recent Activity box 
+      // This sections supports the mini photos found in the Recent Activity box
       const [visitPhotoUrl, newPinPhotoUrl] = await Promise.all([
         visitPinId ? fetchPinCoverUrl(visitPinId) : Promise.resolve(null),
         newPinId ? fetchPinCoverUrl(newPinId) : Promise.resolve(null),
@@ -235,16 +246,9 @@ export default function Account() {
       setRecentVisitPhoto(visitPhotoUrl);
       setRecentPinPhoto(newPinPhotoUrl);
 
-      if (friendPhotoId) {
-        const { data: photoData } = await supabase
-          .from("photos")
-          .select("key")
-          .eq("photo_id", friendPhotoId)
-          .single();
-        if (photoData?.key) {
-          const urls = await getPhotoUrl([photoData.key]);
-          setRecentFriendPhoto(urls?.[0]?.url ?? null);
-        }
+      if (friendAvatarKey) {
+        const urls = await getPhotoUrl([friendAvatarKey]);
+        setRecentFriendPhoto(urls?.[0]?.url ?? null);
       }
 
       setActivityLoading(false);
@@ -287,16 +291,20 @@ export default function Account() {
             transition={300}
           />
         ) : (
-          <View style={styles.avatar} />
+          <View style={styles.avatar}>
+            {username ? (
+              <Text style={styles.avatarInitial}>{username[0].toUpperCase()}</Text>
+            ) : null}
+          </View>
         )}
 
         {/* Username, Location, Bio */}
         <Text style={styles.username}>{username}</Text>
         <View style={styles.locationRow}>
           <Ionicons name="location-sharp" size={17} color="#333" />
-          <Text style={[styles.location, { paddingLeft: 2 }]}>Long Beach</Text>
+          <Text style={[styles.location, { paddingLeft: 2 }]}>{location ?? "No location set"}</Text>
         </View>
-        <Text style={styles.bio}>Charted Developer</Text>
+        <Text style={styles.bio}>{bio ?? ""}</Text>
 
         {/* Stats */}
           <View style={styles.infoBox}>
@@ -534,6 +542,11 @@ const styles = StyleSheet.create({
     backgroundColor: "#d8d8d8",
     alignItems: "center",
     justifyContent: "center",
+  },
+  avatarInitial: {
+    fontSize: 65,
+    fontFamily: Fonts.regular,
+    color: "#000",
   },
   locAvatar: {
     width: 32,

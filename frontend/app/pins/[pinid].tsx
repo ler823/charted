@@ -17,6 +17,7 @@ import {
 //import { AutoSkeletonView } from "react-native-auto-skeleton";
 import LoadingPage from "@/components/loading-page";
 import { getPhotoUrl } from "@/lib/photo-utils";
+import { useAuth } from "@/context/AuthContext";
 
 type Friend = {
   user_id: number;
@@ -86,6 +87,7 @@ type Notes = {
 
 export default function PinPage() {
   const { pinid, viewMode } = useLocalSearchParams();
+  const { profile } = useAuth();
 
   const [pin, setPin] = useState<Pin | null>(null);
   const [friends, setFriends] = useState<Friend[] | null>([]);
@@ -182,26 +184,26 @@ export default function PinPage() {
         cluster?.user_ids?.filter((id) => id !== pin?.user_id) ?? [];
 
       const { data, error } = await supabase
-        .from("users")
-        .select("user_id, username, location, photos:photo_id(key)")
+        .from("profiles")
+        .select("user_id, username, avatar_key")
         .in("user_id", filteredUserIds ?? []);
 
       if (!data) return;
-      
+
       const enriched = await Promise.all(
         data
         .filter((user) => user.user_id !== pin.user_id)
         .map(async (user) => {
-          const key = user.photos?.key;
-
           let avatarUrl = null;
-          if (key) {
-            const urls = await getPhotoUrl([key]);
+          if (user.avatar_key) {
+            const urls = await getPhotoUrl([user.avatar_key]);
             avatarUrl = urls?.[0]?.url ?? null;
           }
 
           return {
-            ...user,
+            user_id: user.user_id,
+            username: user.username,
+            location: null,
             avatarUrl,
           };
         })
@@ -224,17 +226,28 @@ export default function PinPage() {
 
       const { data, error } = await supabase
         .from("pins")
-        .select("user_id, user_note, users:user_id( username, photos:photo_id(key) )")
+        .select("user_id, user_note, users:user_id( username )")
         .in("pin_id", filteredPinIds ?? []);
 
-        const normalized = (data ?? [])
-          .filter((row) => row.user_id !== pin.user_id)
+      const filteredData = (data ?? []).filter((row) => row.user_id !== pin.user_id);
+      const noteUserIds = filteredData.map((r) => r.user_id).filter(Boolean);
+
+      const { data: profileData } = await supabase
+        .from("profiles")
+        .select("user_id, avatar_key")
+        .in("user_id", noteUserIds);
+
+      const avatarKeyMap = Object.fromEntries(
+        (profileData ?? []).map((p) => [p.user_id, p.avatar_key])
+      );
+
+        const normalized = filteredData
           .map((row) => {
             const user = Array.isArray(row.users)
               ? row.users[0]
               : row.users;
 
-            const key = user?.photos?.key ?? null;
+            const key = avatarKeyMap[row.user_id] ?? null;
 
             return {
               user_id: row.user_id,
@@ -291,7 +304,7 @@ export default function PinPage() {
           placeholderContentFit="cover"
         />
 
-        {pin.user_id !== 4 && (
+        {pin.user_id !== profile?.user_id && (
           <View style={{backgroundColor: "#243e36", padding: 7, paddingRight: 14, alignSelf: "flex-start", borderTopRightRadius: 16, top: 167, position: "absolute"}}>
             <Text style={{ fontFamily: Fonts.bold_i, color: "#d9d9d9", fontSize: 16, marginLeft: 3 }}>
               {pin.users?.username || "No username available"}'s Pin

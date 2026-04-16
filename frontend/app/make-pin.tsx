@@ -32,6 +32,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { useLocation } from "@/hooks/use-location";
 import { getPhotoUrl, pickImageAsync, processImage } from "@/lib/photo-utils";
+import { useAuth } from "@/context/AuthContext";
 
 type PhotoItem = {
   key: string;
@@ -46,6 +47,7 @@ type ListType = {
 
 export default function MakePin() {
   const router = useRouter();
+  const { profile } = useAuth();
   const {
     pinId,
     lat: latParam,
@@ -124,18 +126,12 @@ export default function MakePin() {
       return;
     }
 
-    const { data: userData, error: userError } = await supabase
-      .from("users")
-      .select("user_id")
-      .eq("username", "TimTimTim")
-      .single();
-
-    if (userError || !userData) return;
+    if (!profile) return;
 
     let query = supabase
       .from("pins")
       .select("name, pin_id")
-      .eq("user_id", userData.user_id)
+      .eq("user_id", profile.user_id)
       .eq("address", addressToCheck);
 
     // When editing, exclude the current pin so its own address doesn't trigger
@@ -273,7 +269,7 @@ export default function MakePin() {
       p_private: isPrivate,
       p_user_note: notes,
       p_user_rating: rating,
-      p_username: "TimTimTim",
+      p_user_id: profile?.user_id,
     });
     if (error) {
       Alert.alert("Error", error.message);
@@ -441,43 +437,29 @@ export default function MakePin() {
   };
 
   const getUserTags = async () => {
+    if (!profile) return [];
     const { data, error } = await supabase
       .from("tags")
-      .select(
-        `
-      tag_id,
-      name,
-      users!tags_user_id_fkey (
-        username
-      )
-    `,
-      )
-      .eq("users.username", "TimTimTim");
+      .select("tag_id, name")
+      .eq("user_id", profile.user_id);
 
     if (error) {
       Alert.alert("Error", error.message);
-      return;
+      return [];
     }
     return data.map((tag: { name: string }) => tag.name);
   };
 
   const getUserLists = async () => {
+    if (!profile) return [];
     const { data, error } = await supabase
       .from("lists")
-      .select(
-        `
-      list_id,
-      name,
-      users!lists_user_id_fkey (
-        username
-      )
-    `,
-      )
-      .eq("users.username", "TimTimTim");
+      .select("list_id, name")
+      .eq("user_id", profile.user_id);
 
     if (error) {
       Alert.alert("Error", error.message);
-      return;
+      return [];
     }
     return data.map((list: { name: string }) => list.name);
   };
@@ -497,16 +479,9 @@ export default function MakePin() {
       Alert.alert("Missing field", "Please enter a name for the new tag");
       return;
     }
-    const { data: userId, error: userIdError } = await supabase
-      .from("users")
-      .select("user_id")
-      .eq("username", "TimTimTim");
-    if (userIdError) {
-      Alert.alert("Error", userIdError.message);
-      return;
-    }
+    if (!profile) return;
     let tagToAdd = {
-      user_id: userId[0].user_id,
+      user_id: profile.user_id,
       name: newTag.name,
       privacy: newTag.privacy,
     };
@@ -529,16 +504,9 @@ export default function MakePin() {
       Alert.alert("Missing field", "Please enter a name for the new list");
       return;
     }
-    const { data: userId, error: userIdError } = await supabase
-      .from("users")
-      .select("user_id")
-      .eq("username", "TimTimTim");
-    if (userIdError) {
-      Alert.alert("Error", userIdError.message);
-      return;
-    }
+    if (!profile) return;
     let listToAdd = {
-      user_id: userId[0].user_id,
+      user_id: profile.user_id,
       name: newList.name,
       privacy: newList.privacy,
     };
@@ -589,8 +557,9 @@ export default function MakePin() {
   };
 
   const cleanupUnusedTags = async () => {
+    if (!profile) return;
     const { error } = await supabase.rpc("update_tags", {
-      p_username: "TimTimTim",
+      p_user_id: profile.user_id,
     });
 
     if (error) {
@@ -600,8 +569,9 @@ export default function MakePin() {
   };
 
   const cleanupUnusedLists = async () => {
+    if (!profile) return;
     const { error } = await supabase.rpc("update_lists", {
-      p_username: "TimTimTim",
+      p_user_id: profile.user_id,
     });
 
     if (error) {
@@ -644,19 +614,6 @@ export default function MakePin() {
       return;
     }
     if (locData == null) {
-      return;
-    }
-
-    const { data: userData, error: userDataError } = await supabase
-      .from("users")
-      .select("user_id")
-      .eq("username", "TimTimTim");
-
-    if (userDataError) {
-      Alert.alert("Error", userDataError.message);
-      return;
-    }
-    if (userData == null) {
       return;
     }
 

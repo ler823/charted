@@ -1,12 +1,9 @@
-import { Colors, Fonts } from "@/constants/theme";
-import { supabase } from "@/lib/supabase";
+import { Fonts } from "@/constants/theme";
 import React, { useEffect, useState } from "react";
 import { StyleSheet, View, Text } from "react-native";
-import LoadingPage from "./loading-page";
 import Svg, { Path } from "react-native-svg";
 
 interface PinMarkerProps {
-  color?: string;
   users_id: number[];
   number_shared: number;
 }
@@ -43,16 +40,12 @@ const COLORS = [
         "#b87ed4",
     ]
 
-function getUserColor(userId: string | number, defaultColor: string): string {
+function getUserColor(userId: string | number): string {
   const str = String(userId);
-
-  if (userId === 4) return defaultColor;
-
   let hash = 0;
   for (let i = 0; i < str.length; i++) {
     hash = str.charCodeAt(i) + ((hash << 5) - hash);
   }
-
   return COLORS[Math.abs(hash) % COLORS.length];
 }
 
@@ -78,7 +71,6 @@ function createSlicePath(cx: number, cy: number, r: number, startAngle: number, 
  * Custom pin-marker with customizable style just like the Figma design
  */
 export default function SharedPinMarkers({
-  color = Colors.light.accent,
   users_id,
   number_shared,
 }: PinMarkerProps) {
@@ -90,14 +82,14 @@ export default function SharedPinMarkers({
       }
     }, [users_id]);
     
-    const userColors = friend.map((id) => getUserColor(id, color));
+    const userColors = friend.map((id) => getUserColor(id));
   
   if (users_id.length === 2) {
     return (
       <View style={styles.wrapper}>
         <View style={styles.pinRow}>
-          <View style={[styles.leftHalf, { backgroundColor: userColors[0] ?? color }]} />
-          <View style={[styles.rightHalf, { backgroundColor: userColors[1] ?? color }]} />
+          <View style={[styles.leftHalf, { backgroundColor: userColors[0] ?? "#7ca982" }]} />
+          <View style={[styles.rightHalf, { backgroundColor: userColors[1] ?? "#7ca982" }]} />
             <View style={styles.avatar}>
               <Text style={styles.avatarInitial}>{number_shared}</Text>
             </View>
@@ -118,9 +110,9 @@ export default function SharedPinMarkers({
       <View style={styles.wrapper}>
         <View style={{ width: size, height: size }}>
           <Svg width={size} height={size} style={{ transform: [{ rotate: "-90deg" }] }}>
-            <Path d={createSlicePath(cx, cy, r, 0, 120)} fill={userColors[0] ?? color} />
-            <Path d={createSlicePath(cx, cy, r, 120, 240)} fill={userColors[1] ?? color} />
-            <Path d={createSlicePath(cx, cy, r, 240, 360)} fill={userColors[2] ?? color} />
+            <Path d={createSlicePath(cx, cy, r, 0, 120)} fill={userColors[0] ?? "#7ca982"} />
+            <Path d={createSlicePath(cx, cy, r, 120, 240)} fill={userColors[1] ?? "#7ca982"} />
+            <Path d={createSlicePath(cx, cy, r, 240, 360)} fill={userColors[2] ?? "#7ca982"} />
           </Svg>
 
           <View style={styles.avatar}>
@@ -138,15 +130,15 @@ export default function SharedPinMarkers({
     return (
       <View style={styles.wrapper}>
         <View style={styles.pinQuarterRow}>
-          <View style={[styles.leftTop, { backgroundColor: userColors[0] ?? color }]} />
-          <View style={[styles.rightTop, { backgroundColor: userColors[1] ?? color }]} />
+          <View style={[styles.leftTop, { backgroundColor: userColors[0] ?? "#7ca982" }]} />
+          <View style={[styles.rightTop, { backgroundColor: userColors[1] ?? "#7ca982" }]} />
           <View style={styles.quarterAvatar}>
             <Text style={styles.avatarInitial}>{number_shared}</Text>
           </View>
         </View>
         <View style={styles.pinQuarterRow}>
-          <View style={[styles.leftBottom, { backgroundColor: userColors[2] ?? color }]} />
-          <View style={[styles.rightBottom, { backgroundColor: userColors[3] ?? color }]} />
+          <View style={[styles.leftBottom, { backgroundColor: userColors[2] ?? "#7ca982" }]} />
+          <View style={[styles.rightBottom, { backgroundColor: userColors[3] ?? "#7ca982" }]} />
         </View>
         <View style={styles.stem} />
         <View style={{height: 62}}/>

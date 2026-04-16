@@ -1,6 +1,7 @@
 import { Fonts } from "@/constants/theme";
 import { getPhotoUrl } from "@/lib/photo-utils";
 import { supabase } from "@/lib/supabase";
+import { useAuth } from "@/context/AuthContext";
 import { Pin } from "@/types/types";
 import { Image } from "expo-image";
 import { router } from "expo-router";
@@ -18,6 +19,7 @@ type FriendAvatar = {
 };
 
 function GridCard({ item }: { item: Pin }) {
+  const { profile } = useAuth();
   const [coverPhoto, setCoverPhoto] = useState<string | null>(null);
   const [friendAvatars, setFriendAvatars] = useState<FriendAvatar[]>([]);
   const [extraCount, setExtraCount] = useState(0);
@@ -29,14 +31,14 @@ function GridCard({ item }: { item: Pin }) {
         return;
       }
 
-      if (item.userIds.length === 1 && item.userIds[0] === 4) {
+      if (item.userIds.length === 1 && item.userIds[0] === profile?.user_id) {
         setFriendAvatars([]);
         return;
       }
 
       const { data, error } = await supabase
-        .from("users")
-        .select("user_id, username, photos:photo_id(key)")
+        .from("profiles")
+        .select("user_id, username, avatar_key")
         .in("user_id", item.userIds)
         .limit(3);
 
@@ -47,18 +49,12 @@ function GridCard({ item }: { item: Pin }) {
 
       const enriched = await Promise.all(
         limitedData.map(async (user) => {
-          const key = user.photos?.key;
-
           let avatarUrl = null;
-          if (key) {
-            const urls = await getPhotoUrl([key]);
+          if (user.avatar_key) {
+            const urls = await getPhotoUrl([user.avatar_key]);
             avatarUrl = urls?.[0]?.url ?? null;
           }
-
-          return {
-            ...user,
-            avatarUrl,
-          };
+          return { ...user, avatarUrl };
         })
       );
 

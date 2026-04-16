@@ -14,11 +14,7 @@ interface PinMarkerProps {
 type Friend = {
   user_id: number;
   username: string;
-  location: string | null;
-  bio: string | null;
-  photos: {
-    key: string | null;
-  }[];
+  avatar_key: string | null;
 };
 
 const COLORS = [
@@ -58,18 +54,16 @@ export default function PinMarkers({
     useEffect(() => {
           async function fetchUsers() {
             const { data, error } = await supabase
-              .from("users")
-              .select("user_id, username, location, bio, photos:photo_id( key )")
+              .from("profiles")
+              .select("user_id, username, avatar_key")
               .eq("user_id", Number(users_id))
               .single();
             if (error) {
-                console.error("Failed to fetch users:", error.message);
-                return;
-              }
-            if (data?.photos?.key) {
-              const key = data?.photos?.key ?? null;
-              if (!key) return;
-              const urls = await getPhotoUrl([key]);
+              console.error("Failed to fetch user profile:", error.message);
+              return;
+            }
+            if (data?.avatar_key) {
+              const urls = await getPhotoUrl([data.avatar_key]);
               setAvatarUrl(urls[0].url);
             }
             setFriend(data);

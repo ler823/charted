@@ -1,4 +1,5 @@
 import LoadingPage from "@/components/loading-page";
+import { useAuth } from "@/context/AuthContext";
 import { Fonts } from "@/constants/theme";
 import { getPhotoUrl } from "@/lib/photo-utils";
 import { supabase } from "@/lib/supabase";
@@ -8,157 +9,155 @@ import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
-type Friend = {
-  user_id: number;
+type RelationshipStatus = "none" | "pending_sent" | "pending_received" | "accepted";
+
+type ProfileData = {
   username: string;
-  location: string | null;
+  avatar_key: string | null;
+  user_id: number;
   bio: string | null;
-  photos: {
-    key: string | null;
-  }[];
 };
 
-export default function FriendProfilePage() {
-  const { userid } = useLocalSearchParams();
-  const [friend, setFriend] = useState<Friend | null>(null);
+export default function UserProfilePage() {
+  const { userid } = useLocalSearchParams<{ userid: string }>();
+  const { profile: currentProfile } = useAuth();
+  const [profileData, setProfileData] = useState<ProfileData | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [requestSent, setRequestSent] = useState(false);
+  const [status, setStatus] = useState<RelationshipStatus>("none");
+  const [relationshipId, setRelationshipId] = useState<string | null>(null);
 
   useEffect(() => {
-      async function fetchUsers() {
-        const { data } = await supabase
-          .from("users")
-          .select("user_id, username, location, bio, photos:photo_id( key )")
-          .eq("user_id", Number(userid))
-          .single();
-        if (data?.photos?.key) {
-          const key = data?.photos?.key ?? null;
-          if (!key) return;
-          const urls = await getPhotoUrl([key]);
-          setAvatarUrl(urls[0].url);
-        }
-        setFriend(data);
-        setLoading(false);
-      }
-      fetchUsers();
-    }, []);
+    if (!userid || !currentProfile) return;
+    fetchProfile();
+    checkRelationship();
+  }, [userid, currentProfile]);
+
+  const fetchProfile = async () => {
+    // THis part grabs the curent user's profile using UUID
+    const { data: p } = await supabase
+      .from("profiles")
+      .select("username, avatar_key, user_id")
+      .eq("id", userid)
+      .single();
+
+    if (!p) { setLoading(false); return; }
+
+    // Get bio from users table, users are associated via profiles
+    const { data: u } = await supabase
+      .from("users")
+      .select("bio")
+      .eq("user_id", p.user_id)
+      .single();
+
+    if (p.avatar_key) {
+      const urls = await getPhotoUrl([p.avatar_key]);
+      setAvatarUrl(urls?.[0]?.url ?? null);
+    }
+
+    setProfileData({ username: p.username, avatar_key: p.avatar_key, user_id: p.user_id, bio: u?.bio ?? null });
+    setLoading(false);
+  };
+
+  const checkRelationship = async () => {
+    if (!currentProfile || !userid) return;
+    const myUuid = currentProfile.id;
+
+    const { data } = await supabase
+      .from("user_relationships1")
+      .select("id, requester_id, target_id, status")
+      .or(
+        `and(requester_id.eq.${myUuid},target_id.eq.${userid}),and(requester_id.eq.${userid},target_id.eq.${myUuid})`
+      )
+      .maybeSingle();
+
+    if (!data) { setStatus("none"); return; }
+
+    setRelationshipId(data.id);
+    if (data.status === "accepted") {
+      setStatus("accepted");
+    } else if (data.status === "pending") {
+      setStatus(data.requester_id === myUuid ? "pending_sent" : "pending_received");
+    } else {
+      setStatus("none");
+    }
+  };
+
+  const handleRequest = async () => {
+    if (!currentProfile || !userid) return;
+    const { data, error } = await supabase
+      .from("user_relationships1")
+      .insert({ requester_id: currentProfile.id, target_id: userid, status: "pending" })
+      .select("id")
+      .single();
+    if (!error && data) {
+      setRelationshipId(data.id);
+      setStatus("pending_sent");
+    }
+  };
+
+  const handleUnsend = async () => {
+    if (!relationshipId) return;
+    await supabase.from("user_relationships1").delete().eq("id", relationshipId);
+    setRelationshipId(null);
+    setStatus("none");
+  };
 
   if (loading) return <LoadingPage />;
 
-  if (!requestSent) return (
+  return (
     <>
       <View style={{ marginTop: 45, marginLeft: 10 }}>
-        <Pressable
-          style={styles.backButton}
-          onPress={() => {
-            router.back();
-          }}
-        >
+        <Pressable style={styles.backButton} onPress={() => router.back()}>
           <Ionicons name="chevron-back" size={20} color="#d9d9d9" />
-          <Text
-            style={{ fontFamily: Fonts.bold, color: "#d9d9d9", fontSize: 16 }}
-          >
-            Back
-          </Text>
+          <Text style={{ fontFamily: Fonts.bold, color: "#d9d9d9", fontSize: 16 }}>Back</Text>
         </Pressable>
       </View>
-      {/* Profile Picture */}
+
       <View style={styles.container}>
-        {avatarUrl ? (
-          <Image
-            source={{ uri: avatarUrl }}
-            style={styles.avatar}
-            transition={300}
-          />
-          ) : !friend?.username ? (
-              <View style={styles.avatar} />
-            ) : friend?.username && (
-              <View style={styles.avatar}>
-                <Text style={styles.avatarInitial}>{friend.username?.[0]?.toUpperCase()}</Text>
-              </View>
-            )
-        }
-
-        {/* Username and Bio */}
-        <Text style={styles.username}>{friend?.username ?? "Username Unavailable"}</Text>
-        <Text style={styles.bio}>{friend?.bio ?? "No bio"}</Text>
-
-        {/* Request to be Friends Button */}
-        <View style={{ marginTop: 25}}>
-          <Pressable
-            style={styles.requestButton}
-            onPress={() => {setRequestSent(true)}}
-          >
-            <Text
-              style={{ fontFamily: Fonts.bold, color: "#d9d9d9", fontSize: 17 }}
-            >
-              Request to be Friends
-            </Text>
-          </Pressable>
+        {/* Avatar */}
+        <View style={styles.avatar}>
+          {avatarUrl ? (
+            <Image source={{ uri: avatarUrl }} style={StyleSheet.absoluteFill} contentFit="cover" transition={300} />
+          ) : (
+            <Text style={styles.avatarInitial}>{profileData?.username?.[0]?.toUpperCase()}</Text>
+          )}
         </View>
 
-      </View>
-    </>
-  );
+        <Text style={styles.username}>{profileData?.username ?? "Unknown"}</Text>
+        <Text style={styles.bio}>{profileData?.bio ?? "No bio"}</Text>
 
-  if (requestSent) return (
-    <>
-      <View style={{ marginTop: 45, marginLeft: 10 }}>
-        <Pressable
-          style={styles.backButton}
-          onPress={() => {
-            router.back();
-          }}
-        >
-          <Ionicons name="chevron-back" size={20} color="#d9d9d9" />
-          <Text
-            style={{ fontFamily: Fonts.bold, color: "#d9d9d9", fontSize: 16 }}
-          >
-            Back
-          </Text>
-        </Pressable>
-      </View>
-      {/* Profile Picture */}
-      <View style={styles.container}>
-        {avatarUrl ? (
-          <Image
-            source={{ uri: avatarUrl }}
-            style={styles.avatar}
-            transition={300}
-          />
-          ) : !friend?.username ? (
-              <View style={styles.avatar} />
-            ) : friend?.username && (
-              <View style={styles.avatar}>
-                <Text style={styles.avatarInitial}>{friend.username?.[0]?.toUpperCase()}</Text>
+        <View style={{ marginTop: 25, alignItems: "center", gap: 10 }}>
+          {status === "none" && (
+            <Pressable style={styles.requestButton} onPress={handleRequest}>
+              <Text style={{ fontFamily: Fonts.bold, color: "#d9d9d9", fontSize: 17 }}>
+                Request to be Friends
+              </Text>
+            </Pressable>
+          )}
+
+          {status === "pending_sent" && (
+            <>
+              <View style={styles.requestSentButton}>
+                <Text style={{ fontFamily: Fonts.bold, color: "#333", fontSize: 17 }}>Requested</Text>
               </View>
-            )
-        }
+              <Pressable style={styles.requestUnsendButton} onPress={handleUnsend}>
+                <Text style={{ fontFamily: Fonts.bold, color: "#fefbea", fontSize: 15 }}>Unsend Request</Text>
+              </Pressable>
+            </>
+          )}
 
-        {/* Username and Bio */}
-        <Text style={styles.username}>{friend?.username ?? "Username Unavailable"}</Text>
-        <Text style={styles.bio}>{friend?.bio ?? "No bio"}</Text>
+          {status === "pending_received" && (
+            <Text style={{ fontFamily: Fonts.regular, fontSize: 15, color: "#555" }}>
+              This person sent you a friend request.
+            </Text>
+          )}
 
-        {/* Request to be Friends Button */}
-        <View style={[styles.requestSentButton, { marginTop: 25}]}>
-            <Text
-              style={{ fontFamily: Fonts.bold, color: "#333", fontSize: 17 }}
-            >
-              Requested
-            </Text>
-        </View>
-        <View style={{ marginTop: 10}}>
-          <Pressable
-            style={styles.requestUnsendButton}
-            onPress={() => {setRequestSent(false)}}
-          >
-            <Text
-              style={{ fontFamily: Fonts.bold, color: "#fefbea", fontSize: 15 }}
-            >
-              Unsend Request
-            </Text>
-          </Pressable>
+          {status === "accepted" && (
+            <View style={styles.requestSentButton}>
+              <Text style={{ fontFamily: Fonts.bold, color: "#333", fontSize: 17 }}>Friends</Text>
+            </View>
+          )}
         </View>
       </View>
     </>
@@ -166,10 +165,7 @@ export default function FriendProfilePage() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    alignItems: "center",
-  },
+  container: { flex: 1, alignItems: "center" },
   username: {
     fontSize: 26,
     color: "#333",
@@ -246,6 +242,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#d8d8d8",
     alignItems: "center",
     justifyContent: "center",
+    overflow: "hidden",
   },
   avatarInitial: {
     fontSize: 75,

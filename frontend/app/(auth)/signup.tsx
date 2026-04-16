@@ -8,6 +8,7 @@ import { supabase } from "@/lib/supabase";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { router } from "expo-router";
+import { useAuth } from "@/context/AuthContext";
 import { useState } from "react";
 import {
   ActivityIndicator,
@@ -45,6 +46,7 @@ const validatePasswords = (password: string, confirmPassword: string) => {
 };
 
 export default function SignupScreen() {
+  const { refreshProfile } = useAuth();
   const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -146,6 +148,7 @@ export default function SignupScreen() {
       return;
     }
 
+    await refreshProfile();
     setLoading(false);
     // onAuthStateChange fires → _layout.tsx re-routes automatically
   };

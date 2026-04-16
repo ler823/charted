@@ -2,6 +2,7 @@
 import { Colors, Fonts } from "@/constants/theme";
 import { getPhotoUrl } from "@/lib/photo-utils";
 import { supabase } from "@/lib/supabase";
+import { useAuth } from "@/context/AuthContext";
 import { Pin } from "@/types/types";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
@@ -25,6 +26,7 @@ export default function PinOverlay({
   setSelectedPin,
 }: PinOverlayProps) {
   const router = useRouter();
+  const { profile } = useAuth();
   const [coverPhoto, setCoverPhoto] = useState<string | null>(null);
   const [friendAvatars, setFriendAvatars] = useState<FriendAvatar[]>([]);
 
@@ -62,38 +64,32 @@ export default function PinOverlay({
         return;
       }
 
-      if (selectedPin?.userIds?.length === 1 && selectedPin.userIds[0] === 4) {
+      if (selectedPin?.userIds?.length === 1 && selectedPin.userIds[0] === profile?.user_id) {
         setFriendAvatars([]);
         return;
       }
 
       const { data, error } = await supabase
-        .from("users")
-        .select("user_id, username, photos:photo_id(key)")
+        .from("profiles")
+        .select("user_id, username, avatar_key")
         .in("user_id", selectedPin.userIds)
         .limit(10);
-      
-        if (error) {
-          console.log(error.message);
-          return;
-        }
 
-        const enriched = await Promise.all(
-          data.map(async (user) => {
-            const key = user.photos?.key;
-  
-            let avatarUrl = null;
-            if (key) {
-              const urls = await getPhotoUrl([key]);
-              avatarUrl = urls?.[0]?.url ?? null;
-            }
-  
-            return {
-              ...user,
-              avatarUrl,
-            };
-          })
-        );
+      if (error) {
+        console.log(error.message);
+        return;
+      }
+
+      const enriched = await Promise.all(
+        data.map(async (user) => {
+          let avatarUrl = null;
+          if (user.avatar_key) {
+            const urls = await getPhotoUrl([user.avatar_key]);
+            avatarUrl = urls?.[0]?.url ?? null;
+          }
+          return { ...user, avatarUrl };
+        })
+      );
 
       setFriendAvatars(enriched);
     }
