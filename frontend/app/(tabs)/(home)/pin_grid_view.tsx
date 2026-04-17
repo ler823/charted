@@ -1,12 +1,12 @@
 import { Fonts } from "@/constants/theme";
+import { useAuth } from "@/context/AuthContext";
 import { getPhotoUrl } from "@/lib/photo-utils";
 import { supabase } from "@/lib/supabase";
-import { useAuth } from "@/context/AuthContext";
 import { Pin } from "@/types/types";
 import { Image } from "expo-image";
 import { router } from "expo-router";
 import React, { useEffect, useState } from "react";
-import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
+import { Dimensions, FlatList, Pressable, StyleSheet, Text, View } from "react-native";
 
 type Props = {
   pins: Pin[];
@@ -17,6 +17,8 @@ type FriendAvatar = {
   username: string;
   avatarUrl?: string | null;
 };
+
+const screenWidth = Dimensions.get("window").width;
 
 function GridCard({ item }: { item: Pin }) {
   const { profile } = useAuth();
@@ -280,12 +282,14 @@ const styles = StyleSheet.create({
   emptyContainer: {
     marginTop: 40,
     alignItems: "center",
+    width: screenWidth - 10
   },
 
   emptyText: {
     fontFamily: Fonts.regular,
     fontSize: 14,
     color: "#243e36",
+
   },
   moreAvatar: {
     width: 20,
