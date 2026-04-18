@@ -109,12 +109,12 @@ export default function MakePin() {
   const duplicateCheckTimer = useRef<ReturnType<typeof setTimeout> | null>(
     null,
   );
-  let originalName = "";
-  let originalAddress = "";
-  let originalRating = 0;
-  let originalNotes = "";
-  let originalPrivacy = false;
-  let inserted_pin_id = 0;
+  const originalName = useRef("");
+  const originalAddress = useRef("");
+  const originalRating = useRef(0);
+  const originalNotes = useRef("");
+  const originalPrivacy = useRef(false);
+  const insertedPinId = useRef(0);
   const { userCoords } = useLocation();
 
   // Check if the user already has a pin saved with the given address.
@@ -200,7 +200,7 @@ export default function MakePin() {
     }
 
     const pinTagAssociation = tagIds?.map((tag) => ({
-      pin_id: inserted_pin_id,
+      pin_id: insertedPinId.current,
       tag_id: tag.tag_id,
     }));
 
@@ -226,7 +226,7 @@ export default function MakePin() {
     }
 
     const pinListAssociation = listIds?.map((list) => ({
-      pin_id: inserted_pin_id,
+      pin_id: insertedPinId.current,
       list_id: list.list_id,
     }));
 
@@ -275,10 +275,10 @@ export default function MakePin() {
       Alert.alert("Error", error.message);
       return;
     }
-    inserted_pin_id = data;
+    insertedPinId.current = data;
     await savePinTags();
     await savePinLists();
-    await saveVisits(inserted_pin_id);
+    await saveVisits(insertedPinId.current);
     if (coverPhotoChanged) {
       await uploadPhoto(coverPhotoUrl, true);
     }
@@ -414,7 +414,7 @@ export default function MakePin() {
     }
 
     const { error: pinPhotoError } = await supabase.from("pin_photos").insert({
-      pin_id: inserted_pin_id === 0 ? pinId : inserted_pin_id,
+      pin_id: insertedPinId.current === 0 ? pinId : insertedPinId.current,
       photo_id: data!.photo_id,
       cover: cover,
     });
@@ -701,15 +701,15 @@ export default function MakePin() {
       await loadPhotos(otherKeys, false);
     }
     setName(pinData[0].name);
-    originalName = pinData[0].name;
+    originalName.current = pinData[0].name;
     setAddress(pinData[0].address);
-    originalAddress = pinData[0].address;
+    originalAddress.current = pinData[0].address;
     setRating(pinData[0].user_rating);
-    originalRating = pinData[0].user_rating;
+    originalRating.current = pinData[0].user_rating;
     setNotes(pinData[0].user_note);
-    originalNotes = pinData[0].user_note;
+    originalNotes.current = pinData[0].user_note;
     setIsPrivate(pinData[0].private);
-    originalPrivacy = pinData[0].private;
+    originalPrivacy.current = pinData[0].private;
     setLat(locData[0].latitude.toString() ?? "");
     setLng(locData[0].longitude.toString() ?? "");
     setSelectedTags(loadedSelectedTags);
@@ -877,23 +877,23 @@ export default function MakePin() {
     }
     setSaveUpdateInitiated(true);
     let updateObject = {};
-    if (name != originalName) {
+    if (name !== originalName.current) {
       updateObject = { ...updateObject, name: name };
       setPinChanged(true);
     }
-    if (address != originalAddress) {
+    if (address !== originalAddress.current) {
       updateObject = { ...updateObject, address: address };
       setPinChanged(true);
     }
-    if (rating != originalRating) {
+    if (rating !== originalRating.current) {
       updateObject = { ...updateObject, rating: rating };
       setPinChanged(true);
     }
-    if (notes != originalNotes) {
+    if (notes !== originalNotes.current) {
       updateObject = { ...updateObject, notes: notes };
       setPinChanged(true);
     }
-    if (isPrivate != originalPrivacy) {
+    if (isPrivate !== originalPrivacy.current) {
       updateObject = { ...updateObject, private: isPrivate };
       setPinChanged(true);
     }
