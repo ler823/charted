@@ -1,5 +1,6 @@
 import ListCard from "@/app/(tabs)/(home)/list_card";
 import { Colors, Fonts } from "@/constants/theme";
+import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/lib/supabase";
 import { Pin } from "@/types/types";
 import Checkbox from "expo-checkbox";
@@ -28,6 +29,7 @@ type PinWithPhoto = PropsWithChildren<{
 export default function AddPinToList({ isVisible, onClose, onSave, listId, pinsInList, setPinsToAdd }: Props) {
   const [checkedItems, setCheckedItems] = useState<Record<string, boolean>>({});
   const [pins, setPins] = useState<PinWithPhoto[]>();
+  const { profile } = useAuth();
 
   const addButtonBehavior = async () => {
     onSave();
@@ -64,7 +66,7 @@ export default function AddPinToList({ isVisible, onClose, onSave, listId, pinsI
         longitude
         )
       `)
-    .eq("user_id", 4)
+    .eq("user_id", profile!.user_id)
     .eq("pin_photos.cover", true)
     
     if (error) {

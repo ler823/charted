@@ -22,11 +22,11 @@ export default function FriendListCard({ userId, name, loc, editList }: Props) {
     async function fetchCoverPhoto() {
       const { data } = await supabase
         .from("users")
-        .select("photos(key)")
+        .select("profiles(avatar_key)")
         .eq("user_id", userId)
         .single();
 
-      const key = data?.photos?.key;
+      const key = data?.profiles[0].avatar_key;
       if (!key) return;
 
       const urls = await getPhotoUrl([key]);
