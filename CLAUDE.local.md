@@ -93,3 +93,9 @@ Live API base URLs are hardcoded in `frontend/lib/photoOperations.ts` and a conf
 ### Database
 
 Supabase (PostgreSQL). Key tables: `profiles`, `pins`, `tags`, `lists`, `visits`, `friends`. Auth is handled by Supabase Auth; `profiles` rows are linked to `auth.users`.
+
+## Rules
+
+- Never commit .env values or hardcode secrets
+- Never install a new package without asking first
+- Never modify the Supabase schema directly — write a migration file
