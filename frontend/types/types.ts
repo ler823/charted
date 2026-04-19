@@ -9,7 +9,7 @@ export type Pin = {
   address: string;
   latitude: number;
   longitude: number;
-  
+
   isShared?: boolean;
   pinCount?: number;
   pinIds?: number[];
@@ -24,4 +24,15 @@ export type ViewOption = {
 export type Coords = {
   latitude: number;
   longitude: number;
+};
+
+export type PhotoItem = {
+  key: string;
+  url: string;
+  changed: boolean;
+};
+
+export type ListType = {
+  name: string;
+  privacy: number;
 };

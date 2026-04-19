@@ -6,7 +6,6 @@ import DeletePhotoModal from "@/components/delete-photo";
 import LoadingPage from "@/components/loading-page";
 import { PressableStars } from "@/components/pressable-stars";
 import { Colors, Fonts } from "@/constants/theme";
-import { setPinChanged } from "@/lib/pin_refresh_data";
 import { supabase } from "@/lib/supabase";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { Image } from "expo-image";
@@ -30,20 +29,29 @@ import { GooglePlacesAutocomplete } from "react-native-google-places-autocomplet
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { useAuth } from "@/context/AuthContext";
 import { useLocation } from "@/hooks/use-location";
 import { getPhotoUrl, pickImageAsync, processImage } from "@/lib/photo-utils";
-import { useAuth } from "@/context/AuthContext";
-
-type PhotoItem = {
-  key: string;
-  url: string;
-  changed: boolean;
-};
-
-type ListType = {
-  name: string;
-  privacy: number;
-};
+import {
+  addList as addListService,
+  getUserLists,
+  syncPinLists,
+} from "@/lib/services/listService";
+import {
+  checkDuplicateAddress,
+  createPin as createPinService,
+  deletePin as deletePinService,
+  getPinInfo,
+  updatePin as updatePinService,
+} from "@/lib/services/pinService";
+import {
+  addTag as addTagService,
+  cleanupUnusedTags,
+  getUserTags,
+  syncPinTags,
+} from "@/lib/services/tagService";
+import { saveNewVisits } from "@/lib/services/visitService";
+import { ListType, PhotoItem } from "@/types/types";
 
 export default function MakePin() {
   const router = useRouter();
@@ -117,48 +125,23 @@ export default function MakePin() {
   const insertedPinId = useRef(0);
   const { userCoords } = useLocation();
 
-  // Check if the user already has a pin saved with the given address.
-  // Excludes the current pin when editing so the existing address doesn't
-  // trigger a false positive on itself.
-  const checkDuplicateAddress = async (addressToCheck: string) => {
-    if (!addressToCheck.trim()) {
-      setDuplicateAddressError("");
-      return;
-    }
-
-    if (!profile) return;
-
-    let query = supabase
-      .from("pins")
-      .select("name, pin_id")
-      .eq("user_id", profile.user_id)
-      .eq("address", addressToCheck);
-
-    // When editing, exclude the current pin so its own address doesn't trigger
-    if (isEdit && pinId) {
-      query = query.neq("pin_id", pinId);
-    }
-
-    const { data, error } = await query.limit(1);
-
-    if (error) return;
-
-    if (data && data.length > 0) {
-      setDuplicateAddressError(
-        `You already have this address saved as: ${data[0].name}`,
-      );
-    } else {
-      setDuplicateAddressError("");
-    }
-  };
-
   // Debounce duplicate address checks so we don't fire on every keystroke
   useEffect(() => {
     if (duplicateCheckTimer.current) {
       clearTimeout(duplicateCheckTimer.current);
     }
-    duplicateCheckTimer.current = setTimeout(() => {
-      checkDuplicateAddress(address);
+    duplicateCheckTimer.current = setTimeout(async () => {
+      if (!profile) return;
+      const conflictName = await checkDuplicateAddress(
+        profile.user_id,
+        address,
+        isEdit ? pinId : undefined,
+      );
+      setDuplicateAddressError(
+        conflictName
+          ? `You already have this address saved as: ${conflictName}`
+          : "",
+      );
     }, 400);
 
     return () => {
@@ -189,66 +172,12 @@ export default function MakePin() {
     );
   };
 
-  const savePinTags = async () => {
-    const { data: tagIds, error: getTagIdsError } = await supabase
-      .from("tags")
-      .select(`"tag_id"`)
-      .in("name", selectedTags);
-
-    if (tagIds === null || getTagIdsError) {
-      return;
-    }
-
-    const pinTagAssociation = tagIds?.map((tag) => ({
-      pin_id: insertedPinId.current,
-      tag_id: tag.tag_id,
-    }));
-
-    const { error: addToPinTagsError } = await supabase
-      .from("pin_tags")
-      .insert(pinTagAssociation);
-
-    if (addToPinTagsError) {
-      return;
-    }
-
-    return;
-  };
-
-  const savePinLists = async () => {
-    const { data: listIds, error: getListIdsError } = await supabase
-      .from("lists")
-      .select(`"list_id"`)
-      .in("name", selectedLists);
-
-    if (listIds === null || getListIdsError) {
-      return;
-    }
-
-    const pinListAssociation = listIds?.map((list) => ({
-      pin_id: insertedPinId.current,
-      list_id: list.list_id,
-    }));
-
-    const { error: addToPinTagsError } = await supabase
-      .from("pin_lists")
-      .insert(pinListAssociation);
-
-    if (addToPinTagsError) {
-      return;
-    }
-
-    return;
-  };
-
   const createPin = async () => {
-    if (saveUpdateInitiated) {
-      return;
-    }
+    if (saveUpdateInitiated) return;
     setSaveUpdateInitiated(true);
+
     const nameInvalid = !name.trim() || name.length > NAME_MAX;
     const addressInvalid = address.length > ADDRESS_MAX;
-
     if (nameInvalid) {
       setNameError(
         !name.trim()
@@ -259,26 +188,27 @@ export default function MakePin() {
     if (addressInvalid) {
       setAddressError(`Address must be ${ADDRESS_MAX} characters or fewer.`);
     }
-    if (nameInvalid || addressInvalid) return; // block submit
+    if (nameInvalid || addressInvalid) return;
 
-    const { data, error } = await supabase.rpc("create_pin", {
-      p_address: address,
-      p_latitude: Math.round(parseFloat(lat!) * 1e5) / 1e5,
-      p_longitude: Math.round(parseFloat(lng!) * 1e5) / 1e5,
-      p_pin_name: name,
-      p_private: isPrivate,
-      p_user_note: notes,
-      p_user_rating: rating,
-      p_user_id: profile?.user_id,
+    const { pinId: newPinId, error } = await createPinService({
+      address,
+      latitude: Math.round(parseFloat(lat!) * 1e5) / 1e5,
+      longitude: Math.round(parseFloat(lng!) * 1e5) / 1e5,
+      name,
+      isPrivate,
+      notes,
+      rating,
+      userId: profile!.user_id,
     });
     if (error) {
-      Alert.alert("Error", error.message);
+      Alert.alert("Error", error);
       return;
     }
-    insertedPinId.current = data;
-    await savePinTags();
-    await savePinLists();
-    await saveVisits(insertedPinId.current);
+
+    insertedPinId.current = newPinId!;
+    await syncPinTags(newPinId!, selectedTags);
+    await syncPinLists(newPinId!, selectedLists);
+    await saveNewVisits(newPinId!, visits, originalVisits);
     if (coverPhotoChanged) {
       await uploadPhoto(coverPhotoUrl, true);
     }
@@ -287,9 +217,7 @@ export default function MakePin() {
         await uploadPhoto(photo.url, false);
       }
     }
-    setPinChanged(true);
     router.back();
-    return;
   };
 
   const handleChooseFromLibrary = async (cover: boolean) => {
@@ -316,16 +244,13 @@ export default function MakePin() {
     cover: boolean,
   ) => {
     if (key == "") {
-      //remove from the list
       setPhotoList(photoList.filter((photo) => photo.url !== url));
     } else {
-      //remove from db
       setPhotoList(photoList.filter((photo) => photo.url !== url));
       setPhotosToDelete((prev) => [
         ...prev,
         { key: key, url: url, changed: true },
       ]);
-      //deletePhoto(key);
     }
 
     if (cover) {
@@ -337,9 +262,6 @@ export default function MakePin() {
 
   const deletePhoto = async (key: string) => {
     setCoverPhotoModalVisible(false);
-    // if (coverPhotoUrl == "") {
-    //   return;
-    // }
     const { data, error: deletePhotoError } = await supabase
       .from("photos")
       .delete()
@@ -436,58 +358,30 @@ export default function MakePin() {
     }
   };
 
-  const getUserTags = async () => {
-    if (!profile) return [];
-    const { data, error } = await supabase
-      .from("tags")
-      .select("tag_id, name")
-      .eq("user_id", profile.user_id);
-
-    if (error) {
-      Alert.alert("Error", error.message);
-      return [];
-    }
-    return data.map((tag: { name: string }) => tag.name);
-  };
-
-  const getUserLists = async () => {
-    if (!profile) return [];
-    const { data, error } = await supabase
-      .from("lists")
-      .select("list_id, name")
-      .eq("user_id", profile.user_id);
-
-    if (error) {
-      Alert.alert("Error", error.message);
-      return [];
-    }
-    return data.map((list: { name: string }) => list.name);
-  };
-
   const loadTags = async () => {
-    const userTags = await getUserTags();
-    if (userTags) setTags(userTags);
+    if (!profile) return;
+    const userTags = await getUserTags(profile.user_id);
+    setTags(userTags);
   };
 
   const loadLists = async () => {
-    const userLists = await getUserLists();
-    if (userLists) setLists(userLists);
+    if (!profile) return;
+    const userLists = await getUserLists(profile.user_id);
+    setLists(userLists);
   };
 
   const addTag = async () => {
-    if (!newTag) {
+    if (!newTag.name) {
       Alert.alert("Missing field", "Please enter a name for the new tag");
       return;
     }
     if (!profile) return;
-    let tagToAdd = {
-      user_id: profile.user_id,
-      name: newTag.name,
-      privacy: newTag.privacy,
-    };
-
-    const { error: addTagError } = await supabase.from("tags").insert(tagToAdd);
-    if (addTagError) {
+    const error = await addTagService(
+      profile.user_id,
+      newTag.name,
+      newTag.privacy,
+    );
+    if (error) {
       Alert.alert(
         "This tag has already been added",
         "You have added this tag before",
@@ -495,26 +389,22 @@ export default function MakePin() {
       return;
     }
     loadTags();
-    toggleTag(tagToAdd.name);
+    toggleTag(newTag.name);
     setAddTagVisible(false);
   };
 
   const addList = async () => {
-    if (!newList) {
+    if (!newList.name) {
       Alert.alert("Missing field", "Please enter a name for the new list");
       return;
     }
     if (!profile) return;
-    let listToAdd = {
-      user_id: profile.user_id,
-      name: newList.name,
-      privacy: newList.privacy,
-    };
-
-    const { error: addListError } = await supabase
-      .from("lists")
-      .insert(listToAdd);
-    if (addListError) {
+    const error = await addListService(
+      profile.user_id,
+      newList.name,
+      newList.privacy,
+    );
+    if (error) {
       Alert.alert(
         "This list has already been added",
         "You have added a list with this name before",
@@ -522,28 +412,8 @@ export default function MakePin() {
       return;
     }
     loadLists();
-    toggleList(listToAdd.name);
+    toggleList(newList.name);
     setAddListVisible(false);
-  };
-
-  const getUserVisits = async () => {
-    const { data, error } = await supabase
-      .from("pin_visits")
-      .select(`*`)
-      .eq("pin_id", Number(pinId));
-
-    if (error) {
-      Alert.alert("Error", error.message);
-      return;
-    }
-    return data.map(
-      (visit: { visit_timestamp: string }) => visit.visit_timestamp,
-    );
-  };
-
-  const loadVisits = async () => {
-    const userVisits = await getUserVisits();
-    if (userVisits) setVisits(userVisits);
   };
 
   const addVisit = async (visitDate: string) => {
@@ -556,381 +426,72 @@ export default function MakePin() {
     setAddVisitVisible(false);
   };
 
-  const cleanupUnusedTags = async () => {
-    if (!profile) return;
-    const { error } = await supabase.rpc("update_tags", {
-      p_user_id: profile.user_id,
-    });
-
-    if (error) {
-      Alert.alert("Error", error.message);
-      return;
-    }
-  };
-
-  const cleanupUnusedLists = async () => {
-    if (!profile) return;
-    const { error } = await supabase.rpc("update_lists", {
-      p_user_id: profile.user_id,
-    });
-
-    if (error) {
-      Alert.alert("Error", error.message);
-      return;
-    }
-  };
-
-  const getPinInfo = async () => {
-    const { data: pinData, error: pinDataError } = await supabase
-      .from("pins")
-      .select(
-        `
-        name,
-        user_rating,
-        user_note,
-        address,
-        location_id,
-        private`,
-      )
-      .eq("pin_id", pinId);
-    if (pinDataError) {
-      Alert.alert("Error", pinDataError.message);
-      return;
-    }
-    if (pinData == null) {
-      return;
-    }
-    const { data: locData, error: locDataError } = await supabase
-      .from("locations")
-      .select(
-        `
-        latitude,
-        longitude
-      `,
-      )
-      .eq("id", pinData[0].location_id);
-    if (locDataError) {
-      Alert.alert("Error", locDataError.message);
-      return;
-    }
-    if (locData == null) {
+  const loadPinInfo = async () => {
+    if (!pinId) return;
+    const { data, error } = await getPinInfo(pinId);
+    if (error || !data) {
+      Alert.alert("Error", error ?? "Failed to load pin");
       return;
     }
 
-    const { data: tagData, error: tagDataError } = await supabase
-      .from("pin_tags")
-      .select(
-        `
-        tags (
-          name
-        )
-      `,
-      )
-      .eq("pin_id", pinId);
-    if (tagDataError) {
-      Alert.alert("Error", tagDataError.message);
-      return;
+    setName(data.name);
+    originalName.current = data.name;
+    setAddress(data.address);
+    originalAddress.current = data.address;
+    setRating(data.rating);
+    originalRating.current = data.rating;
+    setNotes(data.notes);
+    originalNotes.current = data.notes;
+    setIsPrivate(data.isPrivate);
+    originalPrivacy.current = data.isPrivate;
+    setLat(data.latitude.toString());
+    setLng(data.longitude.toString());
+    setSelectedTags(data.selectedTags);
+    setSelectedLists(data.selectedLists);
+    setVisits(data.visits);
+    setOriginalVisits(data.visits);
+
+    if (data.coverPhotoKey) {
+      setCoverPhotoKey(data.coverPhotoKey);
+      await loadPhotos([data.coverPhotoKey], true);
     }
-    if (tagData == null) {
-      return;
-    }
-    let loadedSelectedTags = tagData.map(
-      (data) => (data.tags as unknown as { name: any }).name,
-    ); // kinda messy but it turns off the warnings lol
-
-    const { data: listData, error: listDataError } = await supabase
-      .from("pin_lists")
-      .select(
-        `
-        lists (
-          name
-        )
-      `,
-      )
-      .eq("pin_id", pinId);
-    if (listDataError) {
-      Alert.alert("Error", listDataError.message);
-      return;
-    }
-    if (listData == null) {
-      return;
-    }
-    let loadedSelectedLists = listData.map(
-      (data) => (data.lists as unknown as { name: any }).name,
-    );
-
-    const { data: visitData, error: visitDataError } = await supabase
-      .from("pin_visits")
-      .select("*")
-      .eq("pin_id", Number(pinId));
-    if (visitDataError) {
-      Alert.alert("Error", visitDataError.message);
-      return;
-    }
-    let loadedVisits = visitData.map(
-      (visit: { visit_timestamp: string }) => visit.visit_timestamp,
-    );
-
-    const { data: photoData, error: photoError } = await supabase
-      .from("pin_photos")
-      .select(
-        `
-      photos (
-      key
-      ),
-      cover`,
-      )
-      .eq("pin_id", Number(pinId));
-    const coverPhoto = photoData?.find((photo) => photo.cover);
-    const otherPhotosTemp = photoData?.filter((photo) => !photo.cover);
-    const otherPhotos: PhotoItem[] = [];
-    otherPhotosTemp?.forEach((photo) => {
-      otherPhotos.push({
-        key: photo.photos.key,
-        url: "",
-        changed: false,
-      });
-    });
-    if (coverPhoto) {
-      const coverKey = coverPhoto.photos.key;
-      setCoverPhotoKey(coverKey);
-      await loadPhotos([coverKey], true);
-    }
-    if (otherPhotos) {
-      const otherKeys = otherPhotos.flatMap((photo) => photo.key);
-      await loadPhotos(otherKeys, false);
-    }
-    setName(pinData[0].name);
-    originalName.current = pinData[0].name;
-    setAddress(pinData[0].address);
-    originalAddress.current = pinData[0].address;
-    setRating(pinData[0].user_rating);
-    originalRating.current = pinData[0].user_rating;
-    setNotes(pinData[0].user_note);
-    originalNotes.current = pinData[0].user_note;
-    setIsPrivate(pinData[0].private);
-    originalPrivacy.current = pinData[0].private;
-    setLat(locData[0].latitude.toString() ?? "");
-    setLng(locData[0].longitude.toString() ?? "");
-    setSelectedTags(loadedSelectedTags);
-    setSelectedLists(loadedSelectedLists);
-    setVisits(loadedVisits);
-    setOriginalVisits(loadedVisits);
-  };
-
-  const updatePinTags = async () => {
-    const { data: tagIds, error: getTagIdsError } = await supabase
-      .from("tags")
-      .select(`"tag_id"`)
-      .in("name", selectedTags);
-
-    if (getTagIdsError) {
-      Alert.alert("Error", getTagIdsError.message);
-      return;
-    }
-
-    if (tagIds === null) {
-      return;
-    }
-
-    const { data: tagData, error: tagDataError } = await supabase
-      .from("pin_tags")
-      .select("tag_id")
-      .eq("pin_id", pinId);
-
-    if (tagDataError) {
-      Alert.alert("Error", tagDataError.message);
-      return;
-    }
-
-    if (tagData === null) {
-      return;
-    }
-
-    let locallySelectedTags = tagIds.map((tag) => tag.tag_id);
-    let databaseSelectedTags = tagData.map((tag) => tag.tag_id);
-
-    let deletedTags = databaseSelectedTags.filter(
-      (tag_id) => !locallySelectedTags.includes(tag_id),
-    );
-    let addedTags = locallySelectedTags.filter(
-      (tag_id) => !databaseSelectedTags.includes(tag_id),
-    );
-    if (addedTags.length != 0) {
-      const addPinTagAssociation = addedTags.map((tag) => ({
-        pin_id: pinId,
-        tag_id: tag,
-      }));
-      const { error: addToPinTagsError } = await supabase
-        .from("pin_tags")
-        .insert(addPinTagAssociation);
-
-      if (addToPinTagsError) {
-        Alert.alert("Error", addToPinTagsError.message);
-        return;
-      }
-    }
-    if (deletedTags.length != 0) {
-      const { error: deleteFromPinTagsError } = await supabase
-        .from("pin_tags")
-        .delete()
-        .eq("pin_id", pinId)
-        .in("tag_id", deletedTags);
-
-      if (deleteFromPinTagsError) {
-        Alert.alert("Error", deleteFromPinTagsError.message);
-        return;
-      }
-    }
-
-    return;
-  };
-
-  const updatePinLists = async () => {
-    const { data: listIds, error: getListIdsError } = await supabase
-      .from("lists")
-      .select(`"list_id"`)
-      .in("name", selectedLists);
-
-    if (getListIdsError) {
-      Alert.alert("Error", getListIdsError.message);
-      return;
-    }
-
-    if (listIds === null) {
-      return;
-    }
-
-    const { data: listData, error: listDataError } = await supabase
-      .from("pin_lists")
-      .select("list_id")
-      .eq("pin_id", pinId);
-
-    if (listDataError) {
-      Alert.alert("Error", listDataError.message);
-      return;
-    }
-
-    if (listData === null) {
-      return;
-    }
-
-    let locallySelectedLists = listIds.map((list) => list.list_id);
-    let databaseSelectedLists = listData.map((list) => list.list_id);
-
-    let deletedLists = databaseSelectedLists.filter(
-      (list_id) => !locallySelectedLists.includes(list_id),
-    );
-    let addedLists = locallySelectedLists.filter(
-      (tag_id) => !databaseSelectedLists.includes(tag_id),
-    );
-    if (addedLists.length != 0) {
-      const addPinListAssociation = addedLists.map((list) => ({
-        pin_id: pinId,
-        list_id: list,
-      }));
-      const { error: addToPinListsError } = await supabase
-        .from("pin_lists")
-        .insert(addPinListAssociation);
-
-      if (addToPinListsError) {
-        Alert.alert("Error", addToPinListsError.message);
-        return;
-      }
-    }
-    if (deletedLists.length != 0) {
-      const { error: deleteFromPinTagsError } = await supabase
-        .from("pin_lists")
-        .delete()
-        .eq("pin_id", pinId)
-        .in("list_id", deletedLists);
-
-      if (deleteFromPinTagsError) {
-        Alert.alert("Error", deleteFromPinTagsError.message);
-        return;
-      }
-    }
-
-    return;
-  };
-
-  const saveVisits = async (pinIdToUse: number) => {
-    const newVisits = visits.filter((visit) => !originalVisits.includes(visit));
-
-    if (newVisits.length === 0) return;
-
-    const visitRows = newVisits.map((visit) => ({
-      pin_id: pinIdToUse,
-      visit_timestamp: visit,
-    }));
-
-    const { error } = await supabase.from("pin_visits").insert(visitRows);
-
-    if (error) {
-      Alert.alert("Error", error.message);
+    if (data.otherPhotoKeys.length > 0) {
+      await loadPhotos(data.otherPhotoKeys, false);
     }
   };
 
   const updatePin = async () => {
-    if (saveUpdateInitiated) {
-      return;
-    }
+    if (saveUpdateInitiated) return;
     setSaveUpdateInitiated(true);
-    let updateObject = {};
-    if (name !== originalName.current) {
-      updateObject = { ...updateObject, name: name };
-      setPinChanged(true);
-    }
-    if (address !== originalAddress.current) {
-      updateObject = { ...updateObject, address: address };
-      setPinChanged(true);
-    }
-    if (rating !== originalRating.current) {
-      updateObject = { ...updateObject, rating: rating };
-      setPinChanged(true);
-    }
-    if (notes !== originalNotes.current) {
-      updateObject = { ...updateObject, notes: notes };
-      setPinChanged(true);
-    }
-    if (isPrivate !== originalPrivacy.current) {
-      updateObject = { ...updateObject, private: isPrivate };
-      setPinChanged(true);
-    }
-    const { error } = await supabase
-      .from("pins")
-      .update({
-        name: name,
-        address: address,
-        user_rating: rating,
-        user_note: notes,
-        private: isPrivate,
-      })
-      .eq("pin_id", pinId);
 
+    const error = await updatePinService(pinId!, {
+      name,
+      address,
+      rating,
+      notes,
+      isPrivate,
+    });
     if (error) {
-      Alert.alert("Error", error.message);
+      Alert.alert("Error", error);
       return;
     }
 
-    await updatePinTags();
-    await updatePinLists();
-    await saveVisits(Number(pinId));
+    await syncPinTags(pinId!, selectedTags);
+    await syncPinLists(pinId!, selectedLists);
+    await saveNewVisits(Number(pinId), visits, originalVisits);
+
     if (coverPhotoChanged) {
       await uploadPhoto(coverPhotoUrl, true);
-      setPinChanged(true);
     }
     for (const photo of photoList) {
       if (photo.changed) {
         await uploadPhoto(photo.url, false);
-        setPinChanged(true);
       }
     }
     if (photosToDelete.length > 0) {
       for (const photo of photosToDelete) {
         deletePhoto(photo.key);
       }
-      setPinChanged(true);
     }
     router.back();
   };
@@ -945,13 +506,8 @@ export default function MakePin() {
           text: "Delete",
           style: "destructive",
           onPress: async () => {
-            const { error } = await supabase.rpc("delete_pin", {
-              p_pin_id: pinId,
-            });
-            if (error) {
-              console.log(error.message);
-            }
-            setPinChanged(true);
+            const error = await deletePinService(pinId!);
+            if (error) console.error("[deletePin]", error);
             router.replace({
               pathname: "/(tabs)/(home)",
               params: { viewMode },
@@ -991,11 +547,8 @@ export default function MakePin() {
     const nearest = json.results?.[0];
     if (!nearest) return;
 
-    // Populate name
     setName(nearest.name ?? "");
 
-    // Nearby search gives vicinity (e.g. "123 Main St, Los Angeles")
-    // For a cleaner formatted_address, do a details lookup:
     const placeId = nearest.place_id;
     const detailsUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&fields=formatted_address&key=${process.env.EXPO_PUBLIC_GOOGLE_PLACES_KEY}`;
     const detailsRes = await fetch(detailsUrl);
@@ -1009,20 +562,15 @@ export default function MakePin() {
     setAddress(withoutCountry);
   };
 
-  // This will run on launch
   useEffect(() => {
     const loadData = async () => {
       if (isEdit) {
-        // These two are loaded only when pins are edited
-        await getPinInfo();
-        await loadVisits();
+        await loadPinInfo();
       } else {
         fetchNearestPlace();
       }
-      // These two are loaded for both adding and editing
-      await cleanupUnusedTags();
+      if (profile) await cleanupUnusedTags(profile.user_id);
       await loadTags();
-      //await cleanupUnusedLists();
       await loadLists();
       setDataLoaded(true);
     };
@@ -1512,7 +1060,6 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   cancelBtn: {
-    //padding: 16,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
@@ -1532,7 +1079,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   saveBtn: {
-    //padding: 16,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
@@ -1692,7 +1238,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     alignSelf: "flex-start",
     gap: 10,
-    //padding: 16,
     height: 40,
     paddingHorizontal: 16,
     backgroundColor: Colors.light.error,
@@ -1748,7 +1293,7 @@ const styles = StyleSheet.create({
     marginLeft: 4,
   },
   inputError: {
-    borderColor: Colors.light.error, // optional: highlight the border too
+    borderColor: Colors.light.error,
   },
   photoCarousel: {
     width: 90,
