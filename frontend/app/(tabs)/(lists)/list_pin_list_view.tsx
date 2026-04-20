@@ -1,6 +1,7 @@
 import LoadingPage from "@/components/loading-page";
 import Sort from "@/components/sort-lists";
 import { Colors, Fonts } from "@/constants/theme";
+import { useAuth } from "@/context/AuthContext";
 import { setPinChanged } from "@/lib/pin_refresh_data";
 import { supabase } from "@/lib/supabase";
 import { Ionicons } from "@expo/vector-icons";
@@ -27,7 +28,7 @@ export default function ListPinListView() {
   const [sortChoice, setSortChoice] = useState("date")
   const [ascending, setAscending] = useState(true)
   const [loading, setLoading] = useState(true)
-  const userId = 4;
+  const { profile } = useAuth();
 
   const handleSort = async (pin: PinWithDate[]) => {
     if (sortChoice == "date") {
@@ -93,7 +94,7 @@ export default function ListPinListView() {
               .from("list_members")
               .delete()
               .eq("list_id", listIdToView)
-              .eq("viewer_id", userId)
+              .eq("viewer_id", profile?.user_id)
             if (error) {
               console.log(error.message);
             }
