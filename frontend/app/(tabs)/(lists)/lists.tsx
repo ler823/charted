@@ -2,8 +2,8 @@ import AddTagOrList from "@/components/add-tag";
 import LoadingPage from "@/components/loading-page";
 import Sort from "@/components/sort-lists";
 import { Colors, Fonts } from "@/constants/theme";
-import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
+import { supabase } from "@/lib/supabase";
 import { Pin } from "@/types/types";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useFocusEffect, useRouter } from "expo-router";
@@ -296,11 +296,14 @@ const styles = StyleSheet.create({
     paddingBottom: 265,
   },
   text: {
-    margin: 15,
     fontFamily: Fonts.regular,
     fontSize: 16,
+    color: "#888",
+    marginTop: 40,
     textAlign: "center",
+    paddingHorizontal: 30,
   },
+  
   plusButton: {
     position: "absolute",
     bottom: 115,

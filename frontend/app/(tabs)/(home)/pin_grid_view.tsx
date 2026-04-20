@@ -287,9 +287,10 @@ const styles = StyleSheet.create({
 
   emptyText: {
     fontFamily: Fonts.regular,
-    fontSize: 14,
-    color: "#243e36",
-
+    fontSize: 16,
+    color: "#888",
+    textAlign: "center",
+    paddingHorizontal: 30,
   },
   moreAvatar: {
     width: 20,

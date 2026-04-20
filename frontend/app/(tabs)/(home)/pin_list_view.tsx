@@ -2,7 +2,7 @@ import { Fonts } from "@/constants/theme";
 import { Pin } from "@/types/types";
 import { useRouter } from "expo-router";
 import React from "react";
-import { FlatList, Pressable, StyleSheet, View, Text } from "react-native";
+import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
 import ListCard from "./list_card";
 
 type Props = {
@@ -80,7 +80,9 @@ const styles = StyleSheet.create({
     },
     emptyText: {
       fontFamily: Fonts.regular,
-      fontSize: 14,
-      color: "#243e36",
+    fontSize: 16,
+    color: "#888",
+    textAlign: "center",
+    paddingHorizontal: 30,
     },
 });
