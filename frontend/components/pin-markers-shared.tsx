@@ -1,7 +1,8 @@
 import { Fonts } from "@/constants/theme";
-import React, { useEffect, useState } from "react";
+import React, { Profiler, useEffect, useState } from "react";
 import { StyleSheet, View, Text } from "react-native";
 import Svg, { Path } from "react-native-svg";
+import { useAuth } from "@/context/AuthContext";
 
 interface PinMarkerProps {
   users_id: number[];
@@ -40,8 +41,13 @@ const COLORS = [
         "#b87ed4",
     ]
 
-function getUserColor(userId: string | number): string {
+function getUserColor(userId: string | number, authuser: number | undefined): string {
   const str = String(userId);
+
+  if (str === String(authuser)) {
+    return "#7ca982";
+  }
+
   let hash = 0;
   for (let i = 0; i < str.length; i++) {
     hash = str.charCodeAt(i) + ((hash << 5) - hash);
@@ -75,6 +81,7 @@ export default function SharedPinMarkers({
   number_shared,
 }: PinMarkerProps) {
     const [friend, setFriend] = useState<number[]>([]);
+    const { profile } = useAuth();
     
     useEffect(() => {
       if (users_id?.length) {
@@ -82,7 +89,7 @@ export default function SharedPinMarkers({
       }
     }, [users_id]);
     
-    const userColors = friend.map((id) => getUserColor(id));
+    const userColors = friend.map((id) => getUserColor(id, profile?.user_id));
   
   if (users_id.length === 2) {
     return (
