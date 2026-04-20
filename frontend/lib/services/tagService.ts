@@ -20,7 +20,7 @@ export async function addTag(
 ): Promise<string | null> {
   const { error } = await supabase
     .from("tags")
-    .insert({ user_id: userId, name, privacy });
+    .insert({ user_id: userId, name });
   return error?.message ?? null;
 }
 
