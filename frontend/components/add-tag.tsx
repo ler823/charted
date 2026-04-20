@@ -1,7 +1,7 @@
 import { Colors, Fonts } from "@/constants/theme";
 import { Ionicons } from "@expo/vector-icons";
 import React, { PropsWithChildren, useState } from 'react';
-import { Keyboard, Modal, Pressable, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+import { Keyboard, Modal, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 type listType = {
   name: string;
@@ -72,7 +72,7 @@ export default function AddTagOrList({ name, isVisible, onClose, onSave, newEntr
                   onChangeText={(text) => setNewEntry({name: text, privacy: privacy})}
                   style={styles.input} />
               </View>
-              {name == "tag" && (
+              {/* {name == "tag" && (
                 <View>
                   <Text style={styles.title}>Private</Text>
                   <View style={styles.privacySwitchBackground}>
@@ -93,7 +93,7 @@ export default function AddTagOrList({ name, isVisible, onClose, onSave, newEntr
                     </View>
                   </View>
                 </View>
-              )}
+              )} */}
               {name == "list" && (
                 <View>
                   <Text style={styles.title}>Privacy</Text>
