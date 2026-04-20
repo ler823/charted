@@ -11,6 +11,7 @@ import {
   TouchableWithoutFeedback,
   View,
 } from "react-native";
+import Filter from "./filter";
 import SuggestionItem from "./suggestion-item";
 
 type HeaderProps = {
@@ -29,6 +30,7 @@ export default function Header({
 }: HeaderProps) {
   const [query, setQuery] = useState("");
   const [isFocused, setIsFocused] = useState(false);
+  const [filterModalVisible, setFilterModalVisible] = useState(false);
 
   const suggestions =
     query.trim().length > 0
@@ -130,7 +132,7 @@ export default function Header({
             ))}
           </View>
 
-          <Pressable style={styles.filter}>
+          <Pressable style={styles.filter} onPress={() => setFilterModalVisible(true)}>
             <Text
               style={{ fontFamily: Fonts.bold, color: "#d9d9d9", fontSize: 16 }}
             >
@@ -138,6 +140,7 @@ export default function Header({
             </Text>
             <Ionicons name="chevron-down" size={20} color="#d9d9d9" />
           </Pressable>
+          <Filter isVisible={filterModalVisible} onClose={() => setFilterModalVisible(false)} />
         </View>
       </View>
     </>
