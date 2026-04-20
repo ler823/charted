@@ -1,9 +1,22 @@
-# Welcome to your Expo app 👋
+# Charted
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+## About the Project
+Charted is a curated social map platform that allows users to pin, share, and explore meaningful locations recommended only by themselves and their friends. Unlike influencer-driven maps or generic review platforms, this app prioritizes authentic, small-scale discoveries: from local hidden gems to personal hangouts within a closed, trusted network. Charted creates a private, trusted ecosystem of location sharing, free from algorithms and external influence. With this, we stress the authenticity of users to grow a community and be unique.
 
-## Get started
+## Features
+- Location Pinning
+- 
 
+## Frameworks & Tools
+- **Frontend**
+  - React Native
+  - Expo Go
+  - 
+- **Backend**
+  - Supabase: Database and Authentication
+  - AWS - Photo Cloud Storage
+
+## Running
 1. Install dependencies
 
    ```bash
