@@ -92,7 +92,7 @@ export default function Home() {
       }
 
       // Fetch pin clusters that overlap with any of these user_ids
-      const { data, error } = await supabase
+      const { data: clusters, error } = await supabase
         .from("pin_clusters")
         .select("*")
         .overlaps("user_ids", allUserIds);
@@ -102,22 +102,69 @@ export default function Home() {
         return;
       }
 
-      const formattedPins: Pin[] = data.map((cluster: any) => ({
-        id: String(cluster.cluster_id),
-        latitude: cluster.latitude,
-        longitude: cluster.longitude,
-        address: cluster.address,
-        name: cluster.name,
-        user_id: cluster.user_ids?.[0]?.toString() ?? "",
-        isShared: cluster.is_shared,
-        pinCount: cluster.pin_count,
-        pinIds: cluster.pin_ids,
-        userIds: cluster.user_ids,
-      }));
+      const allPinIds = [...new Set(clusters.flatMap((c: any) => c.pin_ids || []))];
+
+      let pinsMap: Record<number, any> = {};
+
+      if (allPinIds.length > 0) {
+        const { data: pinData, error } = await supabase
+          .from("pins")
+          .select("pin_id, user_id, private, name, address, location_id")
+          .in("pin_id", allPinIds);
+
+        if (error) {
+          console.error("Failed to fetch pins:", error.message);
+          return;
+        }
+
+        pinsMap = Object.fromEntries(
+          (pinData || []).map((p: any) => [p.pin_id, p])
+        );
+      }
+
+
+      const formattedPins: Pin[] = clusters
+        .map((cluster: any) => {
+          const validPins = (cluster.pin_ids || [])
+            .map((id: number) => pinsMap[id])
+            .filter((p: any) => {
+              if (!p) return false;
+
+              const isAllowedUser = allUserIds.includes(p.user_id);
+              const isVisible =
+                !p.private || p.user_id === currentUserId;
+
+              return isAllowedUser && isVisible;
+            });
+
+          if (validPins.length === 0) return null;
+
+          const userIds = [...new Set(validPins.map((p: any) => p.user_id))];
+          const pinIds = validPins.map((p: any) => p.pin_id);
+
+          const userPin = validPins.find(
+            (p: any) => p.user_id === currentUserId
+          );
+
+          const displayPin = userPin ?? validPins[0];
+
+          return {
+            id: String(cluster.cluster_id),
+            latitude: cluster.latitude,
+            longitude: cluster.longitude,
+            address: displayPin?.address ?? cluster.address,
+            name: displayPin?.name ?? cluster.name,
+            user_id: String(userIds[0]),
+            isShared: userIds.length > 1,
+            pinCount: validPins.length,
+            pinIds,
+            userIds,
+          };
+        })
+        .filter(Boolean) as Pin[];
 
       setPins(formattedPins);
     }
-
     setPinChanged(true);
     fetchPins();
   }, [profile])

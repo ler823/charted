@@ -18,6 +18,7 @@ import {
 import LoadingPage from "@/components/loading-page";
 import { getPhotoUrl } from "@/lib/photo-utils";
 import { useAuth } from "@/context/AuthContext";
+import { sortRoutesWithInitial } from "expo-router/build/sortRoutes";
 
 type Friend = {
   user_id: number;
@@ -122,34 +123,32 @@ export default function PinPage() {
       }
 
       async function getPhotos(myPin: Pin) {
-        if (
-          myPin == null ||
-          myPin.pin_photos?.[0] == null ||
-          myPin.pin_photos?.[0].photos?.key == "" ||
-          myPin.pin_photos.length === 0
-        ) {
-          setCoverPhoto("");
-          return;
-        }
-        const coverPhotoKey = myPin.pin_photos
-          ?.filter((pin_photo) => pin_photo.cover)
-          .flatMap((pin_photo) => pin_photo?.photos?.key);
-        const otherPhotoKeys = myPin.pin_photos
-          ?.filter((pin_photo) => !pin_photo.cover)
-          .flatMap((pin_photo) => pin_photo.photos?.key);
-
-        if (!coverPhotoKey.length) {
+        if (!myPin?.pin_photos?.length) {
           setCoverPhoto(null);
           setPhotoList([]);
           return;
         }
 
-        const coverPhotoUri = (await getPhotoUrl(coverPhotoKey))[0].url;
-        const otherPhotoUris = (await getPhotoUrl(otherPhotoKeys)).flatMap(
-          (otherPhoto) => otherPhoto.url,
-        );
-        setCoverPhoto(coverPhotoUri);
-        setPhotoList(otherPhotoUris);
+        const coverKey =
+          myPin.pin_photos.find((p) => p.cover)?.photos?.key ?? null;
+
+        const carouselKeys = myPin.pin_photos
+          .filter((p) => !p.cover && p.photos?.key)
+          .map((p) => p.photos!.key as string);
+
+        if (coverKey) {
+          const coverUrl = await getPhotoUrl([coverKey]);
+          setCoverPhoto(coverUrl?.[0]?.url ?? null);
+        } else {
+          setCoverPhoto(null);
+        }
+
+        if (carouselKeys.length > 0) {
+          const urls = await getPhotoUrl(carouselKeys);
+          setPhotoList(urls.map((u: any) => u.url));
+        } else {
+          setPhotoList([]);
+        }
       }
       fetchPin();
     }, [pinid]),
@@ -180,13 +179,72 @@ export default function PinPage() {
 
       setFriends(null);
 
-      const filteredUserIds =
-        cluster?.user_ids?.filter((id) => id !== pin?.user_id) ?? [];
+      const { data: pinsData, error: pinsError } = await supabase
+        .from("pins")
+        .select("pin_id, user_id, private")
+        .in("pin_id", cluster.pin_ids ?? []);
+
+      if (pinsError) {
+        console.log(pinsError.message);
+        return;
+      }
+
+      if (!profile?.user_id || !profile?.id) return;
+
+      const currentUserId = profile.user_id;
+      const currentUserUuid = profile.id;
+
+      let allUserIds: number[] = [currentUserId];
+
+      const { data: relData } = await supabase
+        .from("user_relationships1")
+        .select("requester_id, target_id")
+        .eq("status", "accepted")
+        .or(`requester_id.eq.${currentUserUuid},target_id.eq.${currentUserUuid}`);
+
+      const friendUuids: string[] = [];
+      (relData ?? []).forEach((r: any) => {
+        const other =
+          r.requester_id === currentUserUuid
+            ? r.target_id
+            : r.requester_id;
+        friendUuids.push(other);
+      });
+
+      if (friendUuids.length > 0) {
+        const { data: profileData } = await supabase
+          .from("profiles")
+          .select("user_id")
+          .in("id", friendUuids);
+
+        const friendIds =
+          profileData?.map((p: any) => p.user_id).filter(Boolean) ?? [];
+
+        allUserIds = [...allUserIds, ...friendIds];
+      }
+
+      const allowedUserSet = new Set(allUserIds);
+
+      const validUserIds = (pinsData ?? [])
+        .filter((p) => {
+          if (!p.user_id) return false;
+
+          if (!allowedUserSet.has(p.user_id)) return false;
+
+          if (p.private && p.user_id !== currentUserId) return false;
+
+          if (p.user_id === pin.user_id) return false;
+
+          return true;
+        })
+        .map((p) => p.user_id);
+
+      const uniqueUserIds = [...new Set(validUserIds)];
 
       const { data, error } = await supabase
         .from("profiles")
         .select("user_id, username, avatar_key")
-        .in("user_id", filteredUserIds ?? []);
+        .in("user_id", uniqueUserIds);
 
       if (!data) return;
 
@@ -218,18 +276,68 @@ export default function PinPage() {
     async function fetchUserNotes() {
       if (!cluster?.pin_ids?.length) return;
       if (!cluster || !pin?.user_id) return;
+      if (!profile?.user_id || !profile?.id) return;
 
       setNotes(null);
+
+      const currentUserId = profile?.user_id;
+      const currentUserUuid = profile?.id;
+
+      let allUserIds: number[] = [currentUserId];
+      const allowedUserSet = new Set(allUserIds);
+
+      const { data: relData } = await supabase
+        .from("user_relationships1")
+        .select("requester_id, target_id")
+        .eq("status", "accepted")
+        .or(`requester_id.eq.${currentUserUuid},target_id.eq.${currentUserUuid}`);
+
+      const friendUuids: string[] = [];
+      (relData ?? []).forEach((r: any) => {
+        const other =
+          r.requester_id === currentUserUuid
+            ? r.target_id
+            : r.requester_id;
+        friendUuids.push(other);
+      });
+
+      if (friendUuids.length > 0) {
+        const { data: profileData } = await supabase
+          .from("profiles")
+          .select("user_id")
+          .in("id", friendUuids);
+
+        const friendIds =
+          profileData?.map((p: any) => p.user_id).filter(Boolean) ?? [];
+
+        allUserIds = [...allUserIds, ...friendIds];
+      }
 
       const filteredPinIds =
         cluster?.pin_ids?.filter((id) => id !== pin?.pin_id) ?? [];
 
       const { data, error } = await supabase
         .from("pins")
-        .select("user_id, user_note, users:user_id( username )")
-        .in("pin_id", filteredPinIds ?? []);
+        .select("pin_id, user_id, user_note, private, users:user_id( username )")
+        .in("pin_id", filteredPinIds ?? [])
 
-      const filteredData = (data ?? []).filter((row) => row.user_id !== pin.user_id);
+      if (error) {
+        console.log(error.message);
+        return;
+      }
+
+      const filteredData = (data ?? []).filter((row) => {
+        if (!row.user_id) return false;
+
+        if (!allowedUserSet.has(row.user_id)) return false;
+
+        if (row.private && row.user_id !== currentUserId) return false;
+
+        if (row.user_id === pin.user_id) return false;
+        
+        return true;
+      });
+
       const noteUserIds = filteredData.map((r) => r.user_id).filter(Boolean);
 
       const { data: profileData } = await supabase
@@ -357,7 +465,7 @@ export default function PinPage() {
                   { width: "92%", alignSelf: "center" },
                 ]}
               >
-                <Text style={styles.boxText}>
+                <Text style={styles.emptyText}>
                   None of your friends share this pin yet
                 </Text>
               </View>
@@ -408,20 +516,26 @@ export default function PinPage() {
           {/* Notes */}
           <Text style={styles.subtitle}>My Notes</Text>
           <View style={styles.cardFullRow}>
-            <Text style={styles.boxText}>
+            <Text style={pin.user_note? styles.boxText : styles.emptyText}>
               {pin.user_note || "You have no notes yet"}
             </Text>
           </View>
 
           {/* Friend Notes */}
           <Text style={styles.subtitle}>Friends' Notes</Text>
-          {notes?.length === 0 && (
+          {friends?.length === 0 ? (
             <View style={styles.cardFullRow}>
-              <Text style={styles.boxText}>
+              <Text style={styles.emptyText}>
                 None of your friends share this pin yet
               </Text>
             </View>
-          )}
+          ) : notes?.length === 0 ? (
+            <View style={styles.cardFullRow}>
+              <Text style={styles.emptyText}>
+                Your friends haven't added notes yet
+              </Text>
+            </View>
+          ) : null}
           {notes?.length! > 0 && (
             <FlatList
               data={notes}
@@ -474,7 +588,7 @@ export default function PinPage() {
               }}
             >
               {pin.pin_tags?.length === 0 && (
-                <Text style={styles.boxText}>You have no tags yet</Text>
+                <Text style={styles.emptyText}>You have no tags yet</Text>
               )}
               {pin.pin_tags?.map((pin_tag) => (
                 <Text key={pin_tag.tags?.tag_id} style={styles.boxText}>
@@ -497,7 +611,7 @@ export default function PinPage() {
               }}
             >
               {pin.pin_lists?.length === 0 && (
-                <Text style={styles.boxText}>You have no lists yet</Text>
+                <Text style={styles.emptyText}>You have no lists yet</Text>
               )}
               {pin.pin_lists?.map((pin_list) => (
                 <Text key={pin_list.lists?.list_id} style={styles.boxText}>
@@ -521,7 +635,7 @@ export default function PinPage() {
           >
             <ScrollView>
               {pin.pin_visits?.length === 0 && (
-                <Text style={[styles.boxText, { marginTop: 20 }]}>
+                <Text style={[styles.emptyText, { marginTop: 20 }]}>
                   You have no logged visits
                 </Text>
               )}
@@ -542,7 +656,7 @@ export default function PinPage() {
           <Text style={styles.subtitle}>Photos</Text>
           <View style={[styles.cardFullRow]}>
             {(photoList == null || photoList.length == 0) && (
-              <Text style={styles.boxText}>You have added no photos</Text>
+              <Text style={styles.emptyText}>You have added no photos</Text>
             )}
             <FlatList
               horizontal
@@ -632,6 +746,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#243e36",
     fontFamily: Fonts.regular,
+  },
+  emptyText: {
+    fontSize: 14,
+    color: "rgba(0, 0, 0, 0.4)",
+    fontFamily: Fonts.regular_i,
   },
   button: {
     backgroundColor: "#243e36",
