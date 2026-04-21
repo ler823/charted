@@ -701,8 +701,8 @@ export default function PinPage() {
               Back
             </Text>
           </Pressable>
-          {/* Need to update the route and add a new page that copies the make-pin setup, but autofills with the specific pin's info */}
-          <Pressable
+          {pin.user_id === profile?.user_id && (
+            <Pressable
             style={styles.button}
             onPress={() => {
               router.push({
@@ -720,6 +720,7 @@ export default function PinPage() {
               Edit
             </Text>
           </Pressable>
+          )}
         </View>
       </View>
     </>
