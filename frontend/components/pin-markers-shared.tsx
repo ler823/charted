@@ -1,15 +1,16 @@
-import { Fonts } from "@/constants/theme";
-import React, { Profiler, useEffect, useState } from "react";
-import { StyleSheet, View, Text } from "react-native";
-import Svg, { Path } from "react-native-svg";
+import { Colors, Fonts } from "@/constants/theme";
 import { useAuth } from "@/context/AuthContext";
+import React, { useEffect, useState } from "react";
+import { StyleSheet, Text, View } from "react-native";
+import Svg, { Path } from "react-native-svg";
 
 interface PinMarkerProps {
   users_id: number[];
   number_shared: number;
 }
 
-{/* Old colors:
+{
+  /* Old colors:
   const COLORS = [
         "#d47eaa",
         "#8c4067",
@@ -27,25 +28,29 @@ interface PinMarkerProps {
         "#8c694f",
         "#5a3a23"
     ]
- */}
+ */
+}
 
 const COLORS = [
-        "#d47eaa",
-        "#8c4067",
-        "#d54c4c",
-        "#ec9055",
-        "#b19e24",
-        "#3c6844",
-        "#7ed4d1",
-        "#2c716f",
-        "#b87ed4",
-    ]
+  "#d47eaa",
+  "#8c4067",
+  "#d54c4c",
+  "#ec9055",
+  "#b19e24",
+  "#3c6844",
+  "#7ed4d1",
+  "#2c716f",
+  "#b87ed4",
+];
 
-function getUserColor(userId: string | number, authuser: number | undefined): string {
+function getUserColor(
+  userId: string | number,
+  authuser: number | undefined,
+): string {
   const str = String(userId);
 
   if (str === String(authuser)) {
-    return "#7ca982";
+    return Colors.light.accent;
   }
 
   let hash = 0;
@@ -55,7 +60,13 @@ function getUserColor(userId: string | number, authuser: number | undefined): st
   return COLORS[Math.abs(hash) % COLORS.length];
 }
 
-function createSlicePath(cx: number, cy: number, r: number, startAngle: number, endAngle: number) {
+function createSlicePath(
+  cx: number,
+  cy: number,
+  r: number,
+  startAngle: number,
+  endAngle: number,
+) {
   const rad = (deg: number) => (deg * Math.PI) / 180;
 
   const x1 = cx + r * Math.cos(rad(startAngle));
@@ -80,34 +91,42 @@ export default function SharedPinMarkers({
   users_id,
   number_shared,
 }: PinMarkerProps) {
-    const [friend, setFriend] = useState<number[]>([]);
-    const { profile } = useAuth();
-    
-    useEffect(() => {
-      if (users_id?.length) {
-        setFriend(users_id);
-      }
-    }, [users_id]);
-    
-    const userColors = friend.map((id) => getUserColor(id, profile?.user_id));
-  
+  const [friend, setFriend] = useState<number[]>([]);
+  const { profile } = useAuth();
+
+  useEffect(() => {
+    if (users_id?.length) {
+      setFriend(users_id);
+    }
+  }, [users_id]);
+
+  const userColors = friend.map((id) => getUserColor(id, profile?.user_id));
+
   if (users_id.length === 2) {
     return (
       <View style={styles.wrapper}>
         <View style={styles.pinRow}>
-          <View style={[styles.leftHalf, { backgroundColor: userColors[0] ?? "#7ca982" }]} />
-          <View style={[styles.rightHalf, { backgroundColor: userColors[1] ?? "#7ca982" }]} />
-            <View style={styles.avatar}>
-              <Text style={styles.avatarInitial}>{number_shared}</Text>
-            </View>
+          <View
+            style={[
+              styles.leftHalf,
+              { backgroundColor: userColors[0] ?? Colors.light.accent },
+            ]}
+          />
+          <View
+            style={[
+              styles.rightHalf,
+              { backgroundColor: userColors[1] ?? Colors.light.accent },
+            ]}
+          />
+          <View style={styles.avatar}>
+            <Text style={styles.avatarInitial}>{number_shared}</Text>
+          </View>
         </View>
         <View style={styles.stem} />
-        <View style={{height: 62}}/>
+        <View style={{ height: 62 }} />
       </View>
     );
-  }
-
-  else if (users_id.length === 3) {
+  } else if (users_id.length === 3) {
     const size = 42;
     const r = size / 2;
     const cx = r;
@@ -116,10 +135,23 @@ export default function SharedPinMarkers({
     return (
       <View style={styles.wrapper}>
         <View style={{ width: size, height: size }}>
-          <Svg width={size} height={size} style={{ transform: [{ rotate: "-90deg" }] }}>
-            <Path d={createSlicePath(cx, cy, r, 0, 120)} fill={userColors[0] ?? "#7ca982"} />
-            <Path d={createSlicePath(cx, cy, r, 120, 240)} fill={userColors[1] ?? "#7ca982"} />
-            <Path d={createSlicePath(cx, cy, r, 240, 360)} fill={userColors[2] ?? "#7ca982"} />
+          <Svg
+            width={size}
+            height={size}
+            style={{ transform: [{ rotate: "-90deg" }] }}
+          >
+            <Path
+              d={createSlicePath(cx, cy, r, 0, 120)}
+              fill={userColors[0] ?? Colors.light.accent}
+            />
+            <Path
+              d={createSlicePath(cx, cy, r, 120, 240)}
+              fill={userColors[1] ?? Colors.light.accent}
+            />
+            <Path
+              d={createSlicePath(cx, cy, r, 240, 360)}
+              fill={userColors[2] ?? Colors.light.accent}
+            />
           </Svg>
 
           <View style={styles.avatar}>
@@ -131,29 +163,46 @@ export default function SharedPinMarkers({
         <View style={{ height: 62 }} />
       </View>
     );
-  }
-
-  else {
+  } else {
     return (
       <View style={styles.wrapper}>
         <View style={styles.pinQuarterRow}>
-          <View style={[styles.leftTop, { backgroundColor: userColors[0] ?? "#7ca982" }]} />
-          <View style={[styles.rightTop, { backgroundColor: userColors[1] ?? "#7ca982" }]} />
+          <View
+            style={[
+              styles.leftTop,
+              { backgroundColor: userColors[0] ?? Colors.light.accent },
+            ]}
+          />
+          <View
+            style={[
+              styles.rightTop,
+              { backgroundColor: userColors[1] ?? Colors.light.accent },
+            ]}
+          />
           <View style={styles.quarterAvatar}>
             <Text style={styles.avatarInitial}>{number_shared}</Text>
           </View>
         </View>
         <View style={styles.pinQuarterRow}>
-          <View style={[styles.leftBottom, { backgroundColor: userColors[2] ?? "#7ca982" }]} />
-          <View style={[styles.rightBottom, { backgroundColor: userColors[3] ?? "#7ca982" }]} />
+          <View
+            style={[
+              styles.leftBottom,
+              { backgroundColor: userColors[2] ?? Colors.light.accent },
+            ]}
+          />
+          <View
+            style={[
+              styles.rightBottom,
+              { backgroundColor: userColors[3] ?? Colors.light.accent },
+            ]}
+          />
         </View>
         <View style={styles.stem} />
-        <View style={{height: 62}}/>
+        <View style={{ height: 62 }} />
       </View>
     );
   }
 }
-
 
 const styles = StyleSheet.create({
   wrapper: {
@@ -270,10 +319,10 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: 2,
     borderBottomRightRadius: 2,
   },
-    avatarInitial: {
-      fontSize: 20,
-      fontFamily: Fonts.bold,
-      color: "#000",
-      paddingBottom: 5,
-    },
+  avatarInitial: {
+    fontSize: 20,
+    fontFamily: Fonts.bold,
+    color: "#000",
+    paddingBottom: 5,
+  },
 });

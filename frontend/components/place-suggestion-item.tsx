@@ -1,4 +1,4 @@
-import { Fonts } from "@/constants/theme";
+import { Colors, Fonts } from "@/constants/theme";
 import { Ionicons } from "@expo/vector-icons";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
@@ -19,7 +19,11 @@ export default function PlaceSuggestionItem({ item, onPress }: Props) {
   return (
     <Pressable style={styles.item} onPress={() => onPress(item.place_id)}>
       <View style={styles.iconContainer}>
-        <Ionicons name="location-outline" size={18} color="#7ca982" />
+        <Ionicons
+          name="location-outline"
+          size={18}
+          color={Colors.light.accent}
+        />
       </View>
       <View style={styles.text}>
         <Text style={styles.name} numberOfLines={1}>
@@ -31,7 +35,7 @@ export default function PlaceSuggestionItem({ item, onPress }: Props) {
           </Text>
         ) : null}
       </View>
-      <Ionicons name="chevron-forward" size={14} color="#7ca982" />
+      <Ionicons name="chevron-forward" size={14} color={Colors.light.accent} />
     </Pressable>
   );
 }
@@ -64,7 +68,7 @@ const styles = StyleSheet.create({
   },
   address: {
     fontFamily: Fonts.regular ?? Fonts.bold,
-    color: "#7ca982",
+    color: Colors.light.accent,
     fontSize: 12,
     marginTop: 1,
   },

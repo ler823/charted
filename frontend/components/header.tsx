@@ -39,8 +39,12 @@ export default function Header({
 }: HeaderProps) {
   const [query, setQuery] = useState("");
   const [isFocused, setIsFocused] = useState(false);
-  const [suggestionsType, setSuggestionsType] = useState<"pins" | "places">("pins");
-  const [placeSuggestions, setPlaceSuggestions] = useState<PlacePrediction[]>([]);
+  const [suggestionsType, setSuggestionsType] = useState<"pins" | "places">(
+    "pins",
+  );
+  const [placeSuggestions, setPlaceSuggestions] = useState<PlacePrediction[]>(
+    [],
+  );
   const [placesLoading, setPlacesLoading] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -142,11 +146,7 @@ export default function Header({
           </View>
 
           <Pressable style={styles.settings}>
-            <Ionicons
-              name="settings"
-              size={32}
-              color={Colors.light.background}
-            />
+            <Ionicons name="settings" size={24} color="#d9d9d9" />
           </Pressable>
         </View>
 
@@ -157,13 +157,15 @@ export default function Header({
                 onPress={() => setSuggestionsType("pins")}
                 style={[
                   styles.suggestionsPillOption,
-                  suggestionsType === "pins" && styles.suggestionsPillOptionActive,
+                  suggestionsType === "pins" &&
+                    styles.suggestionsPillOptionActive,
                 ]}
               >
                 <Text
                   style={[
                     styles.suggestionsPillText,
-                    suggestionsType === "pins" && styles.suggestionsPillTextActive,
+                    suggestionsType === "pins" &&
+                      styles.suggestionsPillTextActive,
                   ]}
                 >
                   Pins
@@ -173,13 +175,15 @@ export default function Header({
                 onPress={() => setSuggestionsType("places")}
                 style={[
                   styles.suggestionsPillOption,
-                  suggestionsType === "places" && styles.suggestionsPillOptionActive,
+                  suggestionsType === "places" &&
+                    styles.suggestionsPillOptionActive,
                 ]}
               >
                 <Text
                   style={[
                     styles.suggestionsPillText,
-                    suggestionsType === "places" && styles.suggestionsPillTextActive,
+                    suggestionsType === "places" &&
+                      styles.suggestionsPillTextActive,
                   ]}
                 >
                   Places
@@ -196,13 +200,21 @@ export default function Header({
                   ))
                 ) : (
                   <View style={styles.noResults}>
-                    <Ionicons name="search-outline" size={16} color="#7ca982" />
+                    <Ionicons
+                      name="search-outline"
+                      size={16}
+                      color={Colors.light.accent}
+                    />
                     <Text style={styles.noResultsText}>No pins found</Text>
                   </View>
                 )
               ) : placesLoading ? (
                 <View style={styles.noResults}>
-                  <Ionicons name="search-outline" size={16} color="#7ca982" />
+                  <Ionicons
+                    name="search-outline"
+                    size={16}
+                    color={Colors.light.accent}
+                  />
                   <Text style={styles.noResultsText}>Searching...</Text>
                 </View>
               ) : placeSuggestions.length > 0 ? (
@@ -215,7 +227,11 @@ export default function Header({
                 ))
               ) : (
                 <View style={styles.noResults}>
-                  <Ionicons name="search-outline" size={16} color="#7ca982" />
+                  <Ionicons
+                    name="search-outline"
+                    size={16}
+                    color={Colors.light.accent}
+                  />
                   <Text style={styles.noResultsText}>No places found</Text>
                 </View>
               )}
@@ -284,7 +300,7 @@ const styles = StyleSheet.create({
 
   // Search
   searchbar: {
-    backgroundColor: "#7ca982",
+    backgroundColor: Colors.light.accent,
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 15,
@@ -310,7 +326,7 @@ const styles = StyleSheet.create({
 
   // Settings
   settings: {
-    backgroundColor: "#7ca982",
+    backgroundColor: Colors.light.background,
     borderRadius: 999,
     alignItems: "center",
     justifyContent: "center",
@@ -344,12 +360,12 @@ const styles = StyleSheet.create({
     borderRadius: 999,
   },
   suggestionsPillOptionActive: {
-    backgroundColor: "#7ca982",
+    backgroundColor: Colors.light.accent,
   },
   suggestionsPillText: {
     fontFamily: Fonts.bold,
     fontSize: 13,
-    color: "#7ca982",
+    color: Colors.light.accent,
   },
   suggestionsPillTextActive: {
     color: "#fefbea",
@@ -400,7 +416,7 @@ const styles = StyleSheet.create({
   },
   suggestionAddress: {
     fontFamily: Fonts.regular ?? Fonts.bold,
-    color: "#7ca982",
+    color: Colors.light.accent,
     fontSize: 12,
     marginTop: 1,
   },
@@ -413,7 +429,7 @@ const styles = StyleSheet.create({
   },
   noResultsText: {
     fontFamily: Fonts.bold,
-    color: "#7ca982",
+    color: Colors.light.accent,
     fontSize: 14,
   },
 
@@ -436,16 +452,16 @@ const styles = StyleSheet.create({
     borderRadius: 999,
   },
   pillOptionActiveMap: {
-    backgroundColor: "#7ca982",
+    backgroundColor: Colors.light.accent,
     borderTopRightRadius: 0,
     borderBottomRightRadius: 0,
   },
   pillOptionActiveList: {
-    backgroundColor: "#7ca982",
+    backgroundColor: Colors.light.accent,
     borderRadius: 0,
   },
   pillOptionActiveGrid: {
-    backgroundColor: "#7ca982",
+    backgroundColor: Colors.light.accent,
     borderTopLeftRadius: 0,
     borderBottomLeftRadius: 0,
   },
