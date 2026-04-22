@@ -192,6 +192,12 @@ export default function Home() {
           setViewMode={setViewMode}
           viewOptions={VIEW_OPTIONS}
           pins={pins}
+          onPlaceSelect={(lat, lng) => {
+            mapRef.current?.animateToRegion(
+              { latitude: lat, longitude: lng, latitudeDelta: 0.01, longitudeDelta: 0.01 },
+              400,
+            );
+          }}
         />
       )}
 
