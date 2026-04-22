@@ -156,10 +156,8 @@ export default function ListPinListView() {
         </Pressable>
         {isShared == "false" && (
           <Pressable
-            style={styles.button}>
-            <Text
-              style={styles.buttonText}
-              onPress={() => {
+            style={styles.button}
+            onPress={() => {
                 router.push(
                   {
                     pathname: "/(tabs)/(lists)/edit_list",
@@ -167,6 +165,7 @@ export default function ListPinListView() {
                   }
                 )
               }}>
+            <Text style={styles.buttonText}>
               Edit
             </Text>
           </Pressable>
