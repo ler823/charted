@@ -1,6 +1,6 @@
 import { Stars } from "@/components/light-stars";
 import LoadingPage from "@/components/loading-page";
-import { Fonts } from "@/constants/theme";
+import { Colors, Fonts } from "@/constants/theme";
 import { getPhotoUrl } from "@/lib/photo-utils";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
@@ -28,7 +28,7 @@ type VisPin = {
 }
 
 export default function Account() {
-  const { profile, loading: authLoading } = useAuth();
+  const { profile, loading: authLoading, signOut } = useAuth();
   const [username, setUsername] = useState("");
   const [location, setLocation] = useState<string | null>(null);
   const [bio, setBio] = useState<string | null>(null);
@@ -284,6 +284,7 @@ export default function Account() {
 
   return (
     <ScrollView>
+      <View style={{ height: 15 }} />
       <View
         style={{
           marginTop: 45,
@@ -328,7 +329,7 @@ export default function Account() {
           <Ionicons name="location-sharp" size={17} color="#333" />
           <Text style={[styles.location, { paddingLeft: 2 }]}>{location ?? "No location set"}</Text>
         </View>
-        <Text style={styles.bio}>{bio ?? ""}</Text>
+        <Text style={styles.bio}>{bio ?? "No bio"}</Text>
 
         {/* Stats */}
           <View style={styles.infoBox}>
@@ -512,7 +513,12 @@ export default function Account() {
           </View>
         </View>
       </View>
-      <View style={{ height: 100 }} />
+      <View style={styles.container}>
+        <Pressable style={styles.button} onPress={signOut}>
+          <Text style={styles.buttonText}>Sign Out</Text>
+        </Pressable>
+      </View>
+      <View style={{ height: 105 }} />
     </ScrollView>
   );
 }
@@ -654,5 +660,28 @@ const styles = StyleSheet.create({
     marginLeft: -2,
     borderTopRightRadius: 12,
     justifyContent: "center",
+  },
+  button: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    height: 40,
+    width: 150,
+    paddingHorizontal: 16,
+    marginVertical: 24,
+    backgroundColor: Colors.light.error,
+    borderRadius: 999,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
+    elevation: 4,
+  },
+  buttonText: {
+    color: "#fff",
+    fontWeight: "bold",
+    fontSize: 16,
+    fontFamily: Fonts.bold,
+    letterSpacing: 1,
   },
 });

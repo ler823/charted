@@ -388,7 +388,7 @@ export default function FriendProfilePage() {
         <View style={styles.locationRow}>
           <Ionicons name="location-sharp" size={17} color="#333" />
           <Text style={[styles.location, { paddingLeft: 2 }]}>
-            {friend?.location ?? "Location unavailable"}
+            {friend?.location ?? "No location set"}
           </Text>
         </View>
         <Text style={styles.bio}>{friend?.bio ?? "No bio"}</Text>
