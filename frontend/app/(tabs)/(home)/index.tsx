@@ -44,6 +44,8 @@ export default function Home() {
   const [viewMode, setViewMode] = useState<ViewMode>(incomingViewMode ?? "map");
   const [selectedPin, setSelectedPin] = useState<Pin | null>(null);
   const [pins, setPins] = useState<Pin[]>([]);
+  const [filteredPins, setFilteredPins] = useState<Pin[] | null>(null);
+  const [pinSearchQuery, setPinSearchQuery] = useState("");
   const [pinCoords, setPinCoords] = useState<Coords | null>(null);
   const mapRef = useRef<any>(null);
   const { permissionStatus } = useLocation();
@@ -206,6 +208,10 @@ export default function Home() {
               400,
             );
           }}
+          onFilteredPinsChange={(filtered, query) => {
+            setFilteredPins(filtered);
+            setPinSearchQuery(query);
+          }}
         />
       )}
 
@@ -271,12 +277,26 @@ export default function Home() {
 
       {viewMode === "list" && (
         <View style={styles.cardsContainer}>
-          <PinListView pins={pins} />
+          <PinListView
+            pins={filteredPins ?? pins}
+            emptyMessage={
+              pinSearchQuery
+                ? `No pins matched "${pinSearchQuery}"`
+                : "No pins to display yet."
+            }
+          />
         </View>
       )}
       {viewMode === "grid" && (
         <View>
-          <PinGridView pins={pins} />
+          <PinGridView
+            pins={filteredPins ?? pins}
+            emptyMessage={
+              pinSearchQuery
+                ? `No pins matched "${pinSearchQuery}"`
+                : "No pins to display yet."
+            }
+          />
         </View>
       )}
 

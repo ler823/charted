@@ -28,6 +28,7 @@ type HeaderProps = {
   viewOptions: ViewOption[];
   pins: Pin[];
   onPlaceSelect?: (lat: number, lng: number) => void;
+  onFilteredPinsChange?: (filtered: Pin[] | null, query: string) => void;
 };
 
 export default function Header({
@@ -36,12 +37,15 @@ export default function Header({
   viewOptions,
   pins = [],
   onPlaceSelect,
+  onFilteredPinsChange,
 }: HeaderProps) {
   const [query, setQuery] = useState("");
   const [isFocused, setIsFocused] = useState(false);
   const [suggestionsType, setSuggestionsType] = useState<"pins" | "places">(
     "pins",
   );
+
+  const isMapView = viewMode === "map";
   const [placeSuggestions, setPlaceSuggestions] = useState<PlacePrediction[]>(
     [],
   );
@@ -88,7 +92,7 @@ export default function Header({
     }
   }
 
-  const pinSuggestions =
+  const matchingPins =
     query.trim().length > 0
       ? pins
           .filter((p) => p.name?.toLowerCase().includes(query.toLowerCase()))
@@ -100,10 +104,17 @@ export default function Header({
             if (!aStarts && bStarts) return 1;
             return 0;
           })
-          .slice(0, 5)
       : [];
 
-  const showSuggestions = isFocused && query.trim().length > 0;
+  const pinSuggestions = isMapView ? matchingPins.slice(0, 5) : matchingPins;
+
+  useEffect(() => {
+    if (!isMapView) {
+      onFilteredPinsChange?.(query.trim().length > 0 ? matchingPins : null, query.trim());
+    }
+  }, [query, isMapView, pins, onFilteredPinsChange]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const showSuggestions = isMapView && isFocused && query.trim().length > 0;
 
   return (
     <>
@@ -240,36 +251,38 @@ export default function Header({
         )}
 
         {/* Pill and Filter */}
-        <View style={styles.row}>
-          <View style={styles.pill}>
-            {viewOptions.map(({ mode, icon }) => (
-              <Pressable
-                key={mode}
-                onPress={() => setViewMode(mode)}
-                style={[
-                  styles.pillOption,
-                  viewMode === mode &&
-                    (mode === "map"
-                      ? styles.pillOptionActiveMap
-                      : viewMode === "list"
-                        ? styles.pillOptionActiveList
-                        : styles.pillOptionActiveGrid),
-                ]}
-              >
-                <Ionicons name={icon} size={20} color="#d9d9d9" />
-              </Pressable>
-            ))}
-          </View>
+        {!showSuggestions && (
+          <View style={styles.row}>
+            <View style={styles.pill}>
+              {viewOptions.map(({ mode, icon }) => (
+                <Pressable
+                  key={mode}
+                  onPress={() => setViewMode(mode)}
+                  style={[
+                    styles.pillOption,
+                    viewMode === mode &&
+                      (mode === "map"
+                        ? styles.pillOptionActiveMap
+                        : viewMode === "list"
+                          ? styles.pillOptionActiveList
+                          : styles.pillOptionActiveGrid),
+                  ]}
+                >
+                  <Ionicons name={icon} size={20} color="#d9d9d9" />
+                </Pressable>
+              ))}
+            </View>
 
-          <Pressable style={styles.filter}>
-            <Text
-              style={{ fontFamily: Fonts.bold, color: "#d9d9d9", fontSize: 16 }}
-            >
-              Filter <Text style={{ color: "#243e36" }}>.</Text>
-            </Text>
-            <Ionicons name="chevron-down" size={20} color="#d9d9d9" />
-          </Pressable>
-        </View>
+            <Pressable style={styles.filter}>
+              <Text
+                style={{ fontFamily: Fonts.bold, color: "#d9d9d9", fontSize: 16 }}
+              >
+                Filter <Text style={{ color: "#243e36" }}>.</Text>
+              </Text>
+              <Ionicons name="chevron-down" size={20} color="#d9d9d9" />
+            </Pressable>
+          </View>
+        )}
       </View>
     </>
   );
