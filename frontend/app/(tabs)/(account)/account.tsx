@@ -1,7 +1,6 @@
 import { Stars } from "@/components/light-stars";
 import LoadingPage from "@/components/loading-page";
 import { Colors, Fonts } from "@/constants/theme";
-import { Colors, Fonts } from "@/constants/theme";
 import { getPhotoUrl } from "@/lib/photo-utils";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
