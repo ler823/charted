@@ -5,7 +5,7 @@ import { supabase } from "@/lib/supabase";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { useFocusEffect, useRouter } from "expo-router";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
 type FriendRequest = {
@@ -31,6 +31,19 @@ export default function FriendNotifications() {
   const { profile } = useAuth();
   const [received, setReceived] = useState<FriendRequest[]>([]);
   const [sent, setSent] = useState<FriendRequest[]>([]);
+  const [accepted, setAccepted] = useState<Set<string>>(new Set());
+  const [rejected, setRejected] = useState<Set<string>>(new Set());
+  const [unsent, setUnsent] = useState<Set<string>>(new Set());
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const errorTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const showError = (msg: string) => {
+    setErrorMsg(msg);
+    if (errorTimer.current) clearTimeout(errorTimer.current);
+    errorTimer.current = setTimeout(() => setErrorMsg(null), 4000);
+  };
+
+  useEffect(() => () => { if (errorTimer.current) clearTimeout(errorTimer.current); }, []);
 
   useFocusEffect(
     useCallback(() => {
@@ -98,21 +111,24 @@ export default function FriendNotifications() {
   };
 
   const handleAccept = async (id: string) => {
-    await supabase
+    const { error } = await supabase
       .from("user_relationships1")
       .update({ status: "accepted" })
       .eq("id", id);
-    setReceived((prev) => prev.filter((r) => r.id !== id));
+    if (error) { showError("Error: failed to accept request."); return; }
+    setAccepted((prev) => new Set(prev).add(id));
   };
 
   const handleReject = async (id: string) => {
-    await supabase.from("user_relationships1").delete().eq("id", id);
-    setReceived((prev) => prev.filter((r) => r.id !== id));
+    const { error } = await supabase.from("user_relationships1").delete().eq("id", id);
+    if (error) { showError("Error: failed to reject request."); return; }
+    setRejected((prev) => new Set(prev).add(id));
   };
 
   const handleUnsend = async (id: string) => {
-    await supabase.from("user_relationships1").delete().eq("id", id);
-    setSent((prev) => prev.filter((r) => r.id !== id));
+    const { error } = await supabase.from("user_relationships1").delete().eq("id", id);
+    if (error) { showError("Error: failed to unsend request."); return; }
+    setUnsent((prev) => new Set(prev).add(id));
   };
 
   return (
@@ -140,14 +156,24 @@ export default function FriendNotifications() {
           <View key={user.id} style={styles.card}>
             <Avatar username={user.username} avatarUrl={user.avatarUrl} />
             <Text style={styles.username}>{user.username}</Text>
-            <View style={styles.actions}>
-              <Pressable style={styles.acceptBtn} onPress={() => handleAccept(user.id)}>
-                <Text style={styles.acceptText}>Accept</Text>
-              </Pressable>
-              <Pressable style={styles.rejectBtn} onPress={() => handleReject(user.id)}>
-                <Text style={styles.rejectText}>Reject</Text>
-              </Pressable>
-            </View>
+            {accepted.has(user.id) ? (
+              <View style={styles.acceptedBtn}>
+                <Text style={styles.statusText}>Accepted</Text>
+              </View>
+            ) : rejected.has(user.id) ? (
+              <View style={styles.rejectedBtn}>
+                <Text style={styles.statusText}>Rejected</Text>
+              </View>
+            ) : (
+              <View style={styles.actions}>
+                <Pressable style={styles.acceptBtn} onPress={() => handleAccept(user.id)}>
+                  <Text style={styles.acceptText}>Accept</Text>
+                </Pressable>
+                <Pressable style={styles.rejectBtn} onPress={() => handleReject(user.id)}>
+                  <Text style={styles.rejectText}>Reject</Text>
+                </Pressable>
+              </View>
+            )}
           </View>
         ))}
 
@@ -161,12 +187,27 @@ export default function FriendNotifications() {
           <View key={user.id} style={styles.card}>
             <Avatar username={user.username} avatarUrl={user.avatarUrl} />
             <Text style={styles.username}>{user.username}</Text>
-            <Pressable style={styles.unsendBtn} onPress={() => handleUnsend(user.id)}>
-              <Text style={styles.unsendText}>Unsend</Text>
+            <Pressable
+              style={unsent.has(user.id) ? styles.unsentBtn : styles.unsendBtn}
+              onPress={() => handleUnsend(user.id)}
+            >
+              <Text style={styles.unsendText}>
+                {unsent.has(user.id) ? "Unsent" : "Unsend Request"}
+              </Text>
             </Pressable>
           </View>
         ))}
       </ScrollView>
+
+       {/* Error Banner as seen in Figma design. Should appear on the bottom of the screen */}
+      {errorMsg && (
+        <View style={styles.errorBanner}>
+          <Text style={styles.errorBannerText}>{errorMsg}</Text>
+          <Pressable onPress={() => setErrorMsg(null)} hitSlop={8}>
+            <Ionicons name="close" size={20} color="#fff" />
+          </Pressable>
+        </View>
+      )}
     </View>
   );
 }
@@ -289,6 +330,48 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.bold,
     fontSize: 13,
   },
+  acceptedBtn: {
+    backgroundColor: "rgba(36, 62, 54, 0.6)",
+    paddingVertical: 8,
+    width: 152,
+    alignItems: "center",
+    borderRadius: 999,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
+    elevation: 4,
+  },
+  rejectedBtn: {
+    backgroundColor: "rgba(124, 169, 130, 0.8)",
+    paddingVertical: 8,
+    width: 152,
+    alignItems: "center",
+    borderRadius: 999,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
+    elevation: 4,
+  },
+  statusText: {
+    color: "#fff",
+    fontFamily: Fonts.bold,
+    fontSize: 13,
+  },
+  unsentBtn: {
+    backgroundColor: "#8a9a8e",
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 999,
+    minWidth: 130,
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
+    elevation: 4,
+  },
   unsendBtn: {
     backgroundColor: Colors.light.accent,
     paddingVertical: 8,
@@ -312,5 +395,25 @@ const styles = StyleSheet.create({
     borderBottomColor: Colors.light.background,
     width: "92%",
     marginVertical: 16,
+  },
+  errorBanner: {
+    position: "absolute",
+    bottom: 24,
+    left: 16,
+    right: 16,
+    backgroundColor: "#8B2020",
+    borderRadius: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 14,
+    paddingHorizontal: 18,
+  },
+  errorBannerText: {
+    flex: 1,
+    color: "#fff",
+    fontFamily: Fonts.regular,
+    fontSize: 14,
+    marginRight: 12,
   },
 });

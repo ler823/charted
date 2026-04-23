@@ -7,9 +7,10 @@ import ListCard from "./list_card";
 
 type Props = {
   pins: Pin[];
+  emptyMessage?: string;
 };
 
-export default function PinListView({ pins }: Props) {
+export default function PinListView({ pins, emptyMessage = "No pins to display yet." }: Props) {
   const router = useRouter();
 
   return (
@@ -55,7 +56,7 @@ export default function PinListView({ pins }: Props) {
         }}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>No pins to display yet.</Text>
+            <Text style={styles.emptyText}>{emptyMessage}</Text>
           </View>
         }
       />

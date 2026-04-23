@@ -1,7 +1,7 @@
 import PinMarker from "@/components/pin-marker";
 import { supabase } from "@/lib/supabase";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useRef, useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 import ClusteredMapView from "react-native-map-clustering";
 import { Marker } from "react-native-maps";
@@ -13,11 +13,11 @@ import Header from "@/components/header";
 import PinMarkers from "@/components/pin-markers";
 import SharedPinMarkers from "@/components/pin-markers-shared";
 import PinOverlay from "@/components/pin-overlay";
-import { useDroppingPin } from "@/context/DroppingPinContext";
 import { useAuth } from "@/context/AuthContext";
+import { useDroppingPin } from "@/context/DroppingPinContext";
 import { useLocation } from "@/hooks/use-location";
 import { Coords, Pin, ViewMode, ViewOption } from "@/types/types";
-import { useLocalSearchParams, useFocusEffect } from "expo-router";
+import { useFocusEffect, useLocalSearchParams } from "expo-router";
 import { setPinChanged } from "../../../lib/pin_refresh_data";
 
 const CSULB = {
@@ -44,6 +44,8 @@ export default function Home() {
   const [viewMode, setViewMode] = useState<ViewMode>(incomingViewMode ?? "map");
   const [selectedPin, setSelectedPin] = useState<Pin | null>(null);
   const [pins, setPins] = useState<Pin[]>([]);
+  const [filteredPins, setFilteredPins] = useState<Pin[] | null>(null);
+  const [pinSearchQuery, setPinSearchQuery] = useState("");
   const [pinCoords, setPinCoords] = useState<Coords | null>(null);
   const mapRef = useRef<any>(null);
   const { permissionStatus } = useLocation();
@@ -51,123 +53,126 @@ export default function Home() {
 
   useFocusEffect(
     useCallback(() => {
-    if (!profile) return;
+      if (!profile) return;
 
-    async function fetchPins() {
-      const currentUserId = profile!.user_id;
-      const currentUserUuid = profile!.id;
+      async function fetchPins() {
+        const currentUserId = profile!.user_id;
+        const currentUserUuid = profile!.id;
 
-      // Get accepted friends from user_relationships1. Gonna use this to decide what pins from DB to display
-      const { data: relData, error: relError } = await supabase
-        .from("user_relationships1")
-        .select("requester_id, target_id")
-        .eq("status", "accepted")
-        .or(`requester_id.eq.${currentUserUuid},target_id.eq.${currentUserUuid}`);
+        // Get accepted friends from user_relationships1. Gonna use this to decide what pins from DB to display
+        const { data: relData, error: relError } = await supabase
+          .from("user_relationships1")
+          .select("requester_id, target_id")
+          .eq("status", "accepted")
+          .or(
+            `requester_id.eq.${currentUserUuid},target_id.eq.${currentUserUuid}`,
+          );
 
-      if (relError) {
-        console.log("Failed to fetch friends:", relError.message);
-      }
-
-      // Collect friend UUIDs 
-      const friendUuids: string[] = [];
-      (relData ?? []).forEach((r: any) => {
-        const other = r.requester_id === currentUserUuid ? r.target_id : r.requester_id;
-        friendUuids.push(other);
-      });
-
-      // Convert friend UUIDs to integer user_ids (profiles to users basically)
-      // THis is how the relationship is between 'profiles' and 'users' tables
-      let allUserIds: number[] = [currentUserId];
-      if (friendUuids.length > 0) {
-        const { data: profileData } = await supabase
-          .from("profiles")
-          .select("user_id")
-          .in("id", friendUuids);
-        if (profileData) {
-          const friendIds = profileData
-            .map((p: any) => p.user_id)
-            .filter((id: any) => id != null) as number[];
-          allUserIds = [...allUserIds, ...friendIds];
+        if (relError) {
+          console.log("Failed to fetch friends:", relError.message);
         }
-      }
 
-      // Fetch pin clusters that overlap with any of these user_ids
-      const { data: clusters, error } = await supabase
-        .from("pin_clusters")
-        .select("*")
-        .overlaps("user_ids", allUserIds);
+        // Collect friend UUIDs
+        const friendUuids: string[] = [];
+        (relData ?? []).forEach((r: any) => {
+          const other =
+            r.requester_id === currentUserUuid ? r.target_id : r.requester_id;
+          friendUuids.push(other);
+        });
 
-      if (error) {
-        console.error("Failed to fetch pins:", error.message);
-        return;
-      }
+        // Convert friend UUIDs to integer user_ids (profiles to users basically)
+        // THis is how the relationship is between 'profiles' and 'users' tables
+        let allUserIds: number[] = [currentUserId];
+        if (friendUuids.length > 0) {
+          const { data: profileData } = await supabase
+            .from("profiles")
+            .select("user_id")
+            .in("id", friendUuids);
+          if (profileData) {
+            const friendIds = profileData
+              .map((p: any) => p.user_id)
+              .filter((id: any) => id != null) as number[];
+            allUserIds = [...allUserIds, ...friendIds];
+          }
+        }
 
-      const allPinIds = [...new Set(clusters.flatMap((c: any) => c.pin_ids || []))];
-
-      let pinsMap: Record<number, any> = {};
-
-      if (allPinIds.length > 0) {
-        const { data: pinData, error } = await supabase
-          .from("pins")
-          .select("pin_id, user_id, private, name, address, location_id")
-          .in("pin_id", allPinIds);
+        // Fetch pin clusters that overlap with any of these user_ids
+        const { data: clusters, error } = await supabase
+          .from("pin_clusters")
+          .select("*")
+          .overlaps("user_ids", allUserIds);
 
         if (error) {
           console.error("Failed to fetch pins:", error.message);
           return;
         }
 
-        pinsMap = Object.fromEntries(
-          (pinData || []).map((p: any) => [p.pin_id, p])
-        );
-      }
+        const allPinIds = [
+          ...new Set(clusters.flatMap((c: any) => c.pin_ids || [])),
+        ];
 
+        let pinsMap: Record<number, any> = {};
 
-      const formattedPins: Pin[] = clusters
-        .map((cluster: any) => {
-          const validPins = (cluster.pin_ids || [])
-            .map((id: number) => pinsMap[id])
-            .filter((p: any) => {
-              if (!p) return false;
+        if (allPinIds.length > 0) {
+          const { data: pinData, error } = await supabase
+            .from("pins")
+            .select("pin_id, user_id, private, name, address, location_id")
+            .in("pin_id", allPinIds);
 
-              const isAllowedUser = allUserIds.includes(p.user_id);
-              const isVisible =
-                !p.private || p.user_id === currentUserId;
+          if (error) {
+            console.error("Failed to fetch pins:", error.message);
+            return;
+          }
 
-              return isAllowedUser && isVisible;
-            });
-
-          if (validPins.length === 0) return null;
-
-          const userIds = [...new Set(validPins.map((p: any) => p.user_id))];
-          const pinIds = validPins.map((p: any) => p.pin_id);
-
-          const userPin = validPins.find(
-            (p: any) => p.user_id === currentUserId
+          pinsMap = Object.fromEntries(
+            (pinData || []).map((p: any) => [p.pin_id, p]),
           );
+        }
 
-          const displayPin = userPin ?? validPins[0];
+        const formattedPins: Pin[] = clusters
+          .map((cluster: any) => {
+            const validPins = (cluster.pin_ids || [])
+              .map((id: number) => pinsMap[id])
+              .filter((p: any) => {
+                if (!p) return false;
 
-          return {
-            id: String(cluster.cluster_id),
-            latitude: cluster.latitude,
-            longitude: cluster.longitude,
-            address: displayPin?.address ?? cluster.address,
-            name: displayPin?.name ?? cluster.name,
-            user_id: String(userIds[0]),
-            isShared: userIds.length > 1,
-            pinCount: validPins.length,
-            pinIds,
-            userIds,
-          };
-        })
-        .filter(Boolean) as Pin[];
+                const isAllowedUser = allUserIds.includes(p.user_id);
+                const isVisible = !p.private || p.user_id === currentUserId;
 
-      setPins(formattedPins);
-    }
-    setPinChanged(true);
-    fetchPins();
-  }, [profile])
+                return isAllowedUser && isVisible;
+              });
+
+            if (validPins.length === 0) return null;
+
+            const userIds = [...new Set(validPins.map((p: any) => p.user_id))];
+            const pinIds = validPins.map((p: any) => p.pin_id);
+
+            const userPin = validPins.find(
+              (p: any) => p.user_id === currentUserId,
+            );
+
+            const displayPin = userPin ?? validPins[0];
+
+            return {
+              id: String(cluster.cluster_id),
+              latitude: cluster.latitude,
+              longitude: cluster.longitude,
+              address: displayPin?.address ?? cluster.address,
+              name: displayPin?.name ?? cluster.name,
+              user_id: String(userIds[0]),
+              isShared: userIds.length > 1,
+              pinCount: validPins.length,
+              pinIds,
+              userIds,
+            };
+          })
+          .filter(Boolean) as Pin[];
+
+        setPins(formattedPins);
+      }
+      setPinChanged(true);
+      fetchPins();
+    }, [profile]),
   );
 
   return (
@@ -183,7 +188,7 @@ export default function Home() {
             setIsDroppingPin(true);
           }}
         >
-          <MaterialCommunityIcons name="plus" size={45} color="#fefbea" />
+          <MaterialCommunityIcons name="plus" size={45} color="#d9d9d9" />
         </Pressable>
       )}
       {!isDroppingPin && (
@@ -192,6 +197,21 @@ export default function Home() {
           setViewMode={setViewMode}
           viewOptions={VIEW_OPTIONS}
           pins={pins}
+          onPlaceSelect={(lat, lng) => {
+            mapRef.current?.animateToRegion(
+              {
+                latitude: lat,
+                longitude: lng,
+                latitudeDelta: 0.01,
+                longitudeDelta: 0.01,
+              },
+              400,
+            );
+          }}
+          onFilteredPinsChange={(filtered, query) => {
+            setFilteredPins(filtered);
+            setPinSearchQuery(query);
+          }}
         />
       )}
 
@@ -257,12 +277,26 @@ export default function Home() {
 
       {viewMode === "list" && (
         <View style={styles.cardsContainer}>
-          <PinListView pins={pins} />
+          <PinListView
+            pins={filteredPins ?? pins}
+            emptyMessage={
+              pinSearchQuery
+                ? `No pins matched "${pinSearchQuery}"`
+                : "No pins to display yet."
+            }
+          />
         </View>
       )}
       {viewMode === "grid" && (
         <View>
-          <PinGridView pins={pins} />
+          <PinGridView
+            pins={filteredPins ?? pins}
+            emptyMessage={
+              pinSearchQuery
+                ? `No pins matched "${pinSearchQuery}"`
+                : "No pins to display yet."
+            }
+          />
         </View>
       )}
 
