@@ -1,6 +1,7 @@
 import { Stars } from "@/components/light-stars";
 import LoadingPage from "@/components/loading-page";
 import { Colors, Fonts } from "@/constants/theme";
+import { Colors, Fonts } from "@/constants/theme";
 import { getPhotoUrl } from "@/lib/photo-utils";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
@@ -8,8 +9,8 @@ import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
-import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
+import { supabase } from "@/lib/supabase";
 
 type FavPin = {
   user_id: number;
@@ -17,7 +18,7 @@ type FavPin = {
   user_rating: number;
   name: string;
   last_visited: string | null;
-}
+};
 
 type VisPin = {
   user_id: number;
@@ -25,7 +26,7 @@ type VisPin = {
   visit_count: number;
   name: string;
   last_visited: string | null;
-}
+};
 
 export default function Account() {
   const { profile, loading: authLoading, signOut } = useAuth();
@@ -46,7 +47,9 @@ export default function Account() {
   const [recentFriend, setRecentFriend] = useState<string | null>(null);
   const [recentPin, setRecentPin] = useState<string | null>(null);
   const [recentVisitPhoto, setRecentVisitPhoto] = useState<string | null>(null);
-  const [recentFriendPhoto, setRecentFriendPhoto] = useState<string | null>(null);
+  const [recentFriendPhoto, setRecentFriendPhoto] = useState<string | null>(
+    null,
+  );
   const [recentPinPhoto, setRecentPinPhoto] = useState<string | null>(null);
   const [recentVisitPinId, setRecentVisitPinId] = useState<number | null>(null);
   const [recentFriendId, setRecentFriendId] = useState<number | null>(null);
@@ -127,7 +130,7 @@ export default function Account() {
     }
     fetchTopVisited();
   }, [profile]);
-  
+
   useEffect(() => {
     setFavPhoto(null);
     if (!favorite?.pin_id) return;
@@ -234,7 +237,10 @@ export default function Account() {
       let friendUserId: number | null = null;
 
       if (relData) {
-        const friendUuid = relData.requester_id === profile.id ? relData.target_id : relData.requester_id;
+        const friendUuid =
+          relData.requester_id === profile.id
+            ? relData.target_id
+            : relData.requester_id;
         const { data: friendProfile } = await supabase
           .from("profiles")
           .select("user_id, username, avatar_key")
@@ -318,7 +324,9 @@ export default function Account() {
         ) : (
           <View style={styles.avatar}>
             {username ? (
-              <Text style={styles.avatarInitial}>{username[0].toUpperCase()}</Text>
+              <Text style={styles.avatarInitial}>
+                {username[0].toUpperCase()}
+              </Text>
             ) : null}
           </View>
         )}
@@ -327,101 +335,153 @@ export default function Account() {
         <Text style={styles.username}>{username}</Text>
         <View style={styles.locationRow}>
           <Ionicons name="location-sharp" size={17} color="#333" />
-          <Text style={[styles.location, { paddingLeft: 2 }]}>{location ?? "No location set"}</Text>
+          <Text style={[styles.location, { paddingLeft: 2 }]}>
+            {location ?? "No location set"}
+          </Text>
         </View>
         <Text style={styles.bio}>{bio ?? "No bio"}</Text>
 
         {/* Stats */}
-          <View style={styles.infoBox}>
-            <Text style={styles.header}>Statistics</Text>
-            <View style={[styles.statsRow, {gap: 20}]}>
-              <Pressable style={[styles.infoWindow, {width: "42%", alignItems: "center"}]} onPress={() => {router.push({
+        <View style={styles.infoBox}>
+          <Text style={styles.header}>Statistics</Text>
+          <View style={[styles.statsRow, { gap: 20 }]}>
+            <Pressable
+              style={[
+                styles.infoWindow,
+                { width: "42%", alignItems: "center" },
+              ]}
+              onPress={() => {
+                router.push({
                   pathname: "/pins/[pinid]",
                   params: { pinid: String(favorite?.pin_id) },
-                })}}>
-                <Text style={styles.subHeader}>Favorite</Text>
-                <View style={styles.statsWindows}>
-                  {favPhoto && (
-                    <Image
-                      source={
-                        favPhoto
-                          ? { uri: favPhoto }
-                          : require("@/assets/images/no_image_default.png")
-                      }
-                      style={styles.image}
-                      contentFit="cover"
-                      transition={300}
-                      placeholder="blur"
-                    />
-                  )}
-                  {!favPhoto && (
-                    <Text style={{fontFamily: Fonts.bold, fontSize: 13, textAlign: "center", marginTop: 15, marginHorizontal: 2}}>
-                      {favorite?.name ? (
-                        <>
-                          {favorite.name}
-                          {"\n"}
-                          <Text style={{ fontFamily: Fonts.regular_i, fontSize: 11 }}>
-                            No photo set
-                          </Text>
-                        </>
-                      ) : (
-                        "This user has no pins yet."
-                      )}
-                    </Text>
-                  )}
+                });
+              }}
+            >
+              <Text style={styles.subHeader}>Favorite</Text>
+              <View style={styles.statsWindows}>
+                {favPhoto && (
+                  <Image
+                    source={
+                      favPhoto
+                        ? { uri: favPhoto }
+                        : require("@/assets/images/no_image_default.png")
+                    }
+                    style={styles.image}
+                    contentFit="cover"
+                    transition={300}
+                    placeholder="blur"
+                  />
+                )}
+                {!favPhoto && (
+                  <Text
+                    style={{
+                      fontFamily: Fonts.bold,
+                      fontSize: 13,
+                      textAlign: "center",
+                      marginTop: 15,
+                      marginHorizontal: 2,
+                    }}
+                  >
+                    {favorite?.name ? (
+                      <>
+                        {favorite.name}
+                        {"\n"}
+                        <Text
+                          style={{ fontFamily: Fonts.regular_i, fontSize: 11 }}
+                        >
+                          No photo set
+                        </Text>
+                      </>
+                    ) : (
+                      "This user has no pins yet."
+                    )}
+                  </Text>
+                )}
+              </View>
+              <View style={styles.statsBar}>
+                <View
+                  style={{
+                    flexDirection: "row",
+                    gap: 1,
+                    justifyContent: "center",
+                  }}
+                >
+                  <Stars starnum={favorite?.user_rating ?? 0} />
                 </View>
-                <View style={styles.statsBar}>
-                  <View style={{flexDirection: "row", gap: 1, justifyContent: "center"}}>
-                    <Stars starnum={favorite?.user_rating ?? 0}/>
-                  </View>
-                </View>
-              </Pressable>
-              <Pressable style={[styles.infoWindow, {width: "42%", alignItems: "center"}]} onPress={() => {router.push({
+              </View>
+            </Pressable>
+            <Pressable
+              style={[
+                styles.infoWindow,
+                { width: "42%", alignItems: "center" },
+              ]}
+              onPress={() => {
+                router.push({
                   pathname: "/pins/[pinid]",
                   params: { pinid: String(visited?.pin_id) },
-                })}}>
-                <Text style={styles.subHeader}>Top Visited</Text>
-                <View style={styles.statsWindows}>
-                  {visPhoto && (
-                    <Image
-                      source={
-                        visPhoto
-                          ? { uri: visPhoto }
-                          : require("@/assets/images/no_image_default.png")
-                      }
-                      style={styles.image}
-                      contentFit="cover"
-                      transition={300}
-                      placeholder="blur"
-                    />
-                  )}
-                  {!visPhoto && (
-                    <Text style={{fontFamily: Fonts.bold, fontSize: 13, textAlign: "center", marginTop: 15, marginHorizontal: 2}}>
-                      {visited?.name ? (
-                        <>
-                          {visited.name}
-                          {"\n"}
-                          <Text style={{ fontFamily: Fonts.regular_i, fontSize: 11 }}>
-                            No photo set
-                          </Text>
-                        </>
-                      ) : (
-                        "This user has no pins yet."
-                      )}
-                    </Text>
-                  )}
-                </View>
-                <View style={styles.statsBar}>
-                  <Text style={{ fontFamily: Fonts.regular, fontSize: 16, color: "#fefbea", marginHorizontal: 7, flexShrink: 1 }}
-                        numberOfLines={1}
-                        ellipsizeMode="tail">
-                    {visited?.visit_count ?? "-"}{" "}
-                    {visited?.visit_count === 1 ? "Visit" : "Visits"}
+                });
+              }}
+            >
+              <Text style={styles.subHeader}>Top Visited</Text>
+              <View style={styles.statsWindows}>
+                {visPhoto && (
+                  <Image
+                    source={
+                      visPhoto
+                        ? { uri: visPhoto }
+                        : require("@/assets/images/no_image_default.png")
+                    }
+                    style={styles.image}
+                    contentFit="cover"
+                    transition={300}
+                    placeholder="blur"
+                  />
+                )}
+                {!visPhoto && (
+                  <Text
+                    style={{
+                      fontFamily: Fonts.bold,
+                      fontSize: 13,
+                      textAlign: "center",
+                      marginTop: 15,
+                      marginHorizontal: 2,
+                    }}
+                  >
+                    {visited?.name ? (
+                      <>
+                        {visited.name}
+                        {"\n"}
+                        <Text
+                          style={{ fontFamily: Fonts.regular_i, fontSize: 11 }}
+                        >
+                          No photo set
+                        </Text>
+                      </>
+                    ) : (
+                      "This user has no pins yet."
+                    )}
                   </Text>
-                </View>
-              </Pressable>
-            </View>
+                )}
+              </View>
+              <View style={styles.statsBar}>
+                <Text
+                  style={{
+                    fontFamily: Fonts.regular,
+                    fontSize: 16,
+                    color: "#fefbea",
+                    marginHorizontal: 7,
+                    flexShrink: 1,
+                  }}
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
+                >
+                  {visited?.visit_count ?? "-"}{" "}
+                  {visited?.visit_count === 1 ? "Visit" : "Visits"}
+                </Text>
+              </View>
+            </Pressable>
           </View>
+        </View>
 
         {/* Activity */}
         <View style={styles.infoBox}>
@@ -429,10 +489,21 @@ export default function Account() {
           <View style={[styles.infoWindow, { justifyContent: "center" }]}>
             <Pressable
               style={styles.activityRow}
-              onPress={() => recentVisitPinId && router.push({ pathname: "/pins/[pinid]", params: { pinid: String(recentVisitPinId) } })}
+              onPress={() =>
+                recentVisitPinId &&
+                router.push({
+                  pathname: "/pins/[pinid]",
+                  params: { pinid: String(recentVisitPinId) },
+                })
+              }
             >
               {recentVisitPhoto ? (
-                <Image source={{ uri: recentVisitPhoto }} style={styles.locAvatar} contentFit="cover" transition={300} />
+                <Image
+                  source={{ uri: recentVisitPhoto }}
+                  style={styles.locAvatar}
+                  contentFit="cover"
+                  transition={300}
+                />
               ) : (
                 <View style={styles.locAvatar} />
               )}
@@ -457,10 +528,21 @@ export default function Account() {
             <View style={styles.divider} />
             <Pressable
               style={styles.activityRow}
-              onPress={() => recentFriendId && router.push({ pathname: "/friend_profiles/[friendid]", params: { friendid: String(recentFriendId), from: "account" } })}
+              onPress={() =>
+                recentFriendId &&
+                router.push({
+                  pathname: "/friend_profiles/[friendid]",
+                  params: { friendid: String(recentFriendId), from: "account" },
+                })
+              }
             >
               {recentFriendPhoto ? (
-                <Image source={{ uri: recentFriendPhoto }} style={styles.locAvatar} contentFit="cover" transition={300} />
+                <Image
+                  source={{ uri: recentFriendPhoto }}
+                  style={styles.locAvatar}
+                  contentFit="cover"
+                  transition={300}
+                />
               ) : (
                 <View style={styles.locAvatar} />
               )}
@@ -485,10 +567,21 @@ export default function Account() {
             <View style={styles.divider} />
             <Pressable
               style={styles.activityRow}
-              onPress={() => recentPinId && router.push({ pathname: "/pins/[pinid]", params: { pinid: String(recentPinId) } })}
+              onPress={() =>
+                recentPinId &&
+                router.push({
+                  pathname: "/pins/[pinid]",
+                  params: { pinid: String(recentPinId) },
+                })
+              }
             >
               {recentPinPhoto ? (
-                <Image source={{ uri: recentPinPhoto }} style={styles.locAvatar} contentFit="cover" transition={300} />
+                <Image
+                  source={{ uri: recentPinPhoto }}
+                  style={styles.locAvatar}
+                  contentFit="cover"
+                  transition={300}
+                />
               ) : (
                 <View style={styles.locAvatar} />
               )}
@@ -603,7 +696,7 @@ const styles = StyleSheet.create({
     height: 1,
     width: "75%",
     marginLeft: 30,
-    backgroundColor: "#7ca982",
+    backgroundColor: Colors.light.accent,
     marginVertical: 5,
   },
   infoBox: {

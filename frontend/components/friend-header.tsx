@@ -1,10 +1,9 @@
-import { Fonts } from "@/constants/theme";
+import { Colors, Fonts } from "@/constants/theme";
 import { ViewMode, ViewOption } from "@/types/types";
-import { FontAwesome, Ionicons } from "@expo/vector-icons";
+import { Ionicons } from "@expo/vector-icons";
+import { router } from "expo-router";
 import { Dispatch, SetStateAction } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import { router } from "expo-router";
-
 
 type HeaderProps = {
   viewMode: ViewMode;
@@ -19,74 +18,80 @@ export default function FriendHeader({
 }: HeaderProps) {
   return (
     <>
-    <View style={styles.header}>
+      <View style={styles.header}>
         <View style={styles.row}>
-            <Pressable
+          <Pressable
             style={styles.backButton}
             onPress={() => {
-                router.back();
+              router.back();
             }}
-            >
+          >
             <Ionicons name="chevron-back" size={20} color="#d9d9d9" />
-            <Text style={{ fontFamily: Fonts.bold, color: "#d9d9d9", fontSize: 16 }}>
+            <Text
+              style={{ fontFamily: Fonts.bold, color: "#d9d9d9", fontSize: 16 }}
+            >
               Back
             </Text>
-            </Pressable>
+          </Pressable>
         </View>
         {/* Search Bar and Settings*/}
         <View style={styles.row}>
-            <Pressable style={styles.searchbar}>
-            <View style={{flex: 1}}>
-                <Text
-                style={{ fontFamily: Fonts.bold, color: "#fefbea", fontSize: 16 }}
-                >
+          <Pressable style={styles.searchbar}>
+            <View style={{ flex: 1 }}>
+              <Text
+                style={{
+                  fontFamily: Fonts.bold,
+                  color: "#fefbea",
+                  fontSize: 16,
+                }}
+              >
                 Find a place
-                </Text>
+              </Text>
             </View>
             <Ionicons name="search" size={16} color="#fefbea" />
-            </Pressable>
+          </Pressable>
         </View>
 
         {/* Pill and Filter*/}
         <View style={styles.row}>
-            <View style={styles.pill}>
+          <View style={styles.pill}>
             {viewOptions.map(({ mode, icon }) => (
-                <Pressable
+              <Pressable
                 key={mode}
                 onPress={() => setViewMode(mode)}
                 style={[
-                    styles.pillOption,
-                    viewMode === mode &&
+                  styles.pillOption,
+                  viewMode === mode &&
                     (mode === "map"
-                        ? styles.pillOptionActiveMap
-                        : viewMode === "list"
+                      ? styles.pillOptionActiveMap
+                      : viewMode === "list"
                         ? styles.pillOptionActiveList
                         : styles.pillOptionActiveGrid),
                 ]}
-                >
+              >
                 <Ionicons
-                    name={icon}
-                    size={20}
-                    color={viewMode === mode ? "#d9d9d9" : "#d9d9d9"}
+                  name={icon}
+                  size={20}
+                  color={viewMode === mode ? "#d9d9d9" : "#d9d9d9"}
                 />
-                </Pressable>
+              </Pressable>
             ))}
-            </View>
+          </View>
 
-            <Pressable style={styles.filter}>
-                <Text
-                    style={{
-                    fontFamily: Fonts.bold,
-                    color: "#d9d9d9",
-                    fontSize: 16,
-                    }}
-                >
-                    Filter <Text style={{color: "#243e36"}}>.</Text>
-                </Text>
-                <Ionicons name="chevron-down" size={20} color="#d9d9d9" />
-            </Pressable>
+          <Pressable style={styles.filter}>
+            <Text
+              style={{
+                fontFamily: Fonts.bold,
+                color: "#d9d9d9",
+                fontSize: 16,
+              }}
+            >
+              Filter <Text style={{ color: "#243e36" }}>.</Text>
+            </Text>
+            <Ionicons name="chevron-down" size={20} color="#d9d9d9" />
+          </Pressable>
         </View>
-    </View>
+      </View>
     </>
   );
 }
@@ -126,7 +131,7 @@ const styles = StyleSheet.create({
     width: "100%",
   },
   searchbar: {
-    backgroundColor: "#7ca982",
+    backgroundColor: Colors.light.accent,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
@@ -142,7 +147,7 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   settings: {
-    backgroundColor: "#7ca982",
+    backgroundColor: Colors.light.accent,
     borderRadius: 999,
     alignItems: "center",
     justifyContent: "center",
@@ -173,16 +178,16 @@ const styles = StyleSheet.create({
     borderRadius: 999,
   },
   pillOptionActiveMap: {
-    backgroundColor: "#7ca982",
+    backgroundColor: Colors.light.accent,
     borderTopRightRadius: 0,
     borderBottomRightRadius: 0,
   },
   pillOptionActiveList: {
-    backgroundColor: "#7ca982",
+    backgroundColor: Colors.light.accent,
     borderRadius: 0,
   },
   pillOptionActiveGrid: {
-    backgroundColor: "#7ca982",
+    backgroundColor: Colors.light.accent,
     borderTopLeftRadius: 0,
     borderBottomLeftRadius: 0,
   },

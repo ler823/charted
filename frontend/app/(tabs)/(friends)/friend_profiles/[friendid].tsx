@@ -1,7 +1,7 @@
 import { Stars } from "@/components/light-stars";
 import LoadingPage from "@/components/loading-page";
 import PinMarkers from "@/components/pin-markers";
-import { Fonts } from "@/constants/theme";
+import { Colors, Fonts } from "@/constants/theme";
 import { getPhotoUrl } from "@/lib/photo-utils";
 import { supabase } from "@/lib/supabase";
 import { Pin } from "@/types/types";
@@ -76,7 +76,10 @@ type RecentPin = {
 };
 
 export default function FriendProfilePage() {
-  const { friendid, from } = useLocalSearchParams<{ friendid: string; from?: string }>();
+  const { friendid, from } = useLocalSearchParams<{
+    friendid: string;
+    from?: string;
+  }>();
   const [friend, setFriend] = useState<Friend | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [pinLoading, setPinLoading] = useState(true);
@@ -621,7 +624,7 @@ export default function FriendProfilePage() {
                 height: 1,
                 width: "75%",
                 marginLeft: 30,
-                backgroundColor: "#7ca982",
+                backgroundColor: Colors.light.accent,
                 marginVertical: 5,
               }}
             />
@@ -653,7 +656,7 @@ export default function FriendProfilePage() {
                 height: 1,
                 width: "75%",
                 marginLeft: 30,
-                backgroundColor: "#7ca982",
+                backgroundColor: Colors.light.accent,
                 marginVertical: 5,
               }}
             />
@@ -819,7 +822,7 @@ const styles = StyleSheet.create({
     height: "100%",
   },
   mapExpand: {
-    backgroundColor: "#7ca982",
+    backgroundColor: Colors.light.accent,
     width: 25,
     height: 25,
     borderRadius: 6,

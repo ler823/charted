@@ -1,4 +1,4 @@
-import { Fonts } from "@/constants/theme";
+import { Colors, Fonts } from "@/constants/theme";
 import { getPhotoUrl } from "@/lib/photo-utils"; // adjust to your path
 import { supabase } from "@/lib/supabase"; // adjust to your path
 import { Pin } from "@/types/types";
@@ -46,7 +46,11 @@ export default function SuggestionItem({ item }: { item: Pin }) {
         <Image source={{ uri: coverPhoto }} style={styles.suggestionPhoto} />
       ) : (
         <View style={styles.suggestionPhotoPlaceholder}>
-          <Ionicons name="image-outline" size={18} color="#7ca982" />
+          <Ionicons
+            name="image-outline"
+            size={18}
+            color={Colors.light.accent}
+          />
         </View>
       )}
       <View style={styles.suggestionText}>
@@ -59,7 +63,7 @@ export default function SuggestionItem({ item }: { item: Pin }) {
           </Text>
         ) : null}
       </View>
-      <Ionicons name="chevron-forward" size={14} color="#7ca982" />
+      <Ionicons name="chevron-forward" size={14} color={Colors.light.accent} />
     </Pressable>
   );
 }
@@ -98,7 +102,7 @@ const styles = StyleSheet.create({
   },
   suggestionAddress: {
     fontFamily: Fonts.regular ?? Fonts.bold,
-    color: "#7ca982",
+    color: Colors.light.accent,
     fontSize: 12,
     marginTop: 1,
   },
