@@ -49,132 +49,118 @@ export default function EditAccount() {
 
 
     return (
-    <ScrollView>
-      <View style={{height: 99}} />
-      <View style={styles.topBar}>
-        <Pressable style={styles.cancelBtn} onPress={() => router.back()}>
-          <Text style={styles.cancelText}>Cancel</Text>
-        </Pressable>
-
-        <Pressable
-          style={[styles.saveBtn, styles.saveBtnDisabled]}
-          onPress={() => {}}
-        >
-          <Text style={styles.saveText}>Save</Text>
-        </Pressable>
-      </View>
-      <View style={styles.container}>
-        {/* Avatar */}
-        {avatarUrl ? (
-          <Image
-            source={{ uri: avatarUrl }}
-            style={styles.avatar}
-            transition={300}
-          />
-        ) : (
-          <View style={styles.avatar}>
-            {username ? (
-              <Text style={styles.avatarInitial}>{username[0].toUpperCase()}</Text>
-            ) : null}
-          </View>
-        )}
-
-        {/* Username, Location, Bio */}
-        <Text style={styles.username}>{username}</Text>
-        <View style={styles.locationRow}>
-          <Ionicons name="location-sharp" size={17} color="#333" />
-          <Text style={[styles.location, { paddingLeft: 2 }]}>{location ?? "No location set"}</Text>
-        </View>
-        <Text style={styles.bio}>{bio ?? "No bio"}</Text>
-      </View>
-      <KeyboardAvoidingView
+    <KeyboardAvoidingView
         style={{ flex: 1 }}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        behavior="padding"
+        keyboardVerticalOffset={10}
       >
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-          <View style={styles.container}>
-            <Text style={styles.title}>Welcome back</Text>
-  
-            <TextInput
-              style={styles.input}
-              placeholder="Enter email"
-              placeholderTextColor={Colors.light.accent}
-              autoCapitalize="none"
-              keyboardType="email-address"
-              value={email}
-              onChangeText={setEmail}
-              editable={!isLockedOut}
-            />
-            {emailError ? (
-              <Text style={styles.fieldError}>{emailError}</Text>
-            ) : null}
-  
-            <TextInput
-              style={styles.input}
-              placeholder="Enter password"
-              placeholderTextColor={Colors.light.accent}
-              secureTextEntry
-              value={password}
-              onChangeText={setPassword}
-              editable={!isLockedOut}
-            />
-            {credentialsError ? (
-              <Text style={styles.fieldError}>{credentialsError}</Text>
-            ) : null}
-  
-            <TouchableOpacity
-              onPress={() => {}}
-              style={styles.forgotPasswordContainer}
-            >
-              <Text style={styles.forgotPassword}>Forgot password?</Text>
-            </TouchableOpacity>
-  
-            {isLockedOut && (
-              <View style={styles.lockoutBanner}>
-                <Text style={styles.lockoutText}>
-                  Too many failed attempts. Try again in {secondsLeft}s.
-                </Text>
+          <ScrollView
+            keyboardShouldPersistTaps="handled"
+            contentContainerStyle={{ paddingBottom: 80, flexGrow: 1, justifyContent: "flex-start" }}
+          >
+            <View style={styles.topBar}>
+              <Pressable style={styles.cancelBtn} onPress={() => router.back()}>
+                <Text style={styles.cancelText}>Cancel</Text>
+              </Pressable>
+
+              <Pressable
+                style={[styles.saveBtn, styles.saveBtnDisabled]}
+                onPress={() => {}}
+              >
+                <Text style={styles.saveText}>Save</Text>
+              </Pressable>
+            </View>
+            <View style={styles.container}>
+              {/* Avatar */}
+              <View style={styles.avatarWrapper}>
+                {avatarUrl ? (
+                  <Image
+                    source={{ uri: avatarUrl }}
+                    style={styles.avatarImage}
+                    transition={300}
+                  />
+                ) : (
+                  <View style={styles.avatarFallback}>
+                    {username ? (
+                      <Text style={styles.avatarInitial}>{username[0].toUpperCase()}</Text>
+                    ) : null}
+                  </View>
+                )}
+                <Pressable style={styles.avatarCover}>
+                  <Ionicons name="camera-outline" size={60} color={"rgba(255, 255, 255, 0.9)"}/>
+                </Pressable>
               </View>
-            )}
-  
-            <TouchableOpacity
-              style={[styles.button, isLockedOut && styles.buttonDisabled]}
-              onPress={handleLogin}
-              disabled={loading || isLockedOut}
-            >
-              {loading ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <Text style={styles.buttonText}>Log in</Text>
-              )}
-            </TouchableOpacity>
-  
-            <TouchableOpacity onPress={() => router.push("/(auth)/signup")}>
-              <Text style={styles.link}>
-                Don&apos;t have an account?{" "}
-                <Text style={styles.linkUnderline}>Sign up</Text>
-              </Text>
-            </TouchableOpacity>
-          </View>
+            </View>
+            <View style={styles.container}>
+              <View style={{width: "85%"}}>
+                <Text style={styles.headerText}>Username</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder={username}
+                  placeholderTextColor={Colors.light.accent}
+                  autoCapitalize="none"
+                  keyboardType="default"
+                  value={username}
+                  onChangeText={setUsername}
+                />
+              </View>
+
+              <View style={{width: "85%"}}>
+                <Text style={styles.headerText}>Location</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder={location ?? undefined}
+                  placeholderTextColor={Colors.light.accent}
+                  value={location ?? undefined}
+                  onChangeText={setLocation}
+                />
+              </View>
+
+              <View style={{width: "85%"}}>
+                <Text style={styles.headerText}>Bio</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder={bio ?? undefined}
+                  placeholderTextColor={Colors.light.accent}
+                  value={bio ?? undefined}
+                  onChangeText={setBio}
+                />
+              </View>
+
+            </View>
+          </ScrollView>
         </TouchableWithoutFeedback>
       </KeyboardAvoidingView>
-    </ScrollView>
     );
 };
 
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
     alignItems: "center",
+    justifyContent: "flex-start",
   },
-  avatar: {
+  avatarWrapper: {
     width: 155,
     height: 155,
     borderRadius: 999,
-    marginTop: 20,
-    marginBottom: 10,
+    overflow: "hidden",
+    position: "relative",
+    marginTop: 119,
+  },
+  avatarImage: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  avatarFallback: {
+    ...StyleSheet.absoluteFillObject,
     backgroundColor: "#d8d8d8",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  avatarCover: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(255, 255, 255, 0.3)",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -183,28 +169,13 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.regular,
     color: "#000",
   },
-  username: {
-    fontSize: 26,
-    color: "#333",
-    textAlign: "center",
+  headerText: {
     fontFamily: Fonts.bold,
-  },
-  location: {
-    fontFamily: Fonts.bold_i,
-    fontSize: 15,
-  },
-  bio: {
-    fontSize: 15,
-    marginHorizontal: 50,
-    marginTop: 3,
-    marginBottom: 10,
-    color: "#333",
-    textAlign: "center",
-    fontFamily: Fonts.regular_i,
-  },
-  locationRow: {
-    flexDirection: "row",
-    alignItems: "center",
+    fontSize: 20,
+    color: "#243e36",
+    marginTop: 15,
+    marginBottom: 4,
+    marginLeft: 6,
   },
   topBar: {
     flexDirection: "row",
@@ -235,6 +206,7 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontWeight: "bold",
     fontSize: 16,
+    fontFamily: Fonts.bold,
   },
   saveBtn: {
     flexDirection: "row",
@@ -259,5 +231,15 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontWeight: "bold",
     fontSize: 16,
+    fontFamily: Fonts.bold,
+  },
+  input: {
+    backgroundColor: "#e4ede4",
+    borderRadius: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    fontSize: 16,
+    color: Colors.light.background,
+    marginBottom: 4,
   },
 });
