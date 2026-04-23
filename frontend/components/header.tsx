@@ -284,7 +284,7 @@ export default function Header({
               <Ionicons name="chevron-down" size={20} color="#d9d9d9" />
             </Pressable>
             <Filter isVisible={filterModalVisible} onClose={() => setFilterModalVisible(false)} />
-          </View>
+          </View>)}
       </View>
     </>
   );
