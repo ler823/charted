@@ -1,0 +1,219 @@
+import { Colors, Fonts } from "@/constants/theme";
+import React, { useState } from "react";
+import { Modal, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+
+
+type Props = {
+  isVisible: boolean,
+  onClose: () => void,
+  setActualHour: ((value: string) => void),
+  setActualMinute: ((value: string) => void),
+  setActualSuffix: ((value: string) => void)
+}
+
+export default function TimePicker({ isVisible, onClose, setActualHour, setActualMinute, setActualSuffix}: Props) {
+  const [time, setTime] = useState(new Date(Date.now()));
+  const [hour, setHour] = useState(time.getHours().toString());
+  const [minute, setMinute] = useState(time.getMinutes().toString());
+  const [suffix, setSuffix] = useState(Number(hour) - 12 >= 0 ? "PM" : "AM");
+
+  const onSave = async () => {
+    setActualHour(hour);
+    setActualMinute(minute);
+    setActualSuffix(suffix);
+    onClose();
+  }
+
+  return (
+    <View>
+      <Modal animationType="fade" transparent={true} visible={isVisible}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.titleText}>Enter a time</Text>
+            <View style={styles.timeInputRow}>
+              <TextInput
+                placeholder="12"
+                value={hour}
+                maxLength={2}
+                keyboardType="number-pad"
+                textAlign="center"
+                selectTextOnFocus={true}
+                onChangeText={(value) => setHour(value)} 
+                onEndEditing={(e) => hour.length == 1 ? setHour("0" + hour) : setHour(hour)}
+                style={styles.timeInput}/>
+              <Text>:</Text>
+              <TextInput
+                placeholder="00"
+                value={minute}
+                maxLength={2}
+                keyboardType="number-pad"
+                textAlign="center"
+                selectTextOnFocus={true}
+                onChangeText={(value) => setMinute(value)}
+                onEndEditing={(e) => minute.length == 1 ? setMinute("0" + minute) : setMinute(minute)}
+                style={styles.timeInput}/>
+              <Pressable 
+              onPress={() => setSuffix((prev) => prev == "AM" ? "PM" : "AM")}
+              style={styles.timeInput}>
+                <Text>{suffix}</Text>
+              </Pressable>
+            </View>
+            <View style={styles.buttonRow}>
+            <Pressable 
+            onPress={onClose}
+            style={styles.cancelButton}>
+              <Text style={styles.buttonText}>Close</Text>
+            </Pressable>
+            <Pressable 
+            onPress={onClose}
+            style={styles.button}
+            onPressIn={onSave}>
+              <Text style={styles.buttonText}>Save</Text>
+            </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
+    </View>
+  )
+}
+
+const styles = StyleSheet.create({
+  modalOverlay: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0,0,0,0.4)",
+  },
+  modalContent: {
+    width: '75%',
+    justifyContent: "space-between",
+    backgroundColor: '#ffffff',
+    borderRadius: 18,
+    paddingLeft: 16,
+    paddingRight: 16,
+    paddingTop: 10,
+    paddingBottom: 10,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
+  },
+  buttonRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-evenly"
+  },
+  checkBox: {
+    margin: 10,
+  },
+  bottomButtons: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    margin: 20
+  },
+  cancelButton: {
+    backgroundColor: Colors.light.error,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 999,
+    // padding: 16,
+    height: 40,
+    paddingHorizontal: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
+    elevation: 4,
+  },
+  button: {
+    backgroundColor: "#243e36",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 999,
+    // padding: 16,
+    height: 40,
+    paddingHorizontal: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
+    elevation: 4,
+  },
+  buttonText: {
+    fontFamily: Fonts.bold,
+    color: "#d9d9d9",
+    fontSize: 16
+  },
+  sectionHeader: {
+    margin: 15,
+    fontFamily: Fonts.bold,
+    fontSize: 16,
+    textAlign: "left",
+  },
+  titleText: {
+    margin: 5,
+    fontFamily: Fonts.bold,
+    fontSize: 16,
+    textAlign: "center",
+  },
+  filterContent: {
+    minHeight: "20%",
+  },
+  avatarRow: {
+    flexDirection: "row",
+  },
+  username: {
+    textAlign: "center",
+    fontFamily: Fonts.bold,
+  },
+  avatarStackEnabled: {
+    paddingHorizontal: 4,
+    paddingBottom: 10,
+    opacity: 1
+  },
+  avatarStackDisabled: {
+    paddingHorizontal: 4,
+    paddingBottom: 10,
+    opacity: 0.3
+  },
+  listTagView: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+  },
+  listTagEnabled: {
+    opacity: 1
+  },
+  listTagDisabled: {
+    opacity: 0.3
+  },
+  hourContentRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  hourContentRowDisabled: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    opacity: 0.3
+  },
+  timePicker: {
+    paddingHorizontal: 10,
+    backgroundColor: Colors.light.accent,
+    fontFamily: Fonts.regular
+  },
+  timeInputRow: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  timeInput: {
+    backgroundColor: Colors.light.accent,
+    padding: 5,
+    borderRadius: 8,
+    margin: 5,
+  }
+})
