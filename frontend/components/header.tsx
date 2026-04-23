@@ -11,11 +11,8 @@ import {
   TouchableWithoutFeedback,
   View,
 } from "react-native";
-<<<<<<< HEAD
 import Filter from "./filter";
-=======
 import PlaceSuggestionItem from "./place-suggestion-item";
->>>>>>> main
 import SuggestionItem from "./suggestion-item";
 
 type PlacePrediction = {
@@ -45,13 +42,10 @@ export default function Header({
 }: HeaderProps) {
   const [query, setQuery] = useState("");
   const [isFocused, setIsFocused] = useState(false);
-<<<<<<< HEAD
   const [filterModalVisible, setFilterModalVisible] = useState(false);
-=======
   const [suggestionsType, setSuggestionsType] = useState<"pins" | "places">(
     "pins",
   );
->>>>>>> main
 
   const isMapView = viewMode === "map";
   const [placeSuggestions, setPlaceSuggestions] = useState<PlacePrediction[]>(
@@ -103,15 +97,15 @@ export default function Header({
   const matchingPins =
     query.trim().length > 0
       ? pins
-          .filter((p) => p.name?.toLowerCase().includes(query.toLowerCase()))
-          .sort((a, b) => {
-            const q = query.toLowerCase();
-            const aStarts = a.name?.toLowerCase().startsWith(q);
-            const bStarts = b.name?.toLowerCase().startsWith(q);
-            if (aStarts && !bStarts) return -1;
-            if (!aStarts && bStarts) return 1;
-            return 0;
-          })
+        .filter((p) => p.name?.toLowerCase().includes(query.toLowerCase()))
+        .sort((a, b) => {
+          const q = query.toLowerCase();
+          const aStarts = a.name?.toLowerCase().startsWith(q);
+          const bStarts = b.name?.toLowerCase().startsWith(q);
+          if (aStarts && !bStarts) return -1;
+          if (!aStarts && bStarts) return 1;
+          return 0;
+        })
       : [];
 
   const pinSuggestions = isMapView ? matchingPins.slice(0, 5) : matchingPins;
@@ -177,14 +171,14 @@ export default function Header({
                 style={[
                   styles.suggestionsPillOption,
                   suggestionsType === "pins" &&
-                    styles.suggestionsPillOptionActive,
+                  styles.suggestionsPillOptionActive,
                 ]}
               >
                 <Text
                   style={[
                     styles.suggestionsPillText,
                     suggestionsType === "pins" &&
-                      styles.suggestionsPillTextActive,
+                    styles.suggestionsPillTextActive,
                   ]}
                 >
                   Pins
@@ -195,14 +189,14 @@ export default function Header({
                 style={[
                   styles.suggestionsPillOption,
                   suggestionsType === "places" &&
-                    styles.suggestionsPillOptionActive,
+                  styles.suggestionsPillOptionActive,
                 ]}
               >
                 <Text
                   style={[
                     styles.suggestionsPillText,
                     suggestionsType === "places" &&
-                      styles.suggestionsPillTextActive,
+                    styles.suggestionsPillTextActive,
                   ]}
                 >
                   Places
@@ -269,11 +263,11 @@ export default function Header({
                   style={[
                     styles.pillOption,
                     viewMode === mode &&
-                      (mode === "map"
-                        ? styles.pillOptionActiveMap
-                        : viewMode === "list"
-                          ? styles.pillOptionActiveList
-                          : styles.pillOptionActiveGrid),
+                    (mode === "map"
+                      ? styles.pillOptionActiveMap
+                      : viewMode === "list"
+                        ? styles.pillOptionActiveList
+                        : styles.pillOptionActiveGrid),
                   ]}
                 >
                   <Ionicons name={icon} size={20} color="#d9d9d9" />
@@ -281,19 +275,7 @@ export default function Header({
               ))}
             </View>
 
-<<<<<<< HEAD
-          <Pressable style={styles.filter} onPress={() => setFilterModalVisible(true)}>
-            <Text
-              style={{ fontFamily: Fonts.bold, color: "#d9d9d9", fontSize: 16 }}
-            >
-              Filter <Text style={{ color: "#243e36" }}>.</Text>
-            </Text>
-            <Ionicons name="chevron-down" size={20} color="#d9d9d9" />
-          </Pressable>
-          <Filter isVisible={filterModalVisible} onClose={() => setFilterModalVisible(false)} />
-        </View>
-=======
-            <Pressable style={styles.filter}>
+            <Pressable style={styles.filter} onPress={() => setFilterModalVisible(true)}>
               <Text
                 style={{ fontFamily: Fonts.bold, color: "#d9d9d9", fontSize: 16 }}
               >
@@ -301,9 +283,8 @@ export default function Header({
               </Text>
               <Ionicons name="chevron-down" size={20} color="#d9d9d9" />
             </Pressable>
+            <Filter isVisible={filterModalVisible} onClose={() => setFilterModalVisible(false)} />
           </View>
-        )}
->>>>>>> main
       </View>
     </>
   );
