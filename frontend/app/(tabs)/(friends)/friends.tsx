@@ -124,12 +124,16 @@ export default function Friends() {
     }
 
     if (sortChoice === "location") {
-      const aLoc = a.location ?? "";
-      const bLoc = b.location ?? "";
+      const aEmpty = !a.location;
+      const bEmpty = !b.location;
+
+      if (aEmpty && bEmpty) return 0;
+      if (aEmpty) return 1;
+      if (bEmpty) return -1;
 
       return ascending
-        ? aLoc.localeCompare(bLoc)
-        : bLoc.localeCompare(aLoc);
+        ? a.location!.localeCompare(b.location!)
+        : b.location!.localeCompare(a.location!);
     }
     const aTime = a.date ? new Date(a.date).getTime() : 0;
     const bTime = b.date ? new Date(b.date).getTime() : 0;
