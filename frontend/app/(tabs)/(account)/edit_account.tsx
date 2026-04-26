@@ -1,6 +1,8 @@
 import { ActivityIndicator, Keyboard, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from "react-native";
-import { getPhotoUrl } from "@/lib/photo-utils";
-import { useEffect, useState } from "react";
+import { getPhotoUrl, pickImageAsync, processImage, uploadImageToS3 } from "@/lib/photo-utils";
+import { useEffect, useState, useCallback } from "react";
+import { useFocusEffect } from "@react-navigation/native";
+import { Alert } from "react-native";
 import { Image } from "expo-image";
 import { Colors, Fonts } from "@/constants/theme";
 import { Ionicons } from "@expo/vector-icons";
@@ -10,43 +12,240 @@ import LoadingPage from "@/components/loading-page";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import { router } from "expo-router";
+import { LocationErrorSubscriber } from "expo-location/build/LocationSubscribers";
+import { isSearchBarAvailableForCurrentPlatform } from "react-native-screens";
+
+const validateUsername = (username: string) => {
+  if (username.length === 0) return "Username is required";
+  if (username.length > 20) return "Username must be 20 characters or less";
+  if (!/^[a-zA-Z0-9_]+$/.test(username))
+    return "Letters, numbers, and underscores only";
+  return "";
+};
+
+const validateLocation = (location: string) => {
+  if (location.length > 50) return "Location must be 50 characters or less";
+  if (!/^[a-zA-Z0-9\s,.-]+$/.test(location))
+    return "Letters, numbers, periods, and hyphens only";
+  return "";
+}
+
+const validateBio = (bio: string) => {
+  if (bio.length > 150) return "Bio must be 150 characters or less";
+  return "";
+}
 
 
 export default function EditAccount() {
     const { profile, loading: authLoading } = useAuth();
-    const [userLoading, setUserLoading] = useState(true);
+    const [loading, setLoading] = useState(true);
     const [username, setUsername] = useState("");
-    const [location, setLocation] = useState<string | null>(null);
-    const [bio, setBio] = useState<string | null>(null);
+    const [location, setLocation] = useState<string | null>("");
+    const [bio, setBio] = useState<string | null>("");
     const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+    const [avatarUri, setAvatarUri] = useState<string | null>(null);
+    const [removeAvatar, setRemoveAvatar] = useState(false);
+    const [baseSnapshot, setBaseSnapshot] = useState<any>(null);
+    const [checkingUsername, setCheckingUsername] = useState(false);
+    const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(null);
+    const [errors, setErrors] = useState({
+      username: "",
+      location: "",
+      bio: "",
+      form: "",
+    });
 
-    useEffect(() => {
-        const loadUser = async () => {
-        if (!profile) {
-            if (!authLoading) {
-            setUserLoading(false);
-            }
-            return;
-        }
-        setUsername(profile.username);
-        if (profile.avatar_key) {
-            const urls = await getPhotoUrl([profile.avatar_key]);
-            setAvatarUrl(urls[0].url);
-        }
+      useFocusEffect(
+        useCallback(() => {
+          let active = true;
 
-        const { data: userData } = await supabase
+          const load = async () => {
+            if (!profile) return;
+
+          setLoading(true);
+
+          const { data: freshProfile } = await supabase
+            .from("profiles")
+            .select("username, avatar_key")
+            .eq("user_id", profile.user_id)
+            .single();
+
+          const { data: userData } = await supabase
             .from("users")
             .select("location, bio")
             .eq("user_id", profile.user_id)
             .single();
 
-        setLocation(userData?.location ?? null);
-        setBio(userData?.bio ?? null);
-        setUserLoading(false);
-        };
-        loadUser();
-    }, [profile, authLoading]);
+          if (!active) return;
 
+          const avatarKey = freshProfile?.avatar_key ?? null;
+
+          let url = null;
+          if (avatarKey) {
+            const urls = await getPhotoUrl([avatarKey]);
+            url = urls?.[0]?.url ?? null;
+          }
+
+          setUsername(freshProfile?.username ?? "");
+          setLocation(userData?.location ?? "");
+          setBio(userData?.bio ?? "");
+
+          setAvatarUrl(url);
+
+          setBaseSnapshot({
+            username: freshProfile?.username ?? "",
+            location: userData?.location ?? "",
+            bio: userData?.bio ?? "",
+            avatarKey,
+          });
+
+          setAvatarUri(null);
+          setRemoveAvatar(false);
+          setLoading(false);
+        };
+
+        load();
+
+        return () => {
+          active = false;
+        };
+      }, [profile?.user_id])
+    );
+
+
+    const handleAvatarOptions = () => {
+      Alert.alert("Profile Photo", "Choose an option", [
+        {
+          text: "Choose New Photo",
+          onPress: async () => {
+            const result = await pickImageAsync();
+            if (!result) return;
+            const processed = await processImage(result.assets[0].uri);
+            setAvatarUri(processed.uri);
+            setRemoveAvatar(false);
+          },
+        },
+        ...(avatarUrl || avatarUri
+          ? [
+              {
+                text: "Remove Photo",
+                style: "destructive" as const,
+                onPress: () => {
+                  setAvatarUri(null);
+                  setRemoveAvatar(true);
+                },
+              },
+            ]
+          : []),
+        {
+          text: "Cancel",
+          style: "cancel",
+        },
+      ]);
+    };
+
+    const checkUsernameAvailability = async (value: string) => {
+        if (value === baseSnapshot.username) {
+          setErrors((e) => ({ ...e, username: "" }));
+          setUsernameAvailable(true);
+          setCheckingUsername(false);
+          return;
+        }
+
+        const usernameError = validateUsername(value);
+        if (usernameError) {
+          setErrors((e) => ({ ...e, username: usernameError }));
+          setUsernameAvailable(null);
+          return;
+        }
+        setCheckingUsername(true);
+        const { data } = await supabase
+          .from("profiles")
+          .select("username")
+          .eq("username", value)
+          .neq("user_id", profile?.user_id)
+          .maybeSingle();
+        setCheckingUsername(false);
+        if (data) {
+          setErrors((e) => ({ ...e, username: "Username is already taken" }));
+          setUsernameAvailable(false);
+        } else {
+          setErrors((e) => ({ ...e, username: "" }));
+          setUsernameAvailable(true);
+        }
+      };
+
+      const handleSave = async () => {
+        if (!profile) return;
+
+        const usernameError = validateUsername(username);
+        const locationError = validateLocation(location ?? "");
+        const bioError = validateBio(bio ?? "");
+
+        setErrors({
+          username: usernameError,
+          location: locationError,
+          bio: bioError,
+          form: "",
+        });
+
+        if (usernameError || locationError || bioError) return;
+        if (usernameAvailable === false) return;
+
+        try {
+          let avatarKey = avatarUri
+            ? await uploadImageToS3(avatarUri)
+            : removeAvatar
+              ? null
+              : baseSnapshot.avatarKey;
+
+          if (removeAvatar) {
+            avatarKey = null;
+          }
+
+          if (avatarUri) {
+            avatarKey = await uploadImageToS3(avatarUri);
+          }
+
+          const { error: profileError } = await supabase
+            .from("profiles")
+            .update({
+              username,
+              avatar_key: avatarKey,
+            })
+            .eq("user_id", profile.user_id);
+
+          if (profileError) throw profileError;
+
+          const { error: userError } = await supabase
+            .from("users")
+            .update({
+              username,
+              location,
+              bio,
+            })
+            .eq("user_id", profile.user_id);
+
+          if (userError) throw userError;
+
+          router.back();
+        } catch (err) {
+          setErrors((e) => ({
+            ...e,
+            form: "Failed to update profile",
+          }));
+        }
+      };
+
+      const hasChanges =
+        baseSnapshot &&
+        (username !== baseSnapshot.username ||
+          location !== baseSnapshot.location ||
+          bio !== baseSnapshot.bio ||
+          avatarUri !== null ||
+          removeAvatar);
+
+    if (loading) return <LoadingPage />;
 
     return (
     <KeyboardAvoidingView
@@ -65,8 +264,12 @@ export default function EditAccount() {
               </Pressable>
 
               <Pressable
-                style={[styles.saveBtn, styles.saveBtnDisabled]}
-                onPress={() => {}}
+                style={[
+                  styles.saveBtn,
+                  (!hasChanges) && styles.saveBtnDisabled,
+                ]}
+                onPress={handleSave}
+                disabled={!hasChanges}
               >
                 <Text style={styles.saveText}>Save</Text>
               </Pressable>
@@ -74,21 +277,30 @@ export default function EditAccount() {
             <View style={styles.container}>
               {/* Avatar */}
               <View style={styles.avatarWrapper}>
-                {avatarUrl ? (
-                  <Image
-                    source={{ uri: avatarUrl }}
-                    style={styles.avatarImage}
-                    transition={300}
-                  />
+                {removeAvatar ? (
+                  <View style={styles.avatarFallback}>
+                    {username ? (
+                      <Text style={styles.avatarInitial}>
+                        {username[0].toUpperCase()}
+                      </Text>
+                    ) : null}
+                  </View>
+                ) : avatarUri ? (
+                  <Image source={{ uri: avatarUri }} style={styles.avatarImage} transition={300}/>
+                ) : avatarUrl ? (
+                  <Image source={{ uri: avatarUrl }} style={styles.avatarImage} transition={300}/>
                 ) : (
                   <View style={styles.avatarFallback}>
                     {username ? (
-                      <Text style={styles.avatarInitial}>{username[0].toUpperCase()}</Text>
+                      <Text style={styles.avatarInitial}>
+                        {username[0].toUpperCase()}
+                      </Text>
                     ) : null}
                   </View>
                 )}
-                <Pressable style={styles.avatarCover}>
-                  <Ionicons name="camera-outline" size={60} color={"rgba(255, 255, 255, 0.9)"}/>
+
+                <Pressable style={styles.avatarCover} onPress={handleAvatarOptions}>
+                  <Ionicons name="camera-outline" size={60} color="rgba(255,255,255,0.9)" />
                 </Pressable>
               </View>
             </View>
@@ -102,8 +314,19 @@ export default function EditAccount() {
                   autoCapitalize="none"
                   keyboardType="default"
                   value={username}
-                  onChangeText={setUsername}
+                  onChangeText={(v) => {
+                    setUsername(v);
+                    setUsernameAvailable(null);
+                  }}
+                  onBlur={() => checkUsernameAvailability(username)}
                 />
+                {checkingUsername ? (
+                  <Text style={styles.hint}>Checking...</Text>
+                ) : errors.username ? (
+                  <Text style={styles.fieldError}>{errors.username}</Text>
+                ) : usernameAvailable ? (
+                  <Text style={styles.available}>Username available!</Text>
+                ) : null}
               </View>
 
               <View style={{width: "85%"}}>
@@ -113,8 +336,19 @@ export default function EditAccount() {
                   placeholder={location ?? undefined}
                   placeholderTextColor={Colors.light.accent}
                   value={location ?? undefined}
-                  onChangeText={setLocation}
+                  onChangeText={(v) => {
+                    setLocation(v);
+                  }}
+                  onBlur={() =>
+                    setErrors((e) => ({
+                      ...e,
+                      location: validateLocation(location ?? ""),
+                    }))
+                  }
                 />
+                {errors.location ? (
+                  <Text style={styles.fieldError}>{errors.location}</Text>
+                ) : null}
               </View>
 
               <View style={{width: "85%"}}>
@@ -124,8 +358,19 @@ export default function EditAccount() {
                   placeholder={bio ?? undefined}
                   placeholderTextColor={Colors.light.accent}
                   value={bio ?? undefined}
-                  onChangeText={setBio}
+                  onChangeText={(v) => {
+                    setBio(v);
+                  }}
+                  onBlur={() =>
+                    setErrors((e) => ({
+                      ...e,
+                      bio: validateBio(bio ?? ""),
+                    }))
+                  }
                 />
+                {errors.bio ? (
+                  <Text style={styles.fieldError}>{errors.bio}</Text>
+                ) : null}
               </View>
 
             </View>
@@ -241,5 +486,31 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: Colors.light.background,
     marginBottom: 4,
+    fontFamily: Fonts.regular,
+  },
+  fieldError: {
+    color: "red",
+    fontSize: 12,
+    marginBottom: 8,
+    marginLeft: 4,
+    width: "100%",
+    textAlign: "left",
+  },
+  available: {
+    color: "green",
+    fontSize: 12,
+    marginBottom: 8,
+    marginLeft: 4,
+    width: "100%",
+    textAlign: "left",
+    fontFamily: Fonts.regular,
+  },
+  hint: {
+    color: "#999",
+    fontSize: 12,
+    marginBottom: 8,
+    marginLeft: 4,
+    width: "100%",
+    textAlign: "left",
   },
 });

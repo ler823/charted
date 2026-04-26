@@ -5,8 +5,9 @@ import { getPhotoUrl } from "@/lib/photo-utils";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { router } from "expo-router";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { useFocusEffect } from "@react-navigation/native";
 
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/lib/supabase";
@@ -54,35 +55,57 @@ export default function Account() {
   const [recentFriendId, setRecentFriendId] = useState<number | null>(null);
   const [recentPinId, setRecentPinId] = useState<number | null>(null);
 
-  useEffect(() => {
-    const loadUser = async () => {
-      if (!profile) {
-        if (!authLoading) {
-          setUserLoading(false);
-          setFavLoading(false);
-          setVisitLoading(false);
-          setActivityLoading(false);
+
+  useFocusEffect(
+    useCallback(() => {
+      let isActive = true;
+
+      const loadUser = async () => {
+        if (!profile) return;
+
+        const { data: freshProfile } = await supabase
+          .from("profiles")
+          .select("username, avatar_key")
+          .eq("user_id", profile.user_id)
+          .single();
+
+        if (!isActive || !freshProfile) return;
+
+        setUsername(freshProfile.username);
+
+        const key = freshProfile.avatar_key;
+
+        if (key) {
+          const urls = await getPhotoUrl([key]);
+
+          setAvatarUrl(null);
+          setTimeout(() => {
+            if (isActive) setAvatarUrl(urls?.[0]?.url ?? null);
+          }, 0);
+        } else {
+          setAvatarUrl(null);
         }
-        return;
-      }
-      setUsername(profile.username);
-      if (profile.avatar_key) {
-        const urls = await getPhotoUrl([profile.avatar_key]);
-        setAvatarUrl(urls[0].url);
-      }
 
-      const { data: userData } = await supabase
-        .from("users")
-        .select("location, bio")
-        .eq("user_id", profile.user_id)
-        .single();
+        const { data: userData } = await supabase
+          .from("users")
+          .select("location, bio")
+          .eq("user_id", profile.user_id)
+          .single();
 
-      setLocation(userData?.location ?? null);
-      setBio(userData?.bio ?? null);
-      setUserLoading(false);
-    };
-    loadUser();
-  }, [profile, authLoading]);
+        if (!isActive) return;
+
+        setLocation(userData?.location ?? null);
+        setBio(userData?.bio ?? null);
+        setUserLoading(false);
+      };
+
+      loadUser();
+
+      return () => {
+        isActive = false;
+      };
+    }, [profile?.user_id])
+  );
 
   useEffect(() => {
     if (!profile) return;
