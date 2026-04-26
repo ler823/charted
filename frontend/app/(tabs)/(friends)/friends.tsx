@@ -8,6 +8,7 @@ import { Colors, Fonts } from "../../../constants/theme";
 import LoadingPage from "@/components/loading-page";
 import { getPhotoUrl } from "@/lib/photo-utils";
 import { Image } from "expo-image";
+import Sort from "@/components/sort-lists";
 
 type UserCard = {
   profileId: string;
@@ -15,6 +16,7 @@ type UserCard = {
   username: string;
   location: string | null;
   avatarUrl?: string | null;
+  date: string | null;
 };
 
 export default function Friends() {
@@ -24,6 +26,9 @@ export default function Friends() {
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [pendingCount, setPendingCount] = useState(0);
+  const [sortModalVisible, setSortModalVisible] = useState(false);
+  const [sortChoice, setSortChoice] = useState("date");
+  const [ascending, setAscending] = useState(true);
 
   useFocusEffect(
     useCallback(() => {
@@ -42,9 +47,18 @@ export default function Friends() {
 
     const { data: relData } = await supabase
       .from("user_relationships1")
-      .select("requester_id, target_id")
+      .select("requester_id, target_id, created_at")
       .eq("status", "accepted")
       .or(`requester_id.eq.${profile.id},target_id.eq.${profile.id}`);
+
+    const friendDateMap: Record<string, string> = {};
+
+    (relData ?? []).forEach((r: any) => {
+      const friendId =
+        r.requester_id === profile.id ? r.target_id : r.requester_id;
+
+      friendDateMap[friendId] = r.created_at;
+    });
 
     const friendUuids = (relData ?? []).map((r: any) =>
       r.requester_id === profile.id ? r.target_id : r.requester_id
@@ -79,6 +93,7 @@ export default function Friends() {
           username: p.username,
           location: userData?.location ?? null,
           avatarUrl,
+          date: friendDateMap[p.id] ?? null,
         };
       })
     );
@@ -101,6 +116,27 @@ export default function Friends() {
     f.username.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const sortedFriends = [...filteredFriends].sort((a, b) => {
+    if (sortChoice === "name") {
+      return ascending
+        ? a.username.localeCompare(b.username)
+        : b.username.localeCompare(a.username);
+    }
+
+    if (sortChoice === "location") {
+      const aLoc = a.location ?? "";
+      const bLoc = b.location ?? "";
+
+      return ascending
+        ? aLoc.localeCompare(bLoc)
+        : bLoc.localeCompare(aLoc);
+    }
+    const aTime = a.date ? new Date(a.date).getTime() : 0;
+    const bTime = b.date ? new Date(b.date).getTime() : 0;
+
+    return ascending ? aTime - bTime : bTime - aTime;
+  });
+
   if (loading) return <LoadingPage />;
 
   return (
@@ -122,6 +158,10 @@ export default function Friends() {
           />
           <Ionicons name="search" size={16} color={"#fefbea"} />
         </View>
+        <Pressable style={styles.sortBtn} onPress={() => setSortModalVisible(true)}>
+          <Text style={styles.sortText}>Sort</Text>
+          <Ionicons name="chevron-down" size={14} color={"#fefbea"} />
+        </Pressable>
         <Pressable style={styles.notifBtn} onPress={() => router.push("./friend-notifications")}>
           <Ionicons name="notifications-outline" size={36} color={Colors.light.background} />
           {pendingCount > 0 && <View style={styles.notifBadge} />}
@@ -129,7 +169,7 @@ export default function Friends() {
       </View>
 
       <FlatList
-        data={filteredFriends}
+        data={sortedFriends}
         keyExtractor={(item) => item.profileId}
         contentContainerStyle={styles.list}
         ListEmptyComponent={
@@ -171,6 +211,15 @@ export default function Friends() {
           </Pressable>
         )}
       />
+      <Sort 
+        contentType="friend"
+        isVisible={sortModalVisible} 
+        onClose={() => setSortModalVisible(false)}
+        sortChoice={sortChoice}
+        setSortChoice={setSortChoice}
+        ascending={ascending}
+        setAscending={setAscending}
+        />
       <View style={{ height: 80 }} />
     </View>
   );
@@ -287,5 +336,25 @@ const styles = StyleSheet.create({
     marginTop: 40,
     textAlign: "center",
     paddingHorizontal: 30,
+  },
+  sortBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: Colors.light.accent,
+    borderRadius: 999,
+    height: 40,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    gap: 5,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
+    elevation: 4,
+  },
+  sortText: {
+    fontSize: 16,
+    fontFamily: Fonts.bold,
+    color: "#fefbea",
   },
 });

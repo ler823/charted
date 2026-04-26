@@ -29,6 +29,10 @@ export default function Sort({ contentType, isVisible, onClose, sortChoice, setS
               <Text
                 style={styles.text}>Sort Pins in List</Text>
             )}
+            {contentType == "friend" && (
+              <Text
+                style={styles.text}>Sort Friends</Text>
+            )}
             <Pressable
               onPress={() => setSortChoice("date")}
               style={styles.buttonRow}>
@@ -37,7 +41,13 @@ export default function Sort({ contentType, isVisible, onClose, sortChoice, setS
                 onValueChange={() => setSortChoice("date")}
                 style={styles.checkBox}>
               </Checkbox>
-              <Text>By Date Created (Default)</Text>
+              {contentType == "friend" ? (
+                <Text>By Date Friended (Default)</Text>
+              ) :
+              (
+                <Text>By Date Created (Default)</Text>
+              )
+              }
             </Pressable>
             <Pressable
               onPress={() => setSortChoice("name")}
@@ -49,6 +59,19 @@ export default function Sort({ contentType, isVisible, onClose, sortChoice, setS
               </Checkbox>
               <Text>By Name</Text>
             </Pressable>
+            {contentType === "friend" && (
+              <Pressable
+                onPress={() => setSortChoice("location")}
+                style={styles.buttonRow}
+              >
+                <Checkbox
+                  value={sortChoice === "location"}
+                  onValueChange={() => setSortChoice("location")}
+                  style={styles.checkBox}
+                />
+                <Text>By Location</Text>
+              </Pressable>
+            )}
             <Pressable
               onPress={() => setAscending(true)}
               style={styles.buttonRow}>

@@ -24,6 +24,7 @@ const validateUsername = (username: string) => {
 };
 
 const validateLocation = (location: string) => {
+  if (!location) return "";
   if (location.length > 50) return "Location must be 50 characters or less";
   if (!/^[a-zA-Z0-9\s,.-]+$/.test(location))
     return "Letters, numbers, periods, and hyphens only";

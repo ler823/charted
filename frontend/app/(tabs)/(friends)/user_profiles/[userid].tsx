@@ -125,7 +125,7 @@ export default function UserProfilePage() {
         </View>
 
         <Text style={styles.username}>{profileData?.username ?? "Unknown"}</Text>
-        <Text style={styles.bio}>{profileData?.bio ?? "No bio"}</Text>
+        <Text style={styles.bio}>{profileData?.bio?.trim() ? profileData.bio : "No bio"}</Text>
 
         <View style={{ marginTop: 25, alignItems: "center", gap: 10 }}>
           {status === "none" && (

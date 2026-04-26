@@ -95,7 +95,7 @@ export default function Account() {
         if (!isActive) return;
 
         setLocation(userData?.location ?? null);
-        setBio(userData?.bio ?? null);
+        setBio(userData?.bio?.trim() ? userData.bio : null);
         setUserLoading(false);
       };
 
@@ -358,10 +358,10 @@ export default function Account() {
         <View style={styles.locationRow}>
           <Ionicons name="location-sharp" size={17} color="#333" />
           <Text style={[styles.location, { paddingLeft: 2 }]}>
-            {location ?? "No location set"}
+            {location?.trim() ? location : "No location set"}
           </Text>
         </View>
-        <Text style={styles.bio}>{bio ?? "No bio"}</Text>
+        <Text style={styles.bio}>{bio?.trim() ? bio : "No bio"}</Text>
 
         {/* Stats */}
         <View style={styles.infoBox}>
