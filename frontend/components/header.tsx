@@ -13,6 +13,8 @@ import {
 } from "react-native";
 import PlaceSuggestionItem from "./place-suggestion-item";
 import SuggestionItem from "./suggestion-item";
+import { router } from "expo-router";
+import Settings from "@/app/(tabs)/(home)/settings";
 
 type PlacePrediction = {
   place_id: string;
@@ -156,7 +158,7 @@ export default function Header({
             )}
           </View>
 
-          <Pressable style={styles.settings}>
+          <Pressable style={styles.settings} onPress={() => router.push("/(tabs)/(home)/(settings)/settings")}>
             <Ionicons name="settings" size={24} color="#d9d9d9" />
           </Pressable>
         </View>
