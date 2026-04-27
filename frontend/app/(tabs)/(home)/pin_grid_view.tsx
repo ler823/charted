@@ -10,6 +10,7 @@ import { Dimensions, FlatList, Pressable, StyleSheet, Text, View } from "react-n
 
 type Props = {
   pins: Pin[];
+  emptyMessage?: string;
 };
 
 type FriendAvatar = {
@@ -171,7 +172,7 @@ function GridCard({ item }: { item: Pin }) {
   );
 }
 
-export default function PinGridView({ pins }: Props) {
+export default function PinGridView({ pins, emptyMessage = "No pins to display yet." }: Props) {
   return (
     <FlatList
       data={pins}
@@ -183,7 +184,7 @@ export default function PinGridView({ pins }: Props) {
       renderItem={({ item }) => <GridCard item={item} />}
       ListEmptyComponent={
         <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>No pins to display yet.</Text>
+          <Text style={styles.emptyText}>{emptyMessage}</Text>
         </View>
       }
     />
