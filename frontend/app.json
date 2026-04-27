@@ -43,6 +43,12 @@
       "image": "./assets/images/charted-logo.png",
       "resizeMode": "contain",
       "backgroundColor": "#fff"
+    },
+    "extra": {
+      "apiUrl": "https://1vyn8sez3k.execute-api.us-east-2.amazonaws.com/Prod",
+      "eas": {
+        "projectId": "0c133d59-d112-481f-a33d-4031d0dcefc0"
+      }
     }
   }
 }

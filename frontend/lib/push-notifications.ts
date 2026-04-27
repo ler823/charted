@@ -14,6 +14,7 @@ Notifications.setNotificationHandler({
 });
 
 export async function registerForPushNotificationsAsync(): Promise<string | null> {
+  console.log("[Push] isDevice:", Device.isDevice);
   if (!Device.isDevice) return null;
 
   if (Platform.OS === "android") {
@@ -26,23 +27,32 @@ export async function registerForPushNotificationsAsync(): Promise<string | null
   }
 
   const { status: existing } = await Notifications.getPermissionsAsync();
+  console.log("[Push] existing permission status:", existing);
   let finalStatus = existing;
   if (existing !== "granted") {
     const { status } = await Notifications.requestPermissionsAsync();
     finalStatus = status;
+    console.log("[Push] requested permission, new status:", status);
   }
-  if (finalStatus !== "granted") return null;
+  if (finalStatus !== "granted") {
+    console.log("[Push] permission not granted, aborting");
+    return null;
+  }
 
   const projectId =
     Constants.expoConfig?.extra?.eas?.projectId ??
-    (Constants.easConfig as any)?.projectId;
+    (Constants.easConfig as any)?.projectId ??
+    "0c133d59-d112-481f-a33d-4031d0dcefc0";
+  console.log("[Push] projectId:", projectId);
 
   try {
     const tokenResponse = await Notifications.getExpoPushTokenAsync(
       projectId ? { projectId } : undefined
     );
+    console.log("[Push] token:", tokenResponse.data);
     return tokenResponse.data;
-  } catch {
+  } catch (e) {
+    console.log("[Push] getExpoPushTokenAsync error:", e);
     return null;
   }
 }
