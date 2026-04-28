@@ -121,7 +121,7 @@ export default function Header({
 
   useEffect(() => {
     if (!filterModalVisible) {
-      console.log(filterOptions)
+      //console.log(filterOptions)
     }
   }, [filterOptions]);
 

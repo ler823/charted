@@ -168,7 +168,7 @@ export default function Filter({ isVisible, onClose, exportFilter }: Props) {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <Text style={styles.titleText}>Filters</Text>
-            <ScrollView style={styles.filterContent}>
+            <ScrollView style={styles.filterContent} showsVerticalScrollIndicator={false}>
               <Text style={styles.sectionHeader}>Friends</Text>
               <View>
                 <FlatList
@@ -177,7 +177,9 @@ export default function Filter({ isVisible, onClose, exportFilter }: Props) {
                   keyExtractor={(item) => item.id.toString()}
                   renderItem={({ item }) => (
                     <Pressable style={item.enabled ? styles.avatarStackEnabled : styles.avatarStackDisabled} onPress={() => { item.enabled == true ? item.enabled = false : item.enabled = true; setRefresh((prev) => !prev) }}>
-                      <AvatarBorder users_id={item.id} />
+                      <View style={item.enabled ? styles.avatarEnabled : null}>
+                        <AvatarBorder users_id={item.id} />
+                      </View>
                       <Text style={styles.username}>{item.username}</Text>
                     </Pressable>
                   )} />
@@ -286,6 +288,7 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     width: '85%',
+    maxHeight: '75%',
     justifyContent: "space-between",
     backgroundColor: '#ffffff',
     borderRadius: 18,
@@ -348,7 +351,7 @@ const styles = StyleSheet.create({
     textAlign: "center"
   },
   sectionHeader: {
-    margin: 15,
+    marginVertical: 15,
     fontFamily: Fonts.bold,
     fontSize: 16,
     textAlign: "left",
@@ -368,11 +371,13 @@ const styles = StyleSheet.create({
   username: {
     textAlign: "center",
     fontFamily: Fonts.bold,
+    marginTop: 5,
   },
   avatarStackEnabled: {
     paddingHorizontal: 4,
     paddingBottom: 10,
-    opacity: 1
+    opacity: 1,
+    
   },
   avatarStackDisabled: {
     paddingHorizontal: 4,
@@ -391,6 +396,12 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
     paddingHorizontal: 10,
     margin: 2.5,
+    marginVertical: 5,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
+    elevation: 4,
   },
   listTagDisabled: {
     opacity: 0.3,
@@ -399,12 +410,13 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
     paddingHorizontal: 10,
     margin: 2.5,
+    marginVertical: 5,
   },
   hourContentRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    margin: 5,
+    marginVertical: 5,
   },
   hourContentRowDisabled: {
     flexDirection: "row",
@@ -422,7 +434,12 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.light.accent,
     marginLeft: "auto",
     borderRadius: 8,
-    padding: 7
+    padding: 7,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
+    elevation: 4,
   },
   clearButton: {
     backgroundColor: Colors.light.error,
@@ -432,6 +449,7 @@ const styles = StyleSheet.create({
   },
   separator: {
     borderBottomWidth: 1,
+    padding: 5,
   },
   clearFiltersButton: {
     backgroundColor: Colors.light.error,
@@ -452,8 +470,20 @@ const styles = StyleSheet.create({
   },
   distanceSlider: {
     marginHorizontal: 10,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
+    elevation: 4,
   },
   regularText: {
     fontFamily: Fonts.regular,
+  },
+  avatarEnabled: {
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
+    elevation: 4,
   }
 })
