@@ -41,6 +41,7 @@ export type FilterType = {
   friends: number[] | null,
   lists: number[] | null,
   tags: number[] | null,
+  openNow: boolean,
   hour: number | null,
   minute: number | null,
   suffix: string | null,

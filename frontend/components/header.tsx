@@ -1,4 +1,5 @@
 import { Colors, Fonts } from "@/constants/theme";
+import { useFilterContext } from "@/context/FilterContext";
 import { FilterType, Pin, ViewMode, ViewOption } from "@/types/types";
 import { Ionicons } from "@expo/vector-icons";
 import { Dispatch, SetStateAction, useEffect, useRef, useState } from "react";
@@ -54,6 +55,7 @@ export default function Header({
   const [placesLoading, setPlacesLoading] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [filter, setFilter] = useState<FilterType | null>(null);
+  const { filterOptions } = useFilterContext();
 
   useEffect(() => {
     if (suggestionsType !== "places" || query.trim().length === 0) {
@@ -118,8 +120,10 @@ export default function Header({
   }, [query, isMapView, pins, onFilteredPinsChange]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    console.log(filter)
-  }, [filter]);
+    if (!filterModalVisible) {
+      console.log(filterOptions)
+    }
+  }, [filterOptions]);
 
   const showSuggestions = isMapView && isFocused && query.trim().length > 0;
 

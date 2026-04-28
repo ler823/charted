@@ -1,5 +1,6 @@
 import { Colors, Fonts } from "@/constants/theme";
 import { useAuth } from "@/context/AuthContext";
+import { useFilterContext } from "@/context/FilterContext";
 import { supabase } from "@/lib/supabase";
 import { FilterType } from "@/types/types";
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
@@ -18,6 +19,7 @@ type Props = {
 
 export default function Filter({ isVisible, onClose, exportFilter }: Props) {
   const { profile } = useAuth();
+  const { filterOptions, updateFilterOptions } = useFilterContext();
   const [friends, setFriends] = useState<{ id: number; username: string; enabled: boolean }[]>([]);
   const [lists, setLists] = useState<{ id: number; name: string; enabled: boolean }[]>([]);
   const [tags, setTags] = useState<{ id: number; name: string; enabled: boolean }[]>([]);
@@ -47,9 +49,8 @@ export default function Filter({ isVisible, onClose, exportFilter }: Props) {
     if (error) {
       Alert.alert("Error", error.message);
     }
-    //const friendIdList = data?.map(({ requester, target }) => requester.user_id == profile!.user_id ? Number(target.user_id) : Number(requester.user_id)) ?? []
-    setFriends(
-      data?.map(({ requester, target }) => ({
+
+    var friendsFromDb = data?.map(({ requester, target }) => ({
         id:
           requester.user_id == profile?.user_id
             ? Number(target.user_id)
@@ -60,7 +61,9 @@ export default function Filter({ isVisible, onClose, exportFilter }: Props) {
             : requester.username,
         enabled: false
       })) ?? []
-    );
+    const selectedFriends = filterOptions.friends ?? [];
+    const preSelectedFriends = friendsFromDb.map((friend) => ({...friend, enabled: selectedFriends.includes(friend.id)}))
+    setFriends(preSelectedFriends)
   }
 
   const getUserLists = async (userId: number) => {
@@ -72,7 +75,10 @@ export default function Filter({ isVisible, onClose, exportFilter }: Props) {
       console.error("[getUserLists]", error);
       return [];
     }
-    return data.map((list) => ({ id: list.list_id, name: list.name, enabled: false }));
+    const listsFromDb = data.map((list) => ({ id: list.list_id, name: list.name, enabled: false }));
+    const selectedLists = filterOptions.lists ?? [];
+    const preSelectedLists = listsFromDb.map((list) => ({...list, enabled: selectedLists.includes(list.id)}))
+    return preSelectedLists
   }
 
   const getUserTags = async (userId: number) => {
@@ -84,7 +90,10 @@ export default function Filter({ isVisible, onClose, exportFilter }: Props) {
       console.error("[getUserTags]", error);
       return [];
     }
-    return data.map((tag) => ({ id: tag.tag_id, name: tag.name, enabled: false }));
+    const tagsFromDb = data.map((tag) => ({ id: tag.tag_id, name: tag.name, enabled: false }));
+    const selectedTags = filterOptions.tags ?? [];
+    const preSelectedTags = tagsFromDb.map((tag) => ({...tag, enabled: selectedTags.includes(tag.id)}))
+    return preSelectedTags
   }
 
   const clearFilters = async () => {
@@ -102,15 +111,26 @@ export default function Filter({ isVisible, onClose, exportFilter }: Props) {
     var friendsToAdd = friends.filter((friend) => friend.enabled).map((friend) => friend.id)
     var listsToAdd = lists.filter((list) => list.enabled).map((list) => list.id)
     var tagsToAdd = tags.filter((tag) => tag.enabled).map((tag) => tag.id)
-    exportFilter({
+    
+    updateFilterOptions({
       friends: friendsToAdd.length == 0 ? null : friendsToAdd,
       lists: listsToAdd.length == 0 ? null : listsToAdd,
       tags: tagsToAdd.length == 0 ? null : tagsToAdd,
+      openNow: openNow,
       hour: hour,
       minute: minute,
       suffix: suffix,
       distance: mileRadius == 26 ? null : mileRadius
     })
+    onClose();
+  }
+
+  const updateFromContext = async () => {
+    setOpenNow(filterOptions.openNow);
+    setHour(filterOptions.hour);
+    setMinute(filterOptions.minute);
+    setSuffix(filterOptions.suffix);
+    setMileRadius(filterOptions.distance ?? 26);
   }
 
   useEffect(() => {
@@ -121,6 +141,7 @@ export default function Filter({ isVisible, onClose, exportFilter }: Props) {
         var tags = await getUserTags(profile?.user_id);
         setLists(lists);
         setTags(tags);
+        updateFromContext();
       }
       getData();
     }
