@@ -6,20 +6,19 @@ import { Modal, Pressable, StyleSheet, Text, TextInput, View } from "react-nativ
 type Props = {
   isVisible: boolean,
   onClose: () => void,
-  setActualHour: ((value: string) => void),
-  setActualMinute: ((value: string) => void),
+  setActualHour: ((value: number) => void),
+  setActualMinute: ((value: number) => void),
   setActualSuffix: ((value: string) => void)
 }
 
 export default function TimePicker({ isVisible, onClose, setActualHour, setActualMinute, setActualSuffix}: Props) {
   const [time, setTime] = useState(new Date(Date.now()));
-  const [hour, setHour] = useState(time.getHours().toString());
+  const [hour, setHour] = useState((time.getHours() % 12).toString());
   const [minute, setMinute] = useState(time.getMinutes().toString());
   const [suffix, setSuffix] = useState(Number(hour) - 12 >= 0 ? "PM" : "AM");
-
   const onSave = async () => {
-    setActualHour(hour);
-    setActualMinute(minute);
+    setActualHour(Number(hour));
+    setActualMinute(Number(minute));
     setActualSuffix(suffix);
     onClose();
   }
@@ -55,7 +54,7 @@ export default function TimePicker({ isVisible, onClose, setActualHour, setActua
               <Pressable 
               onPress={() => setSuffix((prev) => prev == "AM" ? "PM" : "AM")}
               style={styles.timeInput}>
-                <Text>{suffix}</Text>
+                <Text style={styles.suffixInput}>{suffix}</Text>
               </Pressable>
             </View>
             <View style={styles.buttonRow}>
@@ -209,11 +208,19 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
+    marginTop: 10,
+    marginBottom: 20,
   },
   timeInput: {
     backgroundColor: Colors.light.accent,
-    padding: 5,
+    fontFamily: Fonts.regular,
+    fontSize: 16,
+    padding: 10,
     borderRadius: 8,
     margin: 5,
+  },
+  suffixInput: {
+    fontFamily: Fonts.regular,
+    fontSize: 16,
   }
 })

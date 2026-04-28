@@ -50,6 +50,7 @@ export default function Home() {
   const mapRef = useRef<any>(null);
   const { permissionStatus } = useLocation();
   const [region, setRegion] = useState(INITIAL_REGION);
+  
 
   useFocusEffect(
     useCallback(() => {

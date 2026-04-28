@@ -1,5 +1,5 @@
 import { Colors, Fonts } from "@/constants/theme";
-import { Pin, ViewMode, ViewOption } from "@/types/types";
+import { FilterType, Pin, ViewMode, ViewOption } from "@/types/types";
 import { Ionicons } from "@expo/vector-icons";
 import { Dispatch, SetStateAction, useEffect, useRef, useState } from "react";
 import {
@@ -53,6 +53,7 @@ export default function Header({
   );
   const [placesLoading, setPlacesLoading] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [filter, setFilter] = useState<FilterType | null>(null);
 
   useEffect(() => {
     if (suggestionsType !== "places" || query.trim().length === 0) {
@@ -115,6 +116,10 @@ export default function Header({
       onFilteredPinsChange?.(query.trim().length > 0 ? matchingPins : null, query.trim());
     }
   }, [query, isMapView, pins, onFilteredPinsChange]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    console.log(filter)
+  }, [filter]);
 
   const showSuggestions = isMapView && isFocused && query.trim().length > 0;
 
@@ -283,7 +288,7 @@ export default function Header({
               </Text>
               <Ionicons name="chevron-down" size={20} color="#d9d9d9" />
             </Pressable>
-            <Filter isVisible={filterModalVisible} onClose={() => setFilterModalVisible(false)} />
+            <Filter isVisible={filterModalVisible} onClose={() => setFilterModalVisible(false)} exportFilter={setFilter} />
           </View>)}
       </View>
     </>

@@ -1,6 +1,7 @@
 import { Colors, Fonts } from "@/constants/theme";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/lib/supabase";
+import { FilterType } from "@/types/types";
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import Slider from '@react-native-community/slider';
 import React, { useEffect, useState } from "react";
@@ -12,18 +13,18 @@ import TimePicker from "./time-picker";
 type Props = {
   isVisible: boolean,
   onClose: () => void,
+  exportFilter: (item: FilterType) => void,
 }
 
-export default function Filter({ isVisible, onClose, }: Props) {
+export default function Filter({ isVisible, onClose, exportFilter }: Props) {
   const { profile } = useAuth();
   const [friends, setFriends] = useState<{ id: number; username: string; enabled: boolean }[]>([]);
   const [lists, setLists] = useState<{ id: number; name: string; enabled: boolean }[]>([]);
   const [tags, setTags] = useState<{ id: number; name: string; enabled: boolean }[]>([]);
   const [refresh, setRefresh] = useState(false);
   const [openNow, setOpenNow] = useState(false);
-  const [time, setTime] = useState<Date | null>(null);
-  const [hour, setHour] = useState<string | null>(null);
-  const [minute, setMinute] = useState<string | null>(null);
+  const [hour, setHour] = useState<number | null>(null);
+  const [minute, setMinute] = useState<number | null>(null);
   const [suffix, setSuffix] = useState<string | null>(null);
   const [mileRadius, setMileRadius] = useState(26);
   const [timePickerVisible, setTimePickerVisible] = useState(false);
@@ -86,6 +87,32 @@ export default function Filter({ isVisible, onClose, }: Props) {
     return data.map((tag) => ({ id: tag.tag_id, name: tag.name, enabled: false }));
   }
 
+  const clearFilters = async () => {
+    setFriends(friends.map((friend) => ({id: friend.id, username: friend.username, enabled: false})));
+    setLists(lists.map((list) => ({id: list.id, name: list.name, enabled: false})));
+    setTags(tags.map((tag) => ({id: tag.id, name: tag.name, enabled: false})));
+    setOpenNow(false);
+    setHour(null);
+    setMinute(null);
+    setSuffix(null);
+    setMileRadius(26);
+  }
+
+  const onApply = async () => {
+    var friendsToAdd = friends.filter((friend) => friend.enabled).map((friend) => friend.id)
+    var listsToAdd = lists.filter((list) => list.enabled).map((list) => list.id)
+    var tagsToAdd = tags.filter((tag) => tag.enabled).map((tag) => tag.id)
+    exportFilter({
+      friends: friendsToAdd.length == 0 ? null : friendsToAdd,
+      lists: listsToAdd.length == 0 ? null : listsToAdd,
+      tags: tagsToAdd.length == 0 ? null : tagsToAdd,
+      hour: hour,
+      minute: minute,
+      suffix: suffix,
+      distance: mileRadius == 26 ? null : mileRadius
+    })
+  }
+
   useEffect(() => {
     if (isVisible) {
       const getData = async () => {
@@ -98,6 +125,21 @@ export default function Filter({ isVisible, onClose, }: Props) {
       getData();
     }
   }, [isVisible]);
+
+  useEffect(() => {
+    if (openNow) {
+      var time = new Date(Date.now());
+      setHour(time.getHours() % 12)
+      setMinute(time.getMinutes())
+      setSuffix(time.getHours() < Number(12) ? "AM" : "PM");
+      setHour(time.getHours() % 12);
+    }
+    else {
+      setHour(null);
+      setMinute(null);
+      setSuffix(null);
+    }
+  }, [openNow])
 
   return (
     <View>
@@ -124,7 +166,7 @@ export default function Filter({ isVisible, onClose, }: Props) {
               <View style={styles.listTagView}>
                 {lists.map((list) => (
                   <Pressable style={list.enabled ? styles.listTagEnabled : styles.listTagDisabled} onPress={() => { list.enabled == true ? list.enabled = false : list.enabled = true; setRefresh((prev) => !prev) }} key={list.id}>
-                    <Text>{list.name}</Text>
+                    <Text style={styles.regularText}>{list.name}</Text>
                   </Pressable>
                 ))}
               </View>
@@ -133,7 +175,7 @@ export default function Filter({ isVisible, onClose, }: Props) {
               <View style={styles.listTagView}>
                 {tags.map((tag) => (
                   <Pressable style={tag.enabled ? styles.listTagEnabled : styles.listTagDisabled} onPress={() => { tag.enabled == true ? tag.enabled = false : tag.enabled = true; setRefresh((prev) => !prev) }} key={tag.id}>
-                    <Text>{tag.name}</Text>
+                    <Text style={styles.regularText}>{tag.name}</Text>
                   </Pressable>
                 ))}
               </View>
@@ -141,7 +183,7 @@ export default function Filter({ isVisible, onClose, }: Props) {
               <Text style={styles.sectionHeader}>Hours</Text>
               <View>
                 <View style={styles.hourContentRow}>
-                  <Text>Open Now</Text>
+                  <Text style={styles.regularText}>Open Now</Text>
                   <Switch
                     trackColor={{
                       false: Colors.light.text,
@@ -153,20 +195,20 @@ export default function Filter({ isVisible, onClose, }: Props) {
                     value={openNow} />
                 </View>
                 <View style={openNow ? styles.hourContentRowDisabled : styles.hourContentRow}>
-                  <Text>Open at...</Text>
+                  <Text style={styles.regularText}>Open at...</Text>
                   <Pressable
                     onPress={() => { if (!openNow) setTimePickerVisible(true) }}
                     style={styles.hoursButton}>
                     {(hour == null || minute == null || suffix == null) && (
-                      <Text>--:--</Text>
+                      <Text style={styles.regularText}>--:--</Text>
                     )}
                     {(hour != null && minute != null && suffix != null) && (
-                      <Text>{hour}:{minute} {suffix}</Text>
+                      <Text style={styles.regularText}>{hour < 10 ? "0" + hour.toString() : hour}:{minute < 10 ? "0" + minute.toString() : minute} {suffix}</Text>
                     )}
                   </Pressable>
                   {(hour != null && minute != null && suffix != null) && (
                     <Pressable 
-                    onPress={() => { setHour(null); setMinute(null); setSuffix(null); }}
+                    onPress={() => {if (!openNow) { setHour(null); setMinute(null); setSuffix(null); }}}
                     style={styles.clearButton}>
                       <MaterialIcons name="highlight-remove" size={17} color="white" />
                     </Pressable>
@@ -178,10 +220,10 @@ export default function Filter({ isVisible, onClose, }: Props) {
               <Text style={styles.sectionHeader}>Distance</Text>
               <View>
                 {mileRadius < 26 && (
-                  <Text>Radius of search (in miles) {mileRadius}</Text>
+                  <Text style={styles.regularText}>Radius of search (in miles) {mileRadius}</Text>
                 )}
                 {mileRadius == 26 && (
-                  <Text>Locations of all distances will be returned</Text>
+                  <Text style={styles.regularText}>Locations of all distances will be returned</Text>
                 )}
                 <Slider
                   value={mileRadius}
@@ -190,14 +232,20 @@ export default function Filter({ isVisible, onClose, }: Props) {
                   minimumTrackTintColor={Colors.light.accent}
                   maximumTrackTintColor="#536161"
                   onValueChange={(value) => setMileRadius(value)}
-                  step={1} />
+                  step={1} 
+                  style={styles.distanceSlider}/>
               </View>
             </ScrollView>
+            <View style={{alignItems: "center"}}>
+              <Pressable onPress={clearFilters} style={styles.clearFiltersButton}>
+                <Text style={styles.buttonText}>Clear all Filters</Text>
+              </Pressable>
+            </View>
             <View style={styles.bottomButtons}>
               <Pressable onPress={onClose} style={styles.cancelButton}>
                 <Text style={styles.buttonText}>Cancel</Text>
               </Pressable>
-              <Pressable onPress={onClose} style={styles.button}>
+              <Pressable onPress={onApply} style={styles.button}>
                 <Text style={styles.buttonText}>Apply</Text>
               </Pressable>
             </View>
@@ -216,7 +264,7 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0,0,0,0.4)",
   },
   modalContent: {
-    width: '75%',
+    width: '85%',
     justifyContent: "space-between",
     backgroundColor: '#ffffff',
     borderRadius: 18,
@@ -239,7 +287,8 @@ const styles = StyleSheet.create({
   bottomButtons: {
     flexDirection: "row",
     justifyContent: "space-around",
-    margin: 20
+    margin: 20,
+    marginTop: 5,
   },
   cancelButton: {
     backgroundColor: Colors.light.error,
@@ -274,7 +323,8 @@ const styles = StyleSheet.create({
   buttonText: {
     fontFamily: Fonts.bold,
     color: "#d9d9d9",
-    fontSize: 16
+    fontSize: 16,
+    textAlign: "center"
   },
   sectionHeader: {
     margin: 15,
@@ -311,7 +361,7 @@ const styles = StyleSheet.create({
   listTagView: {
     flexDirection: "row",
     flexWrap: "wrap",
-    margin: 5,
+    marginBottom: 15,
   },
   listTagEnabled: {
     opacity: 1,
@@ -327,7 +377,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     paddingVertical: 5,
     paddingHorizontal: 10,
-    margin: 2.5
+    margin: 2.5,
   },
   hourContentRow: {
     flexDirection: "row",
@@ -361,5 +411,28 @@ const styles = StyleSheet.create({
   },
   separator: {
     borderBottomWidth: 1,
+  },
+  clearFiltersButton: {
+    backgroundColor: Colors.light.error,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    width: 160,
+    borderRadius: 999,
+    marginBottom: 10,
+    marginTop: 20,
+    height: 40,
+    paddingHorizontal: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
+    elevation: 4,
+  },
+  distanceSlider: {
+    marginHorizontal: 10,
+  },
+  regularText: {
+    fontFamily: Fonts.regular,
   }
 })

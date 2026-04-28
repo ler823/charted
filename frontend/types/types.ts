@@ -36,3 +36,13 @@ export type ListType = {
   name: string;
   privacy: number;
 };
+
+export type FilterType = {
+  friends: number[] | null,
+  lists: number[] | null,
+  tags: number[] | null,
+  hour: number | null,
+  minute: number | null,
+  suffix: string | null,
+  distance: number | null,
+}
