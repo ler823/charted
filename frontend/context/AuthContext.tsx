@@ -1,4 +1,5 @@
 // context/AuthContext.tsx
+import { registerForPushNotificationsAsync, saveExpoPushToken } from "@/lib/push-notifications";
 import { supabase } from "@/lib/supabase";
 import { Session, User } from "@supabase/supabase-js";
 import { createContext, useContext, useEffect, useState } from "react";
@@ -49,6 +50,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (session?.user) {
         const p = await fetchProfile(session.user.id);
         setProfile(p);
+        registerPushToken(session.user.id);
       }
       setLoading(false);
     });
@@ -60,6 +62,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (session?.user) {
         const p = await fetchProfile(session.user.id);
         setProfile(p);
+        registerPushToken(session.user.id);
       } else {
         setProfile(null);
       }
@@ -67,6 +70,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     return () => subscription.unsubscribe();
   }, []);
+
+  const registerPushToken = async (userId: string) => {
+    const token = await registerForPushNotificationsAsync();
+    if (token) await saveExpoPushToken(userId, token);
+  };
 
   const signOut = async () => {
     await supabase.auth.signOut();
