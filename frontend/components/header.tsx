@@ -31,7 +31,7 @@ type HeaderProps = {
   viewOptions: ViewOption[];
   pins: Pin[];
   onPlaceSelect?: (lat: number, lng: number) => void;
-  onFilteredPinsChange?: (filtered: Pin[] | null, query: string) => void;
+  onQueryChange?: (query: string) => void;
 };
 
 export default function Header({
@@ -40,7 +40,7 @@ export default function Header({
   viewOptions,
   pins = [],
   onPlaceSelect,
-  onFilteredPinsChange,
+  onQueryChange,
 }: HeaderProps) {
   const [query, setQuery] = useState("");
   const [isFocused, setIsFocused] = useState(false);
@@ -156,19 +156,19 @@ export default function Header({
 
   useEffect(() => {
     if (!isMapView) {
-      onFilteredPinsChange?.(query.trim().length > 0 ? matchingPins : filteredPins, query.trim());
+      onQueryChange?.(query);
     }
-  }, [query, isMapView, pins, onFilteredPinsChange]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [query, isMapView, pins, onQueryChange]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  useEffect(() => {
-    const queryPins = pins.filter((pin) => (
-      (filterOptions.friends == null ? true : filterOptions.friends.includes(Number(pin.user_id))) &&
-      (filterOptions.lists == null ? true : filterOptions.lists.some((id) => pin.listIds?.includes(id))) &&
-      (filterOptions.tags == null ? true : filterOptions.tags.some((id) => pin.tagIds?.includes(id))) &&
-      (filterOptions.distance == null ? true : haversineDistance(pin.latitude, pin.longitude, userCoords!.latitude, userCoords!.longitude) <= filterOptions.distance)
-    ))
-    setFilteredPins(queryPins)
-  }, [filterOptions])
+  // useEffect(() => {
+  //   const queryPins = pins.filter((pin) => (
+  //     (filterOptions.friends == null ? true : filterOptions.friends.includes(Number(pin.user_id))) &&
+  //     (filterOptions.lists == null ? true : filterOptions.lists.some((id) => pin.listIds?.includes(id))) &&
+  //     (filterOptions.tags == null ? true : filterOptions.tags.some((id) => pin.tagIds?.includes(id))) &&
+  //     (filterOptions.distance == null ? true : haversineDistance(pin.latitude, pin.longitude, userCoords!.latitude, userCoords!.longitude) <= filterOptions.distance)
+  //   ))
+  //   setFilteredPins(queryPins)
+  // }, [filterOptions])
 
   const showSuggestions = isMapView && isFocused && query.trim().length > 0;
 
@@ -196,7 +196,7 @@ export default function Header({
               placeholder="Find a place"
               placeholderTextColor="#fefbea"
               value={query}
-              onChangeText={setQuery}
+              onChangeText={(text) => {setQuery(text); onQueryChange?.(text)}}
               onFocus={() => setIsFocused(true)}
               onBlur={() => {
                 // slight delay so tapping a suggestion fires first
