@@ -212,12 +212,17 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   timeInput: {
-    backgroundColor: Colors.light.accent,
+    backgroundColor: Colors.light.accentLight,
     fontFamily: Fonts.regular,
     fontSize: 16,
     padding: 10,
     borderRadius: 8,
     margin: 5,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
+    elevation: 4,
   },
   suffixInput: {
     fontFamily: Fonts.regular,
