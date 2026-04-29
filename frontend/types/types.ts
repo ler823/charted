@@ -14,6 +14,9 @@ export type Pin = {
   pinCount?: number;
   pinIds?: number[];
   userIds?: number[];
+
+  listIds?: number[];
+  tagIds?: number[];
 };
 
 export type ViewOption = {
@@ -36,3 +39,14 @@ export type ListType = {
   name: string;
   privacy: number;
 };
+
+export type FilterType = {
+  friends: number[] | null,
+  lists: number[] | null,
+  tags: number[] | null,
+  openNow: boolean,
+  hour: number | null,
+  minute: number | null,
+  suffix: string | null,
+  distance: number | null,
+}

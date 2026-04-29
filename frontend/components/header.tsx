@@ -1,5 +1,7 @@
 import { Colors, Fonts } from "@/constants/theme";
-import { Pin, ViewMode, ViewOption } from "@/types/types";
+import { useFilterContext } from "@/context/FilterContext";
+import { useLocation } from "@/hooks/use-location";
+import { FilterType, Pin, ViewMode, ViewOption } from "@/types/types";
 import { Ionicons } from "@expo/vector-icons";
 import { Dispatch, SetStateAction, useEffect, useRef, useState } from "react";
 import {
@@ -11,6 +13,7 @@ import {
   TouchableWithoutFeedback,
   View,
 } from "react-native";
+import Filter from "./filter";
 import PlaceSuggestionItem from "./place-suggestion-item";
 import SuggestionItem from "./suggestion-item";
 import { router } from "expo-router";
@@ -30,7 +33,7 @@ type HeaderProps = {
   viewOptions: ViewOption[];
   pins: Pin[];
   onPlaceSelect?: (lat: number, lng: number) => void;
-  onFilteredPinsChange?: (filtered: Pin[] | null, query: string) => void;
+  onQueryChange?: (query: string) => void;
 };
 
 export default function Header({
@@ -39,10 +42,11 @@ export default function Header({
   viewOptions,
   pins = [],
   onPlaceSelect,
-  onFilteredPinsChange,
+  onQueryChange,
 }: HeaderProps) {
   const [query, setQuery] = useState("");
   const [isFocused, setIsFocused] = useState(false);
+  const [filterModalVisible, setFilterModalVisible] = useState(false);
   const [suggestionsType, setSuggestionsType] = useState<"pins" | "places">(
     "pins",
   );
@@ -53,6 +57,10 @@ export default function Header({
   );
   const [placesLoading, setPlacesLoading] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [filter, setFilter] = useState<FilterType | null>(null);
+  const { filterOptions } = useFilterContext();
+  const [filteredPins, setFilteredPins] = useState<Pin[] | null>(null);
+  const { userCoords } = useLocation();
 
   useEffect(() => {
     if (suggestionsType !== "places" || query.trim().length === 0) {
@@ -97,24 +105,72 @@ export default function Header({
   const matchingPins =
     query.trim().length > 0
       ? pins
-          .filter((p) => p.name?.toLowerCase().includes(query.toLowerCase()))
-          .sort((a, b) => {
-            const q = query.toLowerCase();
-            const aStarts = a.name?.toLowerCase().startsWith(q);
-            const bStarts = b.name?.toLowerCase().startsWith(q);
-            if (aStarts && !bStarts) return -1;
-            if (!aStarts && bStarts) return 1;
-            return 0;
-          })
+        .filter((p) => p.name?.toLowerCase().includes(query.toLowerCase()))
+        .sort((a, b) => {
+          const q = query.toLowerCase();
+          const aStarts = a.name?.toLowerCase().startsWith(q);
+          const bStarts = b.name?.toLowerCase().startsWith(q);
+          if (aStarts && !bStarts) return -1;
+          if (!aStarts && bStarts) return 1;
+          return 0;
+        })
       : [];
 
   const pinSuggestions = isMapView ? matchingPins.slice(0, 5) : matchingPins;
 
+  const getFilterCount = () => {
+    let count = 0;
+    if (filterOptions.friends !== null) {
+      filterOptions.friends.forEach(() => count += 1);
+    }
+    if (filterOptions.lists !== null) {
+      filterOptions.lists.forEach(() => count += 1);
+    }
+    if (filterOptions.tags !== null) {
+      filterOptions.tags.forEach(() => count += 1);
+    }
+    if ((filterOptions.openNow) || (filterOptions.hour !== null && filterOptions.minute !== null && filterOptions.suffix !== null)) {
+      count += 1;
+    }
+    if (filterOptions.distance !== null || filterOptions.distance === 26) {
+      count += 1;
+    }
+    return count;
+  }
+
+  const haversineDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+    const R = 3956.0; // Earth radius in mi
+    const lat1Rad = lat1 * Math.PI / 180;
+    const lon1Rad = lon1 * Math.PI / 180;
+    const lat2Rad = lat2 * Math.PI / 180;
+    const lon2Rad = lon2 * Math.PI / 180;
+    
+    const deltaLat = lat2Rad - lat1Rad;
+    const deltaLon = lon2Rad - lon1Rad;
+    
+    const a = Math.sin(deltaLat / 2)**2 + 
+              Math.cos(lat1Rad) * Math.cos(lat2Rad) * 
+              Math.sin(deltaLon / 2)**2;
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    
+    return R * c;
+  }
+
   useEffect(() => {
     if (!isMapView) {
-      onFilteredPinsChange?.(query.trim().length > 0 ? matchingPins : null, query.trim());
+      onQueryChange?.(query);
     }
-  }, [query, isMapView, pins, onFilteredPinsChange]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [query, isMapView, pins, onQueryChange]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // useEffect(() => {
+  //   const queryPins = pins.filter((pin) => (
+  //     (filterOptions.friends == null ? true : filterOptions.friends.includes(Number(pin.user_id))) &&
+  //     (filterOptions.lists == null ? true : filterOptions.lists.some((id) => pin.listIds?.includes(id))) &&
+  //     (filterOptions.tags == null ? true : filterOptions.tags.some((id) => pin.tagIds?.includes(id))) &&
+  //     (filterOptions.distance == null ? true : haversineDistance(pin.latitude, pin.longitude, userCoords!.latitude, userCoords!.longitude) <= filterOptions.distance)
+  //   ))
+  //   setFilteredPins(queryPins)
+  // }, [filterOptions])
 
   const showSuggestions = isMapView && isFocused && query.trim().length > 0;
 
@@ -142,7 +198,7 @@ export default function Header({
               placeholder="Find a place"
               placeholderTextColor="#fefbea"
               value={query}
-              onChangeText={setQuery}
+              onChangeText={(text) => {setQuery(text); onQueryChange?.(text)}}
               onFocus={() => setIsFocused(true)}
               onBlur={() => {
                 // slight delay so tapping a suggestion fires first
@@ -171,14 +227,14 @@ export default function Header({
                 style={[
                   styles.suggestionsPillOption,
                   suggestionsType === "pins" &&
-                    styles.suggestionsPillOptionActive,
+                  styles.suggestionsPillOptionActive,
                 ]}
               >
                 <Text
                   style={[
                     styles.suggestionsPillText,
                     suggestionsType === "pins" &&
-                      styles.suggestionsPillTextActive,
+                    styles.suggestionsPillTextActive,
                   ]}
                 >
                   Pins
@@ -189,14 +245,14 @@ export default function Header({
                 style={[
                   styles.suggestionsPillOption,
                   suggestionsType === "places" &&
-                    styles.suggestionsPillOptionActive,
+                  styles.suggestionsPillOptionActive,
                 ]}
               >
                 <Text
                   style={[
                     styles.suggestionsPillText,
                     suggestionsType === "places" &&
-                      styles.suggestionsPillTextActive,
+                    styles.suggestionsPillTextActive,
                   ]}
                 >
                   Places
@@ -263,11 +319,11 @@ export default function Header({
                   style={[
                     styles.pillOption,
                     viewMode === mode &&
-                      (mode === "map"
-                        ? styles.pillOptionActiveMap
-                        : viewMode === "list"
-                          ? styles.pillOptionActiveList
-                          : styles.pillOptionActiveGrid),
+                    (mode === "map"
+                      ? styles.pillOptionActiveMap
+                      : viewMode === "list"
+                        ? styles.pillOptionActiveList
+                        : styles.pillOptionActiveGrid),
                   ]}
                 >
                   <Ionicons name={icon} size={20} color="#d9d9d9" />
@@ -275,16 +331,24 @@ export default function Header({
               ))}
             </View>
 
-            <Pressable style={styles.filter}>
+            <Pressable style={styles.filter} onPress={() => setFilterModalVisible(true)}>
               <Text
                 style={{ fontFamily: Fonts.bold, color: "#d9d9d9", fontSize: 16 }}
               >
-                Filter <Text style={{ color: "#243e36" }}>.</Text>
+                Filter 
+                {getFilterCount() > 0 && (
+                  <Text>
+                    &nbsp;({getFilterCount()})
+                  </Text>
+                )}
+                <Text style={{ color: "#243e36" }}>
+                  .
+                </Text>
               </Text>
               <Ionicons name="chevron-down" size={20} color="#d9d9d9" />
             </Pressable>
-          </View>
-        )}
+            <Filter isVisible={filterModalVisible} onClose={() => setFilterModalVisible(false)} exportFilter={setFilter} />
+          </View>)}
       </View>
     </>
   );

@@ -30,6 +30,7 @@ import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { useAuth } from "@/context/AuthContext";
+import { useToast } from "@/context/ToastContext";
 import { useLocation } from "@/hooks/use-location";
 import { getPhotoUrl, pickImageAsync, processImage } from "@/lib/photo-utils";
 import {
@@ -56,6 +57,7 @@ import { ListType, PhotoItem } from "@/types/types";
 export default function MakePin() {
   const router = useRouter();
   const { profile } = useAuth();
+  const { showToast } = useToast();
   const {
     pinId,
     lat: latParam,
@@ -217,6 +219,7 @@ export default function MakePin() {
         await uploadPhoto(photo.url, false);
       }
     }
+    showToast("Pin saved!");
     router.back();
   };
 
@@ -493,6 +496,7 @@ export default function MakePin() {
         deletePhoto(photo.key);
       }
     }
+    showToast("Pin updated!");
     router.back();
   };
 
@@ -508,6 +512,7 @@ export default function MakePin() {
           onPress: async () => {
             const error = await deletePinService(pinId!);
             if (error) console.error("[deletePin]", error);
+            showToast("Pin deleted");
             router.replace({
               pathname: "/(tabs)/(home)",
               params: { viewMode },

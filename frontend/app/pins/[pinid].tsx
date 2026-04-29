@@ -16,9 +16,8 @@ import {
 } from "react-native";
 //import { AutoSkeletonView } from "react-native-auto-skeleton";
 import LoadingPage from "@/components/loading-page";
-import { getPhotoUrl } from "@/lib/photo-utils";
 import { useAuth } from "@/context/AuthContext";
-import { sortRoutesWithInitial } from "expo-router/build/sortRoutes";
+import { getPhotoUrl } from "@/lib/photo-utils";
 
 type Friend = {
   user_id: number;
@@ -576,27 +575,32 @@ export default function PinPage() {
           )}
 
           {/* Tags */}
-          <View style={styles.editRow}>
-            <Text style={styles.subtitle}>Tags</Text>
-          </View>
-          <View style={styles.cardFullRow}>
-            <ScrollView
-              contentContainerStyle={{
-                flexDirection: "row",
-                gap: 20,
-                flexWrap: "wrap",
-              }}
-            >
-              {pin.pin_tags?.length === 0 && (
-                <Text style={styles.emptyText}>You have no tags yet</Text>
-              )}
-              {pin.pin_tags?.map((pin_tag) => (
-                <Text key={pin_tag.tags?.tag_id} style={styles.boxText}>
-                  {pin_tag.tags?.name ?? "Unnamed tag"}
-                </Text>
-              ))}
-            </ScrollView>
-          </View>
+          {pin.user_id === profile?.user_id && (
+            <View>
+            <View style={styles.editRow}>
+              <Text style={styles.subtitle}>Tags</Text>
+            </View>
+            <View style={styles.cardFullRow}>
+              <ScrollView
+                contentContainerStyle={{
+                  flexDirection: "row",
+                  gap: 20,
+                  flexWrap: "wrap",
+                }}
+              >
+                {pin.pin_tags?.length === 0 && (
+                  <Text style={styles.emptyText}>You have no tags yet</Text>
+                )}
+                {pin.pin_tags?.map((pin_tag) => (
+                  <Text key={pin_tag.tags?.tag_id} style={styles.boxText}>
+                    {pin_tag.tags?.name ?? "Unnamed tag"}
+                  </Text>
+                ))}
+              </ScrollView>
+            </View>
+            </View>
+
+          )}
 
           {/* Lists */}
           <View style={styles.editRow}>

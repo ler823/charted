@@ -2,6 +2,7 @@ import LoadingPage from "@/components/loading-page";
 import { useAuth } from "@/context/AuthContext";
 import { Fonts } from "@/constants/theme";
 import { getPhotoUrl } from "@/lib/photo-utils";
+import { sendPushNotification } from "@/lib/push-notifications";
 import { supabase } from "@/lib/supabase";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
@@ -93,6 +94,11 @@ export default function UserProfilePage() {
     if (!error && data) {
       setRelationshipId(data.id);
       setStatus("pending_sent");
+      sendPushNotification(
+        userid,
+        "Charted",
+        `Friend request received: ${currentProfile.username}`
+      );
     }
   };
 

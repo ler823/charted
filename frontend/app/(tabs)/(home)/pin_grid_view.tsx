@@ -21,7 +21,7 @@ type FriendAvatar = {
 
 const screenWidth = Dimensions.get("window").width;
 
-function GridCard({ item }: { item: Pin }) {
+function GridCard({ item, isSingle }: { item: Pin, isSingle: Boolean }) {
   const { profile } = useAuth();
   const [coverPhoto, setCoverPhoto] = useState<string | null>(null);
   const [friendAvatars, setFriendAvatars] = useState<FriendAvatar[]>([]);
@@ -92,7 +92,7 @@ function GridCard({ item }: { item: Pin }) {
   }, [item.pinIds?.[0]]);
 
   return (
-    <View style={styles.shadowWrapper}>
+    <View style={isSingle ? styles.shadowWrapperSingle : styles.shadowWrapper}>
       <View style={styles.card}>
         <Pressable
           onPress={() => {
@@ -181,7 +181,7 @@ export default function PinGridView({ pins, emptyMessage = "No pins to display y
       contentContainerStyle={styles.listContainer}
       columnWrapperStyle={styles.row}
       showsVerticalScrollIndicator={false}
-      renderItem={({ item }) => <GridCard item={item} />}
+      renderItem={({ item }) => <GridCard item={item} isSingle={pins.length == 1}/>}
       ListEmptyComponent={
         <View style={styles.emptyContainer}>
           <Text style={styles.emptyText}>{emptyMessage}</Text>
@@ -234,6 +234,16 @@ const styles = StyleSheet.create({
 
   shadowWrapper: {
     width: "48%",
+    shadowColor: "#000",
+    marginHorizontal: 4,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+
+  shadowWrapperSingle: {
+    width: "68.25%",
     shadowColor: "#000",
     marginHorizontal: 4,
     shadowOffset: { width: 0, height: 4 },
