@@ -763,7 +763,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 999,
-    //padding: 16,
     height: 40,
     paddingHorizontal: 16,
     shadowColor: "#000",

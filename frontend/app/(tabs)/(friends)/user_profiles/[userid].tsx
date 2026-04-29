@@ -2,6 +2,7 @@ import LoadingPage from "@/components/loading-page";
 import { useAuth } from "@/context/AuthContext";
 import { Fonts } from "@/constants/theme";
 import { getPhotoUrl } from "@/lib/photo-utils";
+import { sendPushNotification } from "@/lib/push-notifications";
 import { supabase } from "@/lib/supabase";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
@@ -93,6 +94,11 @@ export default function UserProfilePage() {
     if (!error && data) {
       setRelationshipId(data.id);
       setStatus("pending_sent");
+      sendPushNotification(
+        userid,
+        "Charted",
+        `Friend request received: ${currentProfile.username}`
+      );
     }
   };
 
@@ -125,7 +131,7 @@ export default function UserProfilePage() {
         </View>
 
         <Text style={styles.username}>{profileData?.username ?? "Unknown"}</Text>
-        <Text style={styles.bio}>{profileData?.bio ?? "No bio"}</Text>
+        <Text style={styles.bio}>{profileData?.bio?.trim() ? profileData.bio : "No bio"}</Text>
 
         <View style={{ marginTop: 25, alignItems: "center", gap: 10 }}>
           {status === "none" && (

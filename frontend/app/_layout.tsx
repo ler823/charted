@@ -1,6 +1,8 @@
+import Toast from "@/components/toast";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { DroppingPinProvider } from "@/context/DroppingPinContext";
 import { FilterProvider } from "@/context/FilterContext";
+import { ToastProvider } from "@/context/ToastContext";
 import {
   Raleway_200ExtraLight,
   Raleway_400Regular,
@@ -72,8 +74,11 @@ export default function RootLayout() {
   return (
     <AuthProvider>
       <FilterProvider>
-        <StatusBar barStyle="default" />
-        <AppNavigator />
+        <ToastProvider>
+          <StatusBar barStyle="default" />
+          <AppNavigator />
+          <Toast />
+        </ToastProvider>
       </FilterProvider>
     </AuthProvider>
   );

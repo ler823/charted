@@ -5,8 +5,9 @@ import { getPhotoUrl } from "@/lib/photo-utils";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { router } from "expo-router";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { useFocusEffect } from "@react-navigation/native";
 
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/lib/supabase";
@@ -28,7 +29,7 @@ type VisPin = {
 };
 
 export default function Account() {
-  const { profile, loading: authLoading } = useAuth();
+  const { profile, loading: authLoading, signOut } = useAuth();
   const [username, setUsername] = useState("");
   const [location, setLocation] = useState<string | null>(null);
   const [bio, setBio] = useState<string | null>(null);
@@ -54,35 +55,57 @@ export default function Account() {
   const [recentFriendId, setRecentFriendId] = useState<number | null>(null);
   const [recentPinId, setRecentPinId] = useState<number | null>(null);
 
-  useEffect(() => {
-    const loadUser = async () => {
-      if (!profile) {
-        if (!authLoading) {
-          setUserLoading(false);
-          setFavLoading(false);
-          setVisitLoading(false);
-          setActivityLoading(false);
+
+  useFocusEffect(
+    useCallback(() => {
+      let isActive = true;
+
+      const loadUser = async () => {
+        if (!profile) return;
+
+        const { data: freshProfile } = await supabase
+          .from("profiles")
+          .select("username, avatar_key")
+          .eq("user_id", profile.user_id)
+          .single();
+
+        if (!isActive || !freshProfile) return;
+
+        setUsername(freshProfile.username);
+
+        const key = freshProfile.avatar_key;
+
+        if (key) {
+          const urls = await getPhotoUrl([key]);
+
+          setAvatarUrl(null);
+          setTimeout(() => {
+            if (isActive) setAvatarUrl(urls?.[0]?.url ?? null);
+          }, 0);
+        } else {
+          setAvatarUrl(null);
         }
-        return;
-      }
-      setUsername(profile.username);
-      if (profile.avatar_key) {
-        const urls = await getPhotoUrl([profile.avatar_key]);
-        setAvatarUrl(urls[0].url);
-      }
 
-      const { data: userData } = await supabase
-        .from("users")
-        .select("location, bio")
-        .eq("user_id", profile.user_id)
-        .single();
+        const { data: userData } = await supabase
+          .from("users")
+          .select("location, bio")
+          .eq("user_id", profile.user_id)
+          .single();
 
-      setLocation(userData?.location ?? null);
-      setBio(userData?.bio ?? null);
-      setUserLoading(false);
-    };
-    loadUser();
-  }, [profile, authLoading]);
+        if (!isActive) return;
+
+        setLocation(userData?.location ?? null);
+        setBio(userData?.bio?.trim() ? userData.bio : null);
+        setUserLoading(false);
+      };
+
+      loadUser();
+
+      return () => {
+        isActive = false;
+      };
+    }, [profile?.user_id])
+  );
 
   useEffect(() => {
     if (!profile) return;
@@ -289,6 +312,7 @@ export default function Account() {
 
   return (
     <ScrollView>
+      <View style={{ height: 15 }} />
       <View
         style={{
           marginTop: 45,
@@ -334,10 +358,10 @@ export default function Account() {
         <View style={styles.locationRow}>
           <Ionicons name="location-sharp" size={17} color="#333" />
           <Text style={[styles.location, { paddingLeft: 2 }]}>
-            {location ?? "No location set"}
+            {location?.trim() ? location : "No location set"}
           </Text>
         </View>
-        <Text style={styles.bio}>{bio ?? ""}</Text>
+        <Text style={styles.bio}>{bio?.trim() ? bio : "No bio"}</Text>
 
         {/* Stats */}
         <View style={styles.infoBox}>
@@ -604,7 +628,12 @@ export default function Account() {
           </View>
         </View>
       </View>
-      <View style={{ height: 100 }} />
+      <View style={styles.container}>
+        <Pressable style={styles.button} onPress={signOut}>
+          <Text style={styles.buttonText}>Sign Out</Text>
+        </Pressable>
+      </View>
+      <View style={{ height: 105 }} />
     </ScrollView>
   );
 }
@@ -746,5 +775,28 @@ const styles = StyleSheet.create({
     marginLeft: -2,
     borderTopRightRadius: 12,
     justifyContent: "center",
+  },
+  button: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    height: 40,
+    width: 150,
+    paddingHorizontal: 16,
+    marginVertical: 24,
+    backgroundColor: Colors.light.error,
+    borderRadius: 999,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
+    elevation: 4,
+  },
+  buttonText: {
+    color: "#fff",
+    fontWeight: "bold",
+    fontSize: 16,
+    fontFamily: Fonts.bold,
+    letterSpacing: 1,
   },
 });

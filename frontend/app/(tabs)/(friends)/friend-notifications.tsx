@@ -1,6 +1,7 @@
 import { Colors, Fonts } from "@/constants/theme";
 import { useAuth } from "@/context/AuthContext";
 import { getPhotoUrl } from "@/lib/photo-utils";
+import { sendPushNotification } from "@/lib/push-notifications";
 import { supabase } from "@/lib/supabase";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
@@ -10,6 +11,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
 type FriendRequest = {
   id: string;
+  otherUserId: string;
   username: string;
   avatarUrl?: string | null;
 };
@@ -97,6 +99,7 @@ export default function FriendNotifications() {
     setReceived(
       (receivedData ?? []).map((r: any) => ({
         id: r.id,
+        otherUserId: r.requester_id,
         username: profileMap[r.requester_id]?.username ?? r.requester_id,
         avatarUrl: profileMap[r.requester_id]?.avatarUrl ?? null,
       }))
@@ -104,25 +107,40 @@ export default function FriendNotifications() {
     setSent(
       (sentData ?? []).map((r: any) => ({
         id: r.id,
+        otherUserId: r.target_id,
         username: profileMap[r.target_id]?.username ?? r.target_id,
         avatarUrl: profileMap[r.target_id]?.avatarUrl ?? null,
       }))
     );
   };
 
-  const handleAccept = async (id: string) => {
+  const handleAccept = async (user: FriendRequest) => {
     const { error } = await supabase
       .from("user_relationships1")
       .update({ status: "accepted" })
-      .eq("id", id);
+      .eq("id", user.id);
     if (error) { showError("Error: failed to accept request."); return; }
-    setAccepted((prev) => new Set(prev).add(id));
+    setAccepted((prev) => new Set(prev).add(user.id));
+    if (profile?.username) {
+      sendPushNotification(
+        user.otherUserId,
+        "Charted",
+        `Friend request accepted: ${profile.username}`
+      );
+    }
   };
 
-  const handleReject = async (id: string) => {
-    const { error } = await supabase.from("user_relationships1").delete().eq("id", id);
+  const handleReject = async (user: FriendRequest) => {
+    const { error } = await supabase.from("user_relationships1").delete().eq("id", user.id);
     if (error) { showError("Error: failed to reject request."); return; }
-    setRejected((prev) => new Set(prev).add(id));
+    setRejected((prev) => new Set(prev).add(user.id));
+    if (profile?.username) {
+      sendPushNotification(
+        user.otherUserId,
+        "Charted",
+        `Friend request denied: ${profile.username}`
+      );
+    }
   };
 
   const handleUnsend = async (id: string) => {
@@ -166,10 +184,10 @@ export default function FriendNotifications() {
               </View>
             ) : (
               <View style={styles.actions}>
-                <Pressable style={styles.acceptBtn} onPress={() => handleAccept(user.id)}>
+                <Pressable style={styles.acceptBtn} onPress={() => handleAccept(user)}>
                   <Text style={styles.acceptText}>Accept</Text>
                 </Pressable>
-                <Pressable style={styles.rejectBtn} onPress={() => handleReject(user.id)}>
+                <Pressable style={styles.rejectBtn} onPress={() => handleReject(user)}>
                   <Text style={styles.rejectText}>Reject</Text>
                 </Pressable>
               </View>
