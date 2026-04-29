@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/lib/supabase";
-import { Pressable, StyleSheet, View, Text, TextInput } from "react-native";
+import { Pressable, StyleSheet, View, Text, TextInput, TouchableWithoutFeedback, Keyboard, KeyboardAvoidingView, Platform } from "react-native";
 import { useAuth } from "@/context/AuthContext";
 import LoadingPage from "@/components/loading-page";
 import { Colors, Fonts } from "@/constants/theme";
@@ -11,7 +11,9 @@ import Entypo from '@expo/vector-icons/Entypo';
 
 
 export default function AccountSet() {
+    const [passVisible, setPassVisible] = useState(false);
     const [email, setEmail] = useState("");
+    const { profile } = useAuth();
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -27,65 +29,59 @@ export default function AccountSet() {
             setLoading(false);
         };
         getUserEmail();
-    }, [])
+    }, []);
 
     if (loading) return <LoadingPage />;
 
+
     return (
-        <>
-        <View
-          style={{
-              marginTop: 45,
-              marginHorizontal: 10,
-              flexDirection: "row",
-              justifyContent: "space-between",
-          }}
-          >
-          <Pressable
-              style={styles.backButton}
-              onPress={() => {router.back()}
-              }
-          >
-              <Ionicons name="chevron-back" size={20} color="#d9d9d9" />
-              <Text
-              style={{ fontFamily: Fonts.bold, color: "#d9d9d9", fontSize: 16 }}
-              >
-              Back
-              </Text>
-          </Pressable>
-        </View>
-        <View style={styles.title}>
-          <Text style={styles.titleText}>Account</Text>
-        </View>
-        <View style={{alignItems: "center"}}>
-          <Pressable style={{width: "85%"}} onPress={() => router.push("/account-email")}>
-            <View style={{flexDirection: "row", alignItems: "center", gap: 7}}>
-              <Text style={styles.headerText}>Email</Text>
-              <FontAwesome name="pencil" size={18} color="#243e36" style={{marginTop: 9}} />
-            </View>
-            <View style={styles.input}>
-              <Text style={styles.inputText}>{email}</Text>
-            </View>
-          </Pressable>
-          <Pressable style={{width: "85%"}} onPress={() => router.push("/account-pass")}>
-            <View style={{flexDirection: "row", alignItems: "center", gap: 7}}>
-              <Text style={styles.headerText}>Password</Text>
-              <FontAwesome name="pencil" size={18} color="#243e36" style={{marginTop: 9}} />
-            </View>
-            <View style={styles.input}>
-                <Text style={styles.inputText}>••••••••</Text>
-            </View>
-          </Pressable>
-        </View>
-        <Pressable style={styles.button}>
-          <MaterialCommunityIcons
-              name="trash-can-outline"
-              size={24}
-              color="#fff"
-            />
-          <Text style={styles.buttonText}>Delete Account</Text>
-        </Pressable>
-      </>
+        <KeyboardAvoidingView
+            style={{ flex: 1 }}
+            behavior={Platform.OS === "ios" ? "padding" : undefined}
+        >
+            <Pressable style={{ flex: 1 }} onPress={Keyboard.dismiss}>
+                <View>
+                    <View
+                    style={{
+                        marginTop: 45,
+                        marginHorizontal: 10,
+                        flexDirection: "row",
+                        justifyContent: "space-between",
+                    }}
+                    >
+                        <Pressable
+                            style={styles.backButton}
+                            onPress={() => {router.back()}
+                            }
+                        >
+                            <Ionicons name="chevron-back" size={20} color="#d9d9d9" />
+                            <Text style={{ fontFamily: Fonts.bold, color: "#d9d9d9", fontSize: 16 }}>
+                                Back
+                            </Text>
+                        </Pressable>
+                    </View>
+                    <View style={styles.title}>
+                        <Text style={styles.titleText}>Change Your Email</Text>
+                    </View>
+                    <View style={{alignItems: "center"}}>
+                        <View style={{width: "85%"}}>
+                            <View style={{flexDirection: "row", alignItems: "center", gap: 7}}>
+                                <Text style={styles.headerText}>Email</Text>
+                            </View>
+                            <TextInput
+                                style={styles.input}
+                                placeholder={email}
+                                placeholderTextColor={Colors.light.accent}
+                                autoCapitalize="none"
+                                keyboardType="email-address"
+                                value={email}
+                                onChangeText={setEmail}
+                                />
+                        </View>
+                    </View>
+                </View>
+            </Pressable>
+        </KeyboardAvoidingView>
     )
 }
 
