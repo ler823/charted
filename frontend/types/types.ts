@@ -14,6 +14,9 @@ export type Pin = {
   pinCount?: number;
   pinIds?: number[];
   userIds?: number[];
+
+  listIds?: number[];
+  tagIds?: number[];
 };
 
 export type ViewOption = {

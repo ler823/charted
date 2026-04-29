@@ -56,6 +56,7 @@ export default function Header({
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [filter, setFilter] = useState<FilterType | null>(null);
   const { filterOptions } = useFilterContext();
+  const [filteredPins, setFilteredPins] = useState<Pin[] | null>(null);
 
   useEffect(() => {
     if (suggestionsType !== "places" || query.trim().length === 0) {
@@ -115,15 +116,27 @@ export default function Header({
 
   useEffect(() => {
     if (!isMapView) {
-      onFilteredPinsChange?.(query.trim().length > 0 ? matchingPins : null, query.trim());
+      onFilteredPinsChange?.(query.trim().length > 0 ? matchingPins : filteredPins, query.trim());
     }
   }, [query, isMapView, pins, onFilteredPinsChange]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const idInCollection = async (ids: number[], collection: number[]) => {
+      for (let i = 0; i < ids.length; i++) {
+        if (collection.includes(ids[i])) {
+          return true;
+        }
+      }
+      return false;
+  }
+
   useEffect(() => {
-    if (!filterModalVisible) {
-      //console.log(filterOptions)
-    }
-  }, [filterOptions]);
+    const queryPins = pins.filter((pin) => (
+      (filterOptions.friends == null ? true : filterOptions.friends.includes(Number(pin.user_id))) &&
+      (filterOptions.lists == null ? true : filterOptions.lists.some((id) => pin.listIds?.includes(id))) &&
+      (filterOptions.tags == null ? true : filterOptions.tags.some((id) => pin.tagIds?.includes(id)))
+    ))
+    setFilteredPins(queryPins)
+  }, [filterOptions])
 
   const showSuggestions = isMapView && isFocused && query.trim().length > 0;
 

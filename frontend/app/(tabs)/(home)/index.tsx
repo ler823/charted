@@ -1,7 +1,7 @@
 import PinMarker from "@/components/pin-marker";
 import { supabase } from "@/lib/supabase";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
-import React, { useCallback, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 import ClusteredMapView from "react-native-map-clustering";
 import { Marker } from "react-native-maps";
@@ -15,6 +15,7 @@ import SharedPinMarkers from "@/components/pin-markers-shared";
 import PinOverlay from "@/components/pin-overlay";
 import { useAuth } from "@/context/AuthContext";
 import { useDroppingPin } from "@/context/DroppingPinContext";
+import { useFilterContext } from "@/context/FilterContext";
 import { useLocation } from "@/hooks/use-location";
 import { Coords, Pin, ViewMode, ViewOption } from "@/types/types";
 import { useFocusEffect, useLocalSearchParams } from "expo-router";
@@ -50,6 +51,7 @@ export default function Home() {
   const mapRef = useRef<any>(null);
   const { permissionStatus } = useLocation();
   const [region, setRegion] = useState(INITIAL_REGION);
+  const { filterOptions } = useFilterContext();
   
 
   useFocusEffect(
@@ -117,9 +119,21 @@ export default function Home() {
         if (allPinIds.length > 0) {
           const { data: pinData, error } = await supabase
             .from("pins")
-            .select("pin_id, user_id, private, name, address, location_id")
+            .select(`
+              pin_id, 
+              user_id, 
+              private, 
+              name, 
+              address, 
+              location_id,
+              pin_lists (
+                list_id
+              ),
+              pin_tags (
+                tag_id
+              )
+              `)
             .in("pin_id", allPinIds);
-
           if (error) {
             console.error("Failed to fetch pins:", error.message);
             return;
@@ -147,6 +161,13 @@ export default function Home() {
 
             const userIds = [...new Set(validPins.map((p: any) => p.user_id))];
             const pinIds = validPins.map((p: any) => p.pin_id);
+            
+            var list_ids = []
+            validPins.forEach((pin) => list_ids = [...list_ids, ...pin.pin_lists.map((pin_list) => pin_list.list_id)])
+
+            var tag_ids = []
+            validPins.forEach((pin) => tag_ids = [...tag_ids, ...pin.pin_tags.map((pin_tag) => pin_tag.tag_id)])
+            
 
             const userPin = validPins.find(
               (p: any) => p.user_id === currentUserId,
@@ -165,6 +186,8 @@ export default function Home() {
               pinCount: validPins.length,
               pinIds,
               userIds,
+              listIds: list_ids,
+              tagIds: tag_ids,
             };
           })
           .filter(Boolean) as Pin[];
@@ -175,6 +198,28 @@ export default function Home() {
       fetchPins();
     }, [profile]),
   );
+
+  const idInCollection = (ids: number[], collection: number[]) => {
+      for (let i = 0; i < ids.length; i++) {
+        if (collection.includes(ids[i])) {
+          return true;
+        }
+      }
+      return false;
+  }
+
+  useEffect(() => {
+    const queryPins = pins.filter((pin) => (
+      (filterOptions.friends == null ? true : filterOptions.friends.includes(Number(pin.user_id))) &&
+      (filterOptions.lists == null ? true : filterOptions.lists.some((id) => pin.listIds?.includes(id))) &&
+      (filterOptions.tags == null ? true : filterOptions.tags.some((id) => pin.tagIds?.includes(id)))
+    ))
+    setFilteredPins(queryPins)
+  }, [filterOptions])
+
+  useEffect(() => {
+    
+  }, [filteredPins])
 
   return (
     <View style={styles.container}>
@@ -249,7 +294,7 @@ export default function Home() {
           clusterTextColor="#fefbea"
           clusterFontFamily="System"
         >
-          {pins
+          {(filteredPins ?? [])
             .filter((pin) => pin.latitude !== 0 && pin.longitude !== 0)
             .map((pin) => (
               <Marker
