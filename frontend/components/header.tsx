@@ -1,5 +1,6 @@
 import { Colors, Fonts } from "@/constants/theme";
 import { useFilterContext } from "@/context/FilterContext";
+import { useLocation } from "@/hooks/use-location";
 import { FilterType, Pin, ViewMode, ViewOption } from "@/types/types";
 import { Ionicons } from "@expo/vector-icons";
 import { Dispatch, SetStateAction, useEffect, useRef, useState } from "react";
@@ -57,6 +58,7 @@ export default function Header({
   const [filter, setFilter] = useState<FilterType | null>(null);
   const { filterOptions } = useFilterContext();
   const [filteredPins, setFilteredPins] = useState<Pin[] | null>(null);
+  const { userCoords } = useLocation();
 
   useEffect(() => {
     if (suggestionsType !== "places" || query.trim().length === 0) {
@@ -134,6 +136,24 @@ export default function Header({
     return count;
   }
 
+  const haversineDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+    const R = 3956.0; // Earth radius in mi
+    const lat1Rad = lat1 * Math.PI / 180;
+    const lon1Rad = lon1 * Math.PI / 180;
+    const lat2Rad = lat2 * Math.PI / 180;
+    const lon2Rad = lon2 * Math.PI / 180;
+    
+    const deltaLat = lat2Rad - lat1Rad;
+    const deltaLon = lon2Rad - lon1Rad;
+    
+    const a = Math.sin(deltaLat / 2)**2 + 
+              Math.cos(lat1Rad) * Math.cos(lat2Rad) * 
+              Math.sin(deltaLon / 2)**2;
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    
+    return R * c;
+  }
+
   useEffect(() => {
     if (!isMapView) {
       onFilteredPinsChange?.(query.trim().length > 0 ? matchingPins : filteredPins, query.trim());
@@ -144,7 +164,8 @@ export default function Header({
     const queryPins = pins.filter((pin) => (
       (filterOptions.friends == null ? true : filterOptions.friends.includes(Number(pin.user_id))) &&
       (filterOptions.lists == null ? true : filterOptions.lists.some((id) => pin.listIds?.includes(id))) &&
-      (filterOptions.tags == null ? true : filterOptions.tags.some((id) => pin.tagIds?.includes(id)))
+      (filterOptions.tags == null ? true : filterOptions.tags.some((id) => pin.tagIds?.includes(id))) &&
+      (filterOptions.distance == null ? true : haversineDistance(pin.latitude, pin.longitude, userCoords!.latitude, userCoords!.longitude) <= filterOptions.distance)
     ))
     setFilteredPins(queryPins)
   }, [filterOptions])
