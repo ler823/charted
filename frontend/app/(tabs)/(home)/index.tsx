@@ -193,20 +193,12 @@ export default function Home() {
           .filter(Boolean) as Pin[];
 
         setPins(formattedPins);
+        setFilteredPins(formattedPins)
       }
       setPinChanged(true);
       fetchPins();
     }, [profile]),
   );
-
-  const idInCollection = (ids: number[], collection: number[]) => {
-      for (let i = 0; i < ids.length; i++) {
-        if (collection.includes(ids[i])) {
-          return true;
-        }
-      }
-      return false;
-  }
 
   useEffect(() => {
     const queryPins = pins.filter((pin) => (

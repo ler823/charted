@@ -114,20 +114,31 @@ export default function Header({
 
   const pinSuggestions = isMapView ? matchingPins.slice(0, 5) : matchingPins;
 
+  const getFilterCount = () => {
+    let count = 0;
+    if (filterOptions.friends !== null) {
+      filterOptions.friends.forEach(() => count += 1);
+    }
+    if (filterOptions.lists !== null) {
+      filterOptions.lists.forEach(() => count += 1);
+    }
+    if (filterOptions.tags !== null) {
+      filterOptions.tags.forEach(() => count += 1);
+    }
+    if ((filterOptions.openNow) || (filterOptions.hour !== null && filterOptions.minute !== null && filterOptions.suffix !== null)) {
+      count += 1;
+    }
+    if (filterOptions.distance !== null || filterOptions.distance === 26) {
+      count += 1;
+    }
+    return count;
+  }
+
   useEffect(() => {
     if (!isMapView) {
       onFilteredPinsChange?.(query.trim().length > 0 ? matchingPins : filteredPins, query.trim());
     }
   }, [query, isMapView, pins, onFilteredPinsChange]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const idInCollection = async (ids: number[], collection: number[]) => {
-      for (let i = 0; i < ids.length; i++) {
-        if (collection.includes(ids[i])) {
-          return true;
-        }
-      }
-      return false;
-  }
 
   useEffect(() => {
     const queryPins = pins.filter((pin) => (
@@ -301,7 +312,15 @@ export default function Header({
               <Text
                 style={{ fontFamily: Fonts.bold, color: "#d9d9d9", fontSize: 16 }}
               >
-                Filter <Text style={{ color: "#243e36" }}>.</Text>
+                Filter 
+                {getFilterCount() > 0 && (
+                  <Text>
+                    &nbsp;({getFilterCount()})
+                  </Text>
+                )}
+                <Text style={{ color: "#243e36" }}>
+                  .
+                </Text>
               </Text>
               <Ionicons name="chevron-down" size={20} color="#d9d9d9" />
             </Pressable>
