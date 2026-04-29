@@ -99,3 +99,7 @@ Supabase (PostgreSQL). Key tables: `profiles`, `pins`, `tags`, `lists`, `visits`
 - Never commit .env values or hardcode secrets
 - Never install a new package without asking first
 - Never modify the Supabase schema directly — write a migration file
+
+## Design References
+
+- Unfriend/Block UI: `docs/designs/unfriend-block.png`

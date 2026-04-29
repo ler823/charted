@@ -9,7 +9,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import ClusteredMapView from "react-native-map-clustering";
 import { Marker } from "react-native-maps";
 
@@ -96,6 +96,7 @@ export default function FriendProfilePage() {
   const [recentPin, setRecentPin] = useState<RecentPin | null>(null);
   const [activityLoading, setActivityLoading] = useState(true);
   const mapRef = useRef<any>(null);
+  const [settingsVisible, setSettingsVisible] = useState(false);
 
   const loading =
     pinLoading || userLoading || favLoading || visitLoading || activityLoading;
@@ -389,9 +390,7 @@ export default function FriendProfilePage() {
         </Pressable>
         <Pressable
           style={styles.settingsButton}
-          onPress={() => {
-            router.back();
-          }}
+          onPress={() => setSettingsVisible(true)}
         >
           <Text
             style={{ fontFamily: Fonts.bold, color: "#d9d9d9", fontSize: 16 }}
@@ -722,6 +721,34 @@ export default function FriendProfilePage() {
         </View>
       </View>
       <View style={{ height: 100 }} />
+
+      <Modal
+        visible={settingsVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setSettingsVisible(false)}
+      >
+        <Pressable
+          style={styles.modalBackdrop}
+          onPress={() => setSettingsVisible(false)}
+        >
+          <View style={styles.settingsDropdown}>
+            <Pressable
+              style={styles.settingsDropdownHeader}
+              onPress={() => setSettingsVisible(false)}
+            >
+              <Text style={styles.settingsDropdownTitle}>Friend Settings</Text>
+              <Ionicons name="chevron-up" size={18} color="#333" />
+            </Pressable>
+            <Pressable style={styles.unfriendButton} onPress={() => {}}>
+              <Text style={styles.unfriendText}>Unfriend</Text>
+            </Pressable>
+            <Pressable style={styles.blockButton} onPress={() => {}}>
+              <Text style={styles.blockText}>Unfriend and Block</Text>
+            </Pressable>
+          </View>
+        </Pressable>
+      </Modal>
     </ScrollView>
   );
 }
@@ -889,5 +916,63 @@ const styles = StyleSheet.create({
     marginLeft: -2,
     borderTopRightRadius: 12,
     justifyContent: "center",
+  },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.35)",
+  },
+  settingsDropdown: {
+    position: "absolute",
+    top: 88,
+    right: 12,
+    backgroundColor: "#fff",
+    borderRadius: 14,
+    width: 210,
+    paddingBottom: 10,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
+    elevation: 8,
+    overflow: "hidden",
+  },
+  settingsDropdownHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: "#243e36",
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+  },
+  settingsDropdownTitle: {
+    fontFamily: Fonts.bold,
+    fontSize: 15,
+    color: "#d9d9d9",
+  },
+  unfriendButton: {
+    backgroundColor: "#7CA982",
+    marginHorizontal: 12,
+    marginTop: 10,
+    borderRadius: 8,
+    paddingVertical: 11,
+    alignItems: "center",
+  },
+  unfriendText: {
+    fontFamily: Fonts.bold,
+    fontSize: 15,
+    color: "#fff",
+  },
+  blockButton: {
+    backgroundColor: "#7B1111",
+    marginHorizontal: 12,
+    marginTop: 8,
+    borderRadius: 8,
+    paddingVertical: 11,
+    alignItems: "center",
+  },
+  blockText: {
+    fontFamily: Fonts.bold,
+    fontSize: 15,
+    color: "#fff",
   },
 });
