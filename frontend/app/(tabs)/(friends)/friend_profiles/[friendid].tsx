@@ -220,56 +220,92 @@ export default function FriendProfilePage() {
 
   useEffect(() => {
     async function fetchActivity() {
-      // Most recently visited place
-      const { data: visitData } = await supabase
-        .from("pins_with_last_visit")
-        .select("pin_id, name, last_visited")
-        .eq("user_id", Number(friendid))
-        .eq("private", false)
-        .not("last_visited", "is", null)
-        .order("last_visited", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      setRecentVisit(visitData);
+      try {
+        // Most recently visited place
+        const { data: visitData } = await supabase
+          .from("pins_with_last_visit")
+          .select("pin_id, name, last_visited")
+          .eq("user_id", Number(friendid))
+          .eq("private", false)
+          .not("last_visited", "is", null)
+          .order("last_visited", { ascending: false })
+          .limit(1)
+          .maybeSingle();
 
-      // Most recently added friend
-      const { data: relData } = await supabase
-        .from("user_relationships")
-        .select(
-          `
-        requester_id, target_id,
-        requester:requester_id ( username ),
-        target:target_id ( username )
-      `,
-        )
-        .or(
-          `requester_id.eq.${Number(friendid)},target_id.eq.${Number(friendid)}`,
-        )
-        .eq("is_friend", true)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
+        setRecentVisit(visitData ?? null);
 
-      if (relData) {
-        const isRequester = relData.requester_id === Number(friendid);
-        const friendUser = isRequester
-          ? (relData.target as any)
-          : (relData.requester as any);
-        setRecentFriend({ username: friendUser?.username ?? "Unknown" });
+        // Most recently added friend (if discoverable)
+        const { data: myProfile } = await supabase
+          .from("profiles")
+          .select("id")
+          .eq("user_id", Number(friendid))
+          .single();
+
+        const myProfileId = myProfile?.id;
+
+        if (myProfileId) {
+          const { data: relData } = await supabase
+            .from("user_relationships1")
+            .select("requester_id, target_id")
+            .eq("status", "accepted")
+            .or(`requester_id.eq.${myProfileId},target_id.eq.${myProfileId}`)
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+          if (relData) {
+            const otherProfileId =
+              relData.requester_id === myProfileId
+                ? relData.target_id
+                : relData.requester_id;
+
+            const { data: profileData } = await supabase
+              .from("profiles")
+              .select("user_id, username")
+              .eq("id", otherProfileId)
+              .maybeSingle();
+
+            if (profileData) {
+              const { data: userData } = await supabase
+                .from("users")
+                .select("discoverable")
+                .eq("user_id", profileData.user_id)
+                .maybeSingle();
+
+              if (userData?.discoverable) {
+                setRecentFriend({
+                  username: profileData.username ?? "Unknown",
+                });
+              } else {
+                setRecentFriend(null);
+              }
+            } else {
+              setRecentFriend(null);
+            }
+          } else {
+            setRecentFriend(null);
+          }
+        }
+
+        // Most recently created pin
+        const { data: pinData } = await supabase
+          .from("pins")
+          .select("pin_id, name, created_at")
+          .eq("user_id", Number(friendid))
+          .eq("private", false)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        setRecentPin(pinData ?? null);
+      } catch (err) {
+        console.error("Activity fetch error:", err);
+        setRecentVisit(null);
+        setRecentFriend(null);
+        setRecentPin(null);
+      } finally {
+        setActivityLoading(false);
       }
-
-      // Most recently created pin
-      const { data: pinData } = await supabase
-        .from("pins")
-        .select("pin_id, name, created_at")
-        .eq("user_id", Number(friendid))
-        .eq("private", false)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      setRecentPin(pinData);
-
-      setActivityLoading(false);
     }
     fetchActivity();
   }, []);

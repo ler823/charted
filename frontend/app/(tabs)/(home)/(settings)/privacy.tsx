@@ -1,4 +1,4 @@
-import React, { useCallback, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { Pressable, StyleSheet, View, Text, Switch } from "react-native";
 import { useAuth } from "@/context/AuthContext";
@@ -9,6 +9,63 @@ import { Ionicons } from "@expo/vector-icons";
 
 
 export default function Privacy() {
+  const [discover, setDiscover] = useState(true);
+  const [loading, setLoading] = useState(true);
+  const { profile } = useAuth();
+
+  const hasLoaded = useRef(false);
+
+  const toggleDiscover = () => {
+    setDiscover((previousState) => !previousState);
+  }
+
+  // fetch discoverable value from database
+  useEffect(() => {
+    if (!profile?.user_id) return;
+
+    const fetchDiscoverability = async () => {
+      const { data, error } = await supabase
+        .from("users")
+        .select("discoverable")
+        .eq("user_id", profile.user_id)
+        .single();
+
+      if (error) {
+        console.error("Error fetching discoverable:", error.message);
+        setLoading(false);
+        return;
+      }
+
+      setDiscover(!!data?.discoverable);
+      setLoading(false);
+    };
+
+    fetchDiscoverability();
+  }, [profile?.user_id]);
+
+
+  // update discoverable value
+  useEffect(() => {
+    if (!profile?.user_id) return;
+
+    if (!hasLoaded.current) {
+      hasLoaded.current = true;
+      return;
+    }
+
+    const updateDiscoverability = async () => {
+      const { error } = await supabase
+        .from("users")
+        .update({ discoverable: discover })
+        .eq("user_id", profile.user_id);
+
+      if (error) {
+        console.error("Error updating discoverable:", error);
+      }
+    };
+    updateDiscoverability();
+  }, [discover]);
+
     return (
         <>
         <View
@@ -45,6 +102,9 @@ export default function Privacy() {
               }}
               thumbColor="#FFF"
               ios_backgroundColor={Colors.light.text}
+              onValueChange={toggleDiscover}
+              value={discover}
+              disabled={loading}
             />
           </View>
           <View style={{width: "70%"}}>

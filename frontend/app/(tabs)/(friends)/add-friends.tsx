@@ -21,6 +21,9 @@ type UserCard = {
   user_id: number;
   username: string;
   avatarUrl?: string | null;
+  users: {
+    discoverable: boolean;
+  }
 };
 
 export default function AddFriends() {
@@ -49,8 +52,9 @@ export default function AddFriends() {
 
     let q = supabase
       .from("profiles")
-      .select("id, user_id, username, avatar_key")
-      .neq("id", profile.id);
+      .select("id, user_id, username, avatar_key, users!inner( discoverable )")
+      .neq("id", profile.id)
+      .eq("users.discoverable", true);
 
     if (query.trim()) {
       q = q.ilike("username", `%${query.trim()}%`);
