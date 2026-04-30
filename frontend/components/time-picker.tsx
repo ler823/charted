@@ -15,7 +15,7 @@ export default function TimePicker({ isVisible, onClose, setActualHour, setActua
   const [time, setTime] = useState(new Date(Date.now()));
   const [hour, setHour] = useState((time.getHours() % 12).toString());
   const [minute, setMinute] = useState(time.getMinutes().toString());
-  const [suffix, setSuffix] = useState(Number(hour) - 12 >= 0 ? "PM" : "AM");
+  const [suffix, setSuffix] = useState(Number(time.getHours()) - 12 >= 0 ? "PM" : "AM");
   const onSave = async () => {
     setActualHour(Number(hour));
     setActualMinute(Number(minute));

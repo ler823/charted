@@ -111,12 +111,19 @@ export default function Filter({ isVisible, onClose, exportFilter }: Props) {
     var friendsToAdd = friends.filter((friend) => friend.enabled).map((friend) => friend.id)
     var listsToAdd = lists.filter((list) => list.enabled).map((list) => list.id)
     var tagsToAdd = tags.filter((tag) => tag.enabled).map((tag) => tag.id)
+    var militaryHour = null;
+    var time = null;
+    if (hour !== null && minute !== null && suffix !== null) {
+      militaryHour = suffix == "AM" ? hour : hour! + 12;
+      time = militaryHour! * 100 + minute!
+    }
     
     updateFilterOptions({
       friends: friendsToAdd.length == 0 ? null : friendsToAdd,
       lists: listsToAdd.length == 0 ? null : listsToAdd,
       tags: tagsToAdd.length == 0 ? null : tagsToAdd,
       openNow: openNow,
+      time: time,
       hour: hour,
       minute: minute,
       suffix: suffix,

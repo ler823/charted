@@ -17,6 +17,8 @@ export type Pin = {
 
   listIds?: number[];
   tagIds?: number[];
+
+  hours: any[];
 };
 
 export type ViewOption = {
@@ -45,6 +47,7 @@ export type FilterType = {
   lists: number[] | null,
   tags: number[] | null,
   openNow: boolean,
+  time: number | null,
   hour: number | null,
   minute: number | null,
   suffix: string | null,

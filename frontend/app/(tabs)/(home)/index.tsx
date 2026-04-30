@@ -72,6 +72,23 @@ export default function Home() {
     return R * c;
   }
 
+  const isBusinessOpen = (givenTime: number, hours: any) => {
+    if (hours == null) {
+      return false;
+    }
+    const timeNow = new Date(Date.now());
+    const day = timeNow.getDay()
+    const filteredHours = hours.filter((entry) => entry.day == day)
+    console.log(givenTime)
+    console.log(filteredHours)
+    for (let i = 0; i < filteredHours.length; i++) {
+      if (Number(filteredHours[i].open) <= Number(givenTime) && Number(filteredHours[i].close) > Number(givenTime)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   useFocusEffect(
     useCallback(() => {
       if (!profile) return;
@@ -144,6 +161,7 @@ export default function Home() {
               name, 
               address, 
               location_id,
+              hours,
               pin_lists (
                 list_id
               ),
@@ -192,7 +210,6 @@ export default function Home() {
             );
 
             const displayPin = userPin ?? validPins[0];
-
             return {
               id: String(cluster.cluster_id),
               latitude: cluster.latitude,
@@ -206,6 +223,7 @@ export default function Home() {
               userIds,
               listIds: list_ids,
               tagIds: tag_ids,
+              hours: displayPin?.hours,
             };
           })
           .filter(Boolean) as Pin[];
@@ -223,6 +241,7 @@ export default function Home() {
       (filterOptions.friends == null ? true : filterOptions.friends.includes(Number(pin.user_id))) &&
       (filterOptions.lists == null ? true : filterOptions.lists.some((id) => pin.listIds?.includes(id))) &&
       (filterOptions.tags == null ? true : filterOptions.tags.some((id) => pin.tagIds?.includes(id))) &&
+      (filterOptions.time == null ? true : isBusinessOpen(filterOptions.time, pin.hours)) &&
       (filterOptions.distance == null ? true : haversineDistance(pin.latitude, pin.longitude, userCoords!.latitude, userCoords!.longitude) <= filterOptions.distance)
     ))
     if (pinSearchQuery.trim().length > 0) {

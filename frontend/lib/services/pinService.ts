@@ -88,6 +88,8 @@ export type PinInfo = {
   rating: number;
   notes: string;
   isPrivate: boolean;
+  placeId: number;
+  hours: any;
   selectedTags: string[];
   selectedLists: string[];
   visits: string[];
@@ -100,7 +102,7 @@ export async function getPinInfo(
 ): Promise<{ data: PinInfo | null; error: string | null }> {
   const { data: pinData, error: pinDataError } = await supabase
     .from("pins")
-    .select("name, user_rating, user_note, address, location_id, private")
+    .select("name, user_rating, user_note, address, location_id, private, place_id, hours")
     .eq("pin_id", pinId);
 
   if (pinDataError) return { data: null, error: pinDataError.message };
@@ -166,6 +168,8 @@ export async function getPinInfo(
       rating: pinData[0].user_rating,
       notes: pinData[0].user_note,
       isPrivate: pinData[0].private,
+      placeId: pinData[0].place_id,
+      hours: pinData[0].hours,
       selectedTags,
       selectedLists,
       visits,

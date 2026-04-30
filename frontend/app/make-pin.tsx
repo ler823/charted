@@ -126,6 +126,8 @@ export default function MakePin() {
   const originalPrivacy = useRef(false);
   const insertedPinId = useRef(0);
   const { userCoords } = useLocation();
+  const [hours, setHours] = useState();
+  const [placeId, setPlaceId] = useState();
 
   // Debounce duplicate address checks so we don't fire on every keystroke
   useEffect(() => {
@@ -206,7 +208,17 @@ export default function MakePin() {
       Alert.alert("Error", error);
       return;
     }
-
+    const { data, error: pinInfoError } = await supabase
+      .from("pins")
+      .update({
+        "place_id": placeId,
+        "hours": hours,
+      })
+      .eq("pin_id", newPinId!);
+    if (pinInfoError) {
+      Alert.alert("Error", pinInfoError.message);
+      return;
+    }
     insertedPinId.current = newPinId!;
     await syncPinTags(newPinId!, selectedTags);
     await syncPinLists(newPinId!, selectedLists);
@@ -447,6 +459,8 @@ export default function MakePin() {
     originalNotes.current = data.notes;
     setIsPrivate(data.isPrivate);
     originalPrivacy.current = data.isPrivate;
+    setPlaceId(data.placeId);
+    setHours(data.hours);
     setLat(data.latitude.toString());
     setLng(data.longitude.toString());
     setSelectedTags(data.selectedTags);
@@ -476,6 +490,18 @@ export default function MakePin() {
     });
     if (error) {
       Alert.alert("Error", error);
+      return;
+    }
+
+    const { data, error: pinInfoError } = await supabase
+      .from("pins")
+      .update({
+        "place_id": placeId,
+        "hours": hours,
+      })
+      .eq("pin_id", pinId!);
+    if (pinInfoError) {
+      Alert.alert("Error", pinInfoError.message);
       return;
     }
 
@@ -555,10 +581,13 @@ export default function MakePin() {
     setName(nearest.name ?? "");
 
     const placeId = nearest.place_id;
-    const detailsUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&fields=formatted_address&key=${process.env.EXPO_PUBLIC_GOOGLE_PLACES_KEY}`;
+    const detailsUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&fields=formatted_address,opening_hours&key=${process.env.EXPO_PUBLIC_GOOGLE_PLACES_KEY}`;
     const detailsRes = await fetch(detailsUrl);
     const detailsJson = await detailsRes.json();
-
+    const hoursUnformatted = detailsJson.result.opening_hours?.periods;
+    const hoursFormatted = (hoursUnformatted ?? []).map((hours) => ({day: hours.close.day, open: hours.open.time, close: hours.close.time}))
+    setHours(hoursFormatted);
+    setPlaceId(placeId);
     const formatted =
       detailsJson.result?.formatted_address ?? nearest.vicinity ?? "";
     const withoutCountry = formatted
@@ -664,6 +693,10 @@ export default function MakePin() {
                       onPress={(data, details = null) => {
                         handleNameChange(data.structured_formatting.main_text);
                         handleAddressChange(details?.formatted_address ?? "");
+                        const hoursUnformatted = details?.["current_opening_hours"].periods;
+                        const hoursFormatted = (hoursUnformatted ?? []).map((hours) => ({day: hours.close.day, open: hours.open.time, close: hours.close.time}))
+                        setHours(hoursFormatted)
+                        setPlaceId(data["place_id"])
                       }}
                       query={{
                         key: process.env.EXPO_PUBLIC_GOOGLE_PLACES_KEY,
@@ -699,6 +732,7 @@ export default function MakePin() {
                       onPress={(data, details = null) => {
                         const address = data.description;
                         handleAddressChange(address);
+                        setHours(undefined);
                       }}
                       query={{
                         key: process.env.EXPO_PUBLIC_GOOGLE_PLACES_KEY,
