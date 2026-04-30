@@ -283,7 +283,6 @@ export default function PinPage() {
       const currentUserUuid = profile?.id;
 
       let allUserIds: number[] = [currentUserId];
-      const allowedUserSet = new Set(allUserIds);
 
       const { data: relData } = await supabase
         .from("user_relationships1")
@@ -311,6 +310,8 @@ export default function PinPage() {
 
         allUserIds = [...allUserIds, ...friendIds];
       }
+
+      const allowedUserSet = new Set(allUserIds);
 
       const filteredPinIds =
         cluster?.pin_ids?.filter((id) => id !== pin?.pin_id) ?? [];
