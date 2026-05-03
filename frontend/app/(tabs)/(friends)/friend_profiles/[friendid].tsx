@@ -2,6 +2,8 @@ import { Stars } from "@/components/light-stars";
 import LoadingPage from "@/components/loading-page";
 import PinMarkers from "@/components/pin-markers";
 import { Colors, Fonts } from "@/constants/theme";
+import { useAuth } from "@/context/AuthContext";
+import { useToast } from "@/context/ToastContext";
 import { getPhotoUrl } from "@/lib/photo-utils";
 import { supabase } from "@/lib/supabase";
 import { Pin } from "@/types/types";
@@ -9,7 +11,15 @@ import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import {
+  Alert,
+  Modal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import ClusteredMapView from "react-native-map-clustering";
 import { Marker } from "react-native-maps";
 
@@ -80,7 +90,10 @@ export default function FriendProfilePage() {
     friendid: string;
     from?: string;
   }>();
+  const { profile: currentProfile } = useAuth();
+  const { showToast } = useToast();
   const [friend, setFriend] = useState<Friend | null>(null);
+  const [friendProfileId, setFriendProfileId] = useState<string | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [pinLoading, setPinLoading] = useState(true);
   const [userLoading, setUserLoading] = useState(true);
@@ -163,9 +176,11 @@ export default function FriendProfilePage() {
 
       const { data: profileData } = await supabase
         .from("profiles")
-        .select("avatar_key")
+        .select("id, avatar_key")
         .eq("user_id", Number(friendid))
         .single();
+
+      if (profileData?.id) setFriendProfileId(profileData.id);
 
       if (profileData?.avatar_key) {
         const urls = await getPhotoUrl([profileData.avatar_key]);
@@ -359,6 +374,89 @@ export default function FriendProfilePage() {
     fetchVisPhoto();
   }, [visited]);
 
+  const deleteFriendship = async () => {
+    await supabase
+      .from("user_relationships1")
+      .delete()
+      .or(
+        `and(requester_id.eq.${currentProfile!.id},target_id.eq.${friendProfileId}),and(requester_id.eq.${friendProfileId},target_id.eq.${currentProfile!.id})`,
+      )
+      .eq("status", "accepted");
+  };
+
+  const navigateToUserProfile = () => {
+    router.replace({
+      pathname: "/user_profiles/[userid]",
+      params: { userid: friendProfileId! },
+    });
+  };
+
+  const handleUnfriend = () => {
+    Alert.alert(
+      "Unfriend",
+      `Are you sure you want to unfriend ${friend?.username}?`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Unfriend",
+          style: "destructive",
+          onPress: async () => {
+            const { error } = await supabase
+              .from("user_relationships1")
+              .delete()
+              .or(
+                `and(requester_id.eq.${currentProfile!.id},target_id.eq.${friendProfileId}),and(requester_id.eq.${friendProfileId},target_id.eq.${currentProfile!.id})`,
+              )
+              .eq("status", "accepted");
+
+            if (error) {
+              showToast("Failed to unfriend. Try again.", "error");
+              return;
+            }
+
+            setSettingsVisible(false);
+            showToast(`Unfriended ${friend?.username}`, "success");
+            navigateToUserProfile();
+          },
+        },
+      ],
+    );
+  };
+
+  const handleBlock = () => {
+    Alert.alert(
+      "Unfriend and Block",
+      `Are you sure you want to unfriend and block ${friend?.username}? They won't be able to find you or send you friend requests.`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Block",
+          style: "destructive",
+          onPress: async () => {
+            await deleteFriendship();
+
+            const { error } = await supabase
+              .from("user_relationships1")
+              .insert({
+                requester_id: currentProfile!.id,
+                target_id: friendProfileId,
+                status: "blocked",
+              });
+
+            if (error) {
+              showToast("Failed to block. Try again.", "error");
+              return;
+            }
+
+            setSettingsVisible(false);
+            showToast(`Blocked ${friend?.username}`, "success");
+            navigateToUserProfile();
+          },
+        },
+      ],
+    );
+  };
+
   if (loading) return <LoadingPage />;
 
   return (
@@ -429,7 +527,9 @@ export default function FriendProfilePage() {
             {friend?.location?.trim() ? friend.location : "No location set"}
           </Text>
         </View>
-        <Text style={styles.bio}>{friend?.bio?.trim() ? friend.bio : "No bio"}</Text>
+        <Text style={styles.bio}>
+          {friend?.bio?.trim() ? friend.bio : "No bio"}
+        </Text>
 
         {/* Map */}
         <View style={styles.infoBox}>
@@ -740,10 +840,10 @@ export default function FriendProfilePage() {
               <Text style={styles.settingsDropdownTitle}>Friend Settings</Text>
               <Ionicons name="chevron-up" size={18} color="#333" />
             </Pressable>
-            <Pressable style={styles.unfriendButton} onPress={() => {}}>
+            <Pressable style={styles.unfriendButton} onPress={handleUnfriend}>
               <Text style={styles.unfriendText}>Unfriend</Text>
             </Pressable>
-            <Pressable style={styles.blockButton} onPress={() => {}}>
+            <Pressable style={styles.blockButton} onPress={handleBlock}>
               <Text style={styles.blockText}>Unfriend and Block</Text>
             </Pressable>
           </View>

@@ -8,9 +8,10 @@ import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
+import { useToast } from "@/context/ToastContext";
 
-type RelationshipStatus = "none" | "pending_sent" | "pending_received" | "accepted";
+type RelationshipStatus = "none" | "pending_sent" | "pending_received" | "accepted" | "blocked_by_me";
 
 type ProfileData = {
   username: string;
@@ -22,6 +23,7 @@ type ProfileData = {
 export default function UserProfilePage() {
   const { userid } = useLocalSearchParams<{ userid: string }>();
   const { profile: currentProfile } = useAuth();
+  const { showToast } = useToast();
   const [profileData, setProfileData] = useState<ProfileData | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -79,6 +81,8 @@ export default function UserProfilePage() {
       setStatus("accepted");
     } else if (data.status === "pending") {
       setStatus(data.requester_id === myUuid ? "pending_sent" : "pending_received");
+    } else if (data.status === "blocked" && data.requester_id === myUuid) {
+      setStatus("blocked_by_me");
     } else {
       setStatus("none");
     }
@@ -107,6 +111,34 @@ export default function UserProfilePage() {
     await supabase.from("user_relationships1").delete().eq("id", relationshipId);
     setRelationshipId(null);
     setStatus("none");
+  };
+
+  const handleUnblock = () => {
+    Alert.alert(
+      "Unblock",
+      `Are you sure you want to unblock ${profileData?.username}? They'll be able to find your profile and see your content again.`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Unblock",
+          onPress: async () => {
+            const { error } = await supabase
+              .from("user_relationships1")
+              .delete()
+              .eq("id", relationshipId);
+
+            if (error) {
+              showToast("Failed to unblock. Try again.", "error");
+              return;
+            }
+
+            setRelationshipId(null);
+            setStatus("none");
+            showToast(`Unblocked ${profileData?.username}`, "success");
+          },
+        },
+      ]
+    );
   };
 
   if (loading) return <LoadingPage />;
@@ -163,6 +195,12 @@ export default function UserProfilePage() {
             <View style={styles.requestSentButton}>
               <Text style={{ fontFamily: Fonts.bold, color: "#333", fontSize: 17 }}>Friends</Text>
             </View>
+          )}
+
+          {status === "blocked_by_me" && (
+            <Pressable style={styles.unblockButton} onPress={handleUnblock}>
+              <Text style={{ fontFamily: Fonts.bold, color: "#fefbea", fontSize: 17 }}>Unblock</Text>
+            </Pressable>
           )}
         </View>
       </View>
@@ -233,6 +271,20 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     width: 250,
     height: 40,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
+    elevation: 4,
+  },
+  unblockButton: {
+    backgroundColor: "#7B1111",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 999,
+    width: 250,
+    height: 50,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,

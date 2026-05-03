@@ -41,11 +41,13 @@ export default function AddFriends() {
 
     const { data: relData } = await supabase
       .from("user_relationships1")
-      .select("requester_id, target_id")
+      .select("requester_id, target_id, status")
       .or(`requester_id.eq.${profile.id},target_id.eq.${profile.id}`);
 
     const excludedUuids = new Set<string>([profile.id]);
     (relData ?? []).forEach((r: any) => {
+      // Don't exclude people I blocked — I should still be able to find them
+      if (r.status === "blocked" && r.requester_id === profile.id) return;
       excludedUuids.add(r.requester_id);
       excludedUuids.add(r.target_id);
     });
