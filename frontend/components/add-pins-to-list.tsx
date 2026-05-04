@@ -29,7 +29,37 @@ type PinWithPhoto = PropsWithChildren<{
 export default function AddPinToList({ isVisible, onClose, onSave, listId, pinsInList, setPinsToAdd }: Props) {
   const [checkedItems, setCheckedItems] = useState<Record<string, boolean>>({});
   const [pins, setPins] = useState<PinWithPhoto[]>();
+  const [friendIds, setFriendIds] = useState< number[]>([]);
   const { profile } = useAuth();
+
+  const getUserFriends = async () => {
+      const { data, error } = await supabase
+        .from("user_relationships1")
+        .select(`
+          requester:profiles!user_relationships_requester_id_fkey (
+          user_id,
+          username
+          ),
+          target:profiles!user_relationships_target_id_fkey (
+          user_id,
+          username
+          )
+          `)
+        .or(`requester_id.eq.${profile?.id},target_id.eq.${profile?.id}`)
+        .eq("status", "accepted");
+      if (error) {
+        Alert.alert("Error", error.message);
+      }
+  
+      var friendsFromDb = data?.map(({ requester, target }) => (
+          
+            requester.user_id == profile?.user_id
+              ? Number(target.user_id)
+              : Number(requester.user_id)
+        )) ?? []
+
+      setFriendIds(friendsFromDb)
+    }
 
   const addButtonBehavior = async () => {
     onSave();
@@ -46,13 +76,14 @@ export default function AddPinToList({ isVisible, onClose, onSave, listId, pinsI
     // }
   }
 
-  const getUserPins = async () => {
+  const getPins = async () => {
     const {data, error} = await supabase
     .from("pins")
     .select(`
       pin_id,
       name,
       address,
+      private,
       pin_photos(
         photos(
           key),
@@ -66,8 +97,9 @@ export default function AddPinToList({ isVisible, onClose, onSave, listId, pinsI
         longitude
         )
       `)
-    .eq("user_id", profile!.user_id)
-    .eq("pin_photos.cover", true)
+    // .eq("user_id", profile!.user_id)
+    // .eq("pin_photos.cover", true)
+    .or(`user_id.eq.${profile!.user_id},and(user_id.in.(${friendIds}),private.eq.${false})`)
     
     if (error) {
       Alert.alert("Error", error.message);
@@ -81,7 +113,8 @@ export default function AddPinToList({ isVisible, onClose, onSave, listId, pinsI
   useEffect(() => {
   if (isVisible) {
     setCheckedItems({});
-    getUserPins();
+    getUserFriends();
+    getPins();
   }
 }, [isVisible]);
   return (
