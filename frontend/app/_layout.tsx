@@ -12,7 +12,7 @@ import {
 } from "@expo-google-fonts/raleway";
 import { useFonts } from "expo-font";
 import * as Location from "expo-location";
-import { Stack, router } from "expo-router";
+import { Stack, router, usePathname } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
 import { StatusBar } from "react-native";
@@ -21,6 +21,7 @@ SplashScreen.preventAutoHideAsync();
 
 function AppNavigator() {
   const { session, loading: authLoading } = useAuth();
+  const pathname = usePathname();
 
   const [fontsLoaded] = useFonts({
     Raleway_200ExtraLight,
@@ -32,6 +33,9 @@ function AppNavigator() {
 
   useEffect(() => {
     if (!fontsLoaded || authLoading) return;
+
+    // Don't auto-route while the user is in the middle of resetting their password
+    if (pathname.includes("forgot-password")) return;
 
     if (!session) {
       SplashScreen.hideAsync().then(() => {

@@ -1,7 +1,8 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { Pressable, StyleSheet, View, Text, TextInput, TouchableWithoutFeedback, Keyboard, KeyboardAvoidingView, Platform } from "react-native";
-import { useAuth } from "@/context/AuthContext";
+import { setPasswordUpdateFlag, useAuth } from "@/context/AuthContext";
+import { useToast } from "@/context/ToastContext";
 import LoadingPage from "@/components/loading-page";
 import { Colors, Fonts } from "@/constants/theme";
 import { router } from "expo-router";
@@ -11,10 +12,11 @@ import Entypo from '@expo/vector-icons/Entypo';
 
 
 export default function AccountSet() {
-    const [passVisible, setPassVisible] = useState(false);
     const [email, setEmail] = useState("");
     const { profile } = useAuth();
+    const { showToast } = useToast();
     const [loading, setLoading] = useState(true);
+    const [baseSnapshot, setBaseSnapshot] = useState<any>(null);
 
     useEffect(() => {
         const getUserEmail = async () => {
@@ -27,9 +29,36 @@ export default function AccountSet() {
 
             setEmail(data?.user?.email || "");
             setLoading(false);
+            setBaseSnapshot({email: data?.user?.email ?? ""})
         };
         getUserEmail();
     }, []);
+
+    const handleSave = async () => {
+        setLoading(true);
+        setPasswordUpdateFlag(true);
+
+        const { error } = await supabase.auth.updateUser({ email });
+
+
+        if (error) {
+            console.error(error.message);
+            setLoading(false);
+            setPasswordUpdateFlag(false);
+            return;
+        }
+
+        await supabase.auth.signOut();
+        
+        setPasswordUpdateFlag(false);
+
+        setLoading(false);
+        router.replace("/(auth)/login");
+        };
+    
+    const hasChanges =
+        baseSnapshot &&
+        (email !== baseSnapshot.email);
 
     if (loading) return <LoadingPage />;
 
@@ -49,19 +78,27 @@ export default function AccountSet() {
                         justifyContent: "space-between",
                     }}
                     >
-                        <Pressable
-                            style={styles.backButton}
-                            onPress={() => {router.back()}
-                            }
-                        >
-                            <Ionicons name="chevron-back" size={20} color="#d9d9d9" />
-                            <Text style={{ fontFamily: Fonts.bold, color: "#d9d9d9", fontSize: 16 }}>
-                                Back
-                            </Text>
-                        </Pressable>
+                        <View style={styles.topBar}>
+                            <Pressable style={styles.cancelBtn} onPress={() => router.back()}>
+                            <Text style={styles.cancelText}>Cancel</Text>
+                            </Pressable>
+            
+                            <Pressable
+                            style={[
+                                styles.saveBtn,
+                                (!hasChanges) && styles.saveBtnDisabled,
+                            ]}
+                            onPress={handleSave}
+                            disabled={!hasChanges}
+                            >
+                            <Text style={styles.saveText}>Save</Text>
+                            </Pressable>
+                        </View>
                     </View>
                     <View style={styles.title}>
                         <Text style={styles.titleText}>Change Your Email</Text>
+                        <Text style={styles.subheaderText}>You will be required to sign in again.</Text>
+                        <Text style={styles.subheaderText}>Check your new email to authorize the change!</Text>
                     </View>
                     <View style={{alignItems: "center"}}>
                         <View style={{width: "85%"}}>
@@ -110,7 +147,7 @@ const styles = StyleSheet.create({
   },
   title: {
     alignItems: "center",
-    marginTop: 20,
+    marginTop: 70,
     marginBottom: 30,
   },
   titleText: {
@@ -135,6 +172,10 @@ const styles = StyleSheet.create({
   inputText: {
     fontFamily: Fonts.regular,
     fontSize: 16,
+  },
+  subheaderText: {
+    fontFamily: Fonts.regular_i,
+    fontSize: 14,
   },
   headerText: {
     fontFamily: Fonts.bold,
@@ -169,5 +210,61 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: Fonts.bold,
     letterSpacing: 1,
+  },
+  topBar: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 24,
+    position: "absolute",
+    top: 10,
+    right: 16,
+    left: 16,
+    zIndex: 10,
+  },
+  cancelBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    height: 40,
+    paddingHorizontal: 16,
+    backgroundColor: Colors.light.error,
+    borderRadius: 999,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
+    elevation: 4,
+  },
+  cancelText: {
+    color: "#fff",
+    fontWeight: "bold",
+    fontSize: 16,
+    fontFamily: Fonts.bold,
+  },
+  saveBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    height: 40,
+    paddingHorizontal: 16,
+    backgroundColor: "#243e36",
+    borderRadius: 999,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
+    elevation: 4,
+  },
+  saveBtnDisabled: {
+    backgroundColor: "#888",
+    shadowOpacity: 0,
+    elevation: 0,
+  },
+  saveText: {
+    color: "#fff",
+    fontWeight: "bold",
+    fontSize: 16,
+    fontFamily: Fonts.bold,
   },
 })

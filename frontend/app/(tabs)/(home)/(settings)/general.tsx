@@ -1,6 +1,6 @@
 import React, { useCallback, useRef, useState } from "react";
 import { supabase } from "@/lib/supabase";
-import { Pressable, StyleSheet, View, Text, Switch } from "react-native";
+import { Pressable, StyleSheet, View, Text, Switch, Linking } from "react-native";
 import { useAuth } from "@/context/AuthContext";
 import LoadingPage from "@/components/loading-page";
 import { Colors, Fonts } from "@/constants/theme";
@@ -35,22 +35,15 @@ export default function General() {
         <View style={styles.title}>
           <Text style={styles.titleText}>General</Text>
         </View>
-        <View style={{marginHorizontal: 20}}>
-          <View style={{flexDirection: "row", justifyContent: "space-between"}}>
+        <Pressable style={{marginHorizontal: 20}} onPress={() => Linking.openSettings()}>
+          <View style={{flexDirection: "row", justifyContent: "space-between", alignItems: "center"}}>
             <Text style={styles.settingTitle}>Location</Text>
-            <Switch
-              trackColor={{
-                false: Colors.light.text,
-                true: Colors.light.accent,
-              }}
-              thumbColor="#FFF"
-              ios_backgroundColor={Colors.light.text}
-            />
+            <Ionicons name="chevron-forward" size={20} color="rgba(0,0,0,0.4)" />
           </View>
           <View style={{width: "70%"}}>
             <Text style={styles.settingSubtext}>Allow Charted to have access to location services</Text>
           </View>
-        </View>
+        </Pressable>
         <View style={{marginHorizontal: 20, marginVertical: 30}}>
           <View style={{flexDirection: "row", justifyContent: "space-between"}}>
             <Text style={styles.settingTitle}>Notifications</Text>

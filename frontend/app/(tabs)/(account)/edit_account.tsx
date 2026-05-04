@@ -11,6 +11,7 @@ import LoadingPage from "@/components/loading-page";
 
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
+import { useToast } from "@/context/ToastContext";
 import { router } from "expo-router";
 import { LocationErrorSubscriber } from "expo-location/build/LocationSubscribers";
 import { isSearchBarAvailableForCurrentPlatform } from "react-native-screens";
@@ -39,6 +40,7 @@ const validateBio = (bio: string) => {
 
 export default function EditAccount() {
     const { profile, loading: authLoading } = useAuth();
+    const { showToast } = useToast();
     const [loading, setLoading] = useState(true);
     const [username, setUsername] = useState("");
     const [location, setLocation] = useState<string | null>("");
@@ -229,6 +231,7 @@ export default function EditAccount() {
 
           if (userError) throw userError;
 
+          showToast("Account saved!")
           router.back();
         } catch (err) {
           setErrors((e) => ({
