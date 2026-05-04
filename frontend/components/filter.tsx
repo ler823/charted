@@ -210,6 +210,9 @@ export default function Filter({ isVisible, onClose, exportFilter }: Props) {
               <View style={styles.separator} />
               <Text style={styles.sectionHeader}>Lists</Text>
               <View style={styles.listTagView}>
+                {lists.length == 0 && (
+                  <Text style={styles.emptyListTag}>You have no tags</Text>
+                )}
                 {lists.map((list) => (
                   <Pressable style={list.enabled ? styles.listTagEnabled : styles.listTagDisabled} onPress={() => { list.enabled == true ? list.enabled = false : list.enabled = true; setRefresh((prev) => !prev) }} key={list.id}>
                     <Text style={styles.regularText}>{list.name}</Text>
@@ -219,6 +222,9 @@ export default function Filter({ isVisible, onClose, exportFilter }: Props) {
               <View style={styles.separator} />
               <Text style={styles.sectionHeader}>Tags</Text>
               <View style={styles.listTagView}>
+                {tags.length == 0 && (
+                  <Text style={styles.emptyListTag}>You have no tags</Text>
+                )}
                 {tags.map((tag) => (
                   <Pressable style={tag.enabled ? styles.listTagEnabled : styles.listTagDisabled} onPress={() => { tag.enabled == true ? tag.enabled = false : tag.enabled = true; setRefresh((prev) => !prev) }} key={tag.id}>
                     <Text style={styles.regularText}>{tag.name}</Text>
@@ -501,6 +507,10 @@ const styles = StyleSheet.create({
   },
   regularText: {
     fontFamily: Fonts.regular,
+  },
+  emptyListTag: {
+    fontFamily: Fonts.regular,
+    color: Colors.light.text,
   },
   avatarEnabled: {
     shadowColor: "#000",
