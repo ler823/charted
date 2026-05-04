@@ -11,8 +11,16 @@ import FontAwesome from '@expo/vector-icons/FontAwesome';
 import Entypo from '@expo/vector-icons/Entypo';
 
 
+const validateEmail = (email: string) => {
+  const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return re.test(email) ? true : false;
+};
+
+
 export default function AccountSet() {
     const [email, setEmail] = useState("");
+    const [valEmail, setValEmail] = useState(true);
+    const [dupe, setDupe] = useState(false);
     const { profile } = useAuth();
     const { showToast } = useToast();
     const [loading, setLoading] = useState(true);
@@ -37,14 +45,22 @@ export default function AccountSet() {
     const handleSave = async () => {
         setLoading(true);
         setPasswordUpdateFlag(true);
+        setDupe(false);
 
         const { error } = await supabase.auth.updateUser({ email });
 
 
         if (error) {
-            console.error(error.message);
             setLoading(false);
             setPasswordUpdateFlag(false);
+
+            if (
+                error.message.toLowerCase().includes("already") ||
+                error.message.toLowerCase().includes("exists")
+            ) {
+                setDupe(true);
+            }
+
             return;
         }
 
@@ -55,6 +71,11 @@ export default function AccountSet() {
         setLoading(false);
         router.replace("/(auth)/login");
         };
+
+    useEffect(() => {
+        setValEmail(validateEmail(email));
+        setDupe(false);
+    }, [email]);
     
     const hasChanges =
         baseSnapshot &&
@@ -89,7 +110,7 @@ export default function AccountSet() {
                                 (!hasChanges) && styles.saveBtnDisabled,
                             ]}
                             onPress={handleSave}
-                            disabled={!hasChanges}
+                            disabled={!hasChanges || !valEmail}
                             >
                             <Text style={styles.saveText}>Save</Text>
                             </Pressable>
@@ -114,6 +135,12 @@ export default function AccountSet() {
                                 value={email}
                                 onChangeText={setEmail}
                                 />
+                            {!valEmail && (
+                                <Text style={styles.fieldError}>The email is not a valid format</Text>
+                            )}
+                            {dupe && (
+                                <Text style={styles.fieldError}>This email is already registered</Text>
+                            )}
                         </View>
                     </View>
                 </View>
@@ -154,6 +181,14 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.bold,
     fontSize: 30,
     color: "#243e36",
+  },
+  fieldError: {
+    color: "red",
+    fontSize: 12,
+    width: "100%",
+    marginBottom: 4,
+    fontFamily: Fonts.regular,
+    paddingLeft: 5,
   },
   input: {
     flexDirection: "row",

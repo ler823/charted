@@ -1,6 +1,6 @@
-import React, { useCallback, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/lib/supabase";
-import { Pressable, StyleSheet, View, Text } from "react-native";
+import { Pressable, StyleSheet, View, Text, Linking, Switch } from "react-native";
 import { useAuth } from "@/context/AuthContext";
 import LoadingPage from "@/components/loading-page";
 import { Colors, Fonts } from "@/constants/theme";
@@ -10,6 +10,62 @@ import Feather from '@expo/vector-icons/Feather';
 
 
 export default function Settings() {
+    const [discover, setDiscover] = useState(true);
+    const [loading, setLoading] = useState(true);
+    const { profile } = useAuth();
+
+    const hasLoaded = useRef(false);
+
+    const toggleDiscover = () => {
+    setDiscover((previousState) => !previousState);
+    }
+
+    // fetch discoverable value from database
+    useEffect(() => {
+    if (!profile?.user_id) return;
+
+    const fetchDiscoverability = async () => {
+        const { data, error } = await supabase
+        .from("users")
+        .select("discoverable")
+        .eq("user_id", profile.user_id)
+        .single();
+
+        if (error) {
+        console.error("Error fetching discoverable:", error.message);
+        setLoading(false);
+        return;
+        }
+
+        setDiscover(!!data?.discoverable);
+        setLoading(false);
+    };
+
+    fetchDiscoverability();
+    }, [profile?.user_id]);
+
+
+    // update discoverable value
+    useEffect(() => {
+    if (!profile?.user_id) return;
+
+    if (!hasLoaded.current) {
+        hasLoaded.current = true;
+        return;
+    }
+
+    const updateDiscoverability = async () => {
+        const { error } = await supabase
+        .from("users")
+        .update({ discoverable: discover })
+        .eq("user_id", profile.user_id);
+
+        if (error) {
+        console.error("Error updating discoverable:", error);
+        }
+    };
+    updateDiscoverability();
+    }, [discover]);
 
     return (
         <>
@@ -34,34 +90,55 @@ export default function Settings() {
                     </Text>
                 </Pressable>
             </View>
-            <Pressable style={styles.settingCard} onPress={(() => {router.push("/general")})}>
-                <View style={{flexDirection: "row", alignItems: "center", gap: 15}}>
-                    <Ionicons name="settings-outline" size={40} color="#243e36" />
-                    <Text style={styles.settingText}>General</Text>
+            <View style={styles.title}>
+                <Text style={styles.titleText}>Settings</Text>
+            </View>
+            <Pressable style={{marginHorizontal: 25, marginVertical: 15}} onPress={() => Linking.openSettings()}>
+                <View style={{flexDirection: "row", justifyContent: "space-between", alignItems: "center"}}>
+                <Text style={styles.settingTitle}>Location</Text>
+                <Ionicons name="chevron-forward" size={20} color="rgba(0,0,0,0.4)" />
                 </View>
-                <Ionicons name="chevron-forward" size={30} color="#243e36" />
-            </Pressable>
-            <Pressable style={styles.settingCard} onPress={(() => {router.push("/account-set")})}>
-                <View style={{flexDirection: "row", alignItems: "center", gap: 15}}>
-                    <Ionicons name="person-circle-outline" size={40} color="#243e36" />
-                    <Text style={styles.settingText}>Account</Text>
+                <View style={{width: "70%", marginTop: 5}}>
+                <Text style={styles.settingSubtext}>Allow Charted to have access to location services</Text>
                 </View>
-                <Ionicons name="chevron-forward" size={30} color="#243e36" />
             </Pressable>
-            <Pressable style={styles.settingCard} onPress={(() => {router.push("/privacy")})}>
-                <View style={{flexDirection: "row", alignItems: "center", gap: 15}}>
-                    <Feather name="minus-circle" size={36} color="#243e36" />
-                    <Text style={styles.settingText}>Privacy</Text>
+            <Pressable style={{marginHorizontal: 25, marginVertical: 15}} onPress={() => Linking.openSettings()}>
+                <View style={{flexDirection: "row", justifyContent: "space-between", alignItems: "center"}}>
+                    <Text style={styles.settingTitle}>Notifications</Text>
+                    <Ionicons name="chevron-forward" size={20} color="rgba(0,0,0,0.4)" />
                 </View>
-                <Ionicons name="chevron-forward" size={30} color="#243e36" />
-            </Pressable>
-            <Pressable style={styles.settingCard} onPress={(() => {router.push("/notifs")})}>
-                <View style={{flexDirection: "row", alignItems: "center", gap: 15}}>
-                    <Ionicons name="notifications-outline" size={40} color="#243e36" />
-                    <Text style={styles.settingText}>Notifications</Text>
+                <View style={{width: "70%", marginTop: 5}}>
+                    <Text style={styles.settingSubtext}>Allow Charted to send app notifications</Text>
                 </View>
-                <Ionicons name="chevron-forward" size={30} color="#243e36" />
             </Pressable>
+            <Pressable style={{marginHorizontal: 25, marginVertical: 15}} onPress={(() => {router.push("/account-set")})}>
+                <View style={{flexDirection: "row", justifyContent: "space-between", alignItems: "center"}}>
+                    <Text style={styles.settingTitle}>Account</Text>
+                    <Ionicons name="chevron-forward" size={20} color="rgba(0,0,0,0.4)" />
+                </View>
+                <View style={{width: "70%", marginTop: 5}}>
+                    <Text style={styles.settingSubtext}>Change the email and password associated with your account</Text>
+                </View>
+            </Pressable>
+            <View style={{marginHorizontal: 25, marginVertical: 15}}>
+                <View style={{flexDirection: "row", justifyContent: "space-between"}}>
+                    <Text style={styles.settingTitle}>Discoverability</Text>
+                    <Switch
+                        trackColor={{
+                        false: Colors.light.text,
+                        true: Colors.light.accent,
+                        }}
+                        thumbColor="#FFF"
+                        ios_backgroundColor={Colors.light.text}
+                        onValueChange={toggleDiscover}
+                        value={discover}
+                        disabled={loading}
+                    />
+                </View>
+                <View style={{width: "70%"}}>
+                    <Text style={styles.settingSubtext}>Allow for your account to be discovered by other users</Text>
+                </View>
+            </View>
         </>
     )
 }
@@ -88,26 +165,29 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
     elevation: 4,
   },
-  settingCard: {
-    flexDirection: "row",
-    alignSelf: "center",
+  title: {
     alignItems: "center",
-    justifyContent: "space-between",
-    width: "90%",
-    height: 100,
-    backgroundColor: "#DEE9E0",
-    borderRadius: 10,
-    margin: 12,
-    padding: 30,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 2,
-    elevation: 4,
+    marginTop: 10,
+    marginBottom: 20,
+  },
+  titleText: {
+    fontFamily: Fonts.bold,
+    fontSize: 30,
+    color: "#243e36",
   },
   settingText: {
     fontFamily: Fonts.bold,
     color: "#243e36",
     fontSize: 28,
+  },
+  settingTitle: {
+    fontFamily: Fonts.bold,
+    fontSize: 18,
+    color: "#000",
+  },
+  settingSubtext: {
+    fontFamily: Fonts.regular,
+    fontSize: 14,
+    color: "rgba(0, 0, 0, 0.6)",
   }
 })
