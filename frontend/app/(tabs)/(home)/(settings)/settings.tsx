@@ -117,7 +117,7 @@ export default function Settings() {
                     <Ionicons name="chevron-forward" size={20} color="rgba(0,0,0,0.4)" />
                 </View>
                 <View style={{width: "70%", marginTop: 5}}>
-                    <Text style={styles.settingSubtext}>Change your email and password</Text>
+                    <Text style={styles.settingSubtext}>Change the email and password associated with your account</Text>
                 </View>
             </Pressable>
             <View style={{marginHorizontal: 25, marginVertical: 15}}>

@@ -20,6 +20,7 @@ const validateEmail = (email: string) => {
 export default function AccountSet() {
     const [email, setEmail] = useState("");
     const [valEmail, setValEmail] = useState(true);
+    const [dupe, setDupe] = useState(false);
     const { profile } = useAuth();
     const { showToast } = useToast();
     const [loading, setLoading] = useState(true);
@@ -44,14 +45,22 @@ export default function AccountSet() {
     const handleSave = async () => {
         setLoading(true);
         setPasswordUpdateFlag(true);
+        setDupe(false);
 
         const { error } = await supabase.auth.updateUser({ email });
 
 
         if (error) {
-            console.error(error.message);
             setLoading(false);
             setPasswordUpdateFlag(false);
+
+            if (
+                error.message.toLowerCase().includes("already") ||
+                error.message.toLowerCase().includes("exists")
+            ) {
+                setDupe(true);
+            }
+
             return;
         }
 
@@ -65,6 +74,7 @@ export default function AccountSet() {
 
     useEffect(() => {
         setValEmail(validateEmail(email));
+        setDupe(false);
     }, [email]);
     
     const hasChanges =
@@ -127,6 +137,9 @@ export default function AccountSet() {
                                 />
                             {!valEmail && (
                                 <Text style={styles.fieldError}>The email is not a valid format</Text>
+                            )}
+                            {dupe && (
+                                <Text style={styles.fieldError}>This email is already registered</Text>
                             )}
                         </View>
                     </View>
