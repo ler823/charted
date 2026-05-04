@@ -6,6 +6,7 @@ import { Pin } from "@/types/types";
 import Checkbox from "expo-checkbox";
 import React, { PropsWithChildren, useEffect, useState } from 'react';
 import { Alert, FlatList, Keyboard, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import LoadingPage from "./loading-page";
 
 
 type Props = PropsWithChildren<{
@@ -23,7 +24,8 @@ type PinWithPhoto = PropsWithChildren<{
   address: string, 
   photoKey: string | null
   latitude: number,
-  longitude: number
+  longitude: number,
+  user_id: number,
 }>;
 
 export default function AddPinToList({ isVisible, onClose, onSave, listId, pinsInList, setPinsToAdd }: Props) {
@@ -31,6 +33,7 @@ export default function AddPinToList({ isVisible, onClose, onSave, listId, pinsI
   const [pins, setPins] = useState<PinWithPhoto[]>();
   const [friendIds, setFriendIds] = useState< number[]>([]);
   const { profile } = useAuth();
+  const [dataLoaded, setDataLoaded] = useState(false);
 
   const getUserFriends = async () => {
       const { data, error } = await supabase
@@ -59,13 +62,14 @@ export default function AddPinToList({ isVisible, onClose, onSave, listId, pinsI
         )) ?? []
 
       setFriendIds(friendsFromDb)
+      return friendsFromDb
     }
 
   const addButtonBehavior = async () => {
     onSave();
     const pinIdsToAdd = Object.entries(checkedItems).filter(([_, selected]) => selected).map(([item, _]) => Number(item))
 
-    const pinsToAdd = (pins ?? []).filter((item) => pinIdsToAdd.includes(item.pinId)).map((item) => ({id: item.pinId, name: item.name, address: item.address, latitude: item.latitude, longitude: item.longitude}))
+    const pinsToAdd = (pins ?? []).filter((item) => pinIdsToAdd.includes(item.pinId)).map((item) => ({id: item.pinId, name: item.name, address: item.address, latitude: item.latitude, longitude: item.longitude, user_id: item.user_id}))
     setPinsToAdd(pinsToAdd)
     // const pinListAssociation = pinsToAdd.map((item) => ({pin_id: item, list_id: listId}))
     // const { error } = await supabase
@@ -77,6 +81,7 @@ export default function AddPinToList({ isVisible, onClose, onSave, listId, pinsI
   }
 
   const getPins = async () => {
+    let friendIdsLocal = await getUserFriends();
     const {data, error} = await supabase
     .from("pins")
     .select(`
@@ -84,6 +89,7 @@ export default function AddPinToList({ isVisible, onClose, onSave, listId, pinsI
       name,
       address,
       private,
+      user_id,
       pin_photos(
         photos(
           key),
@@ -97,14 +103,12 @@ export default function AddPinToList({ isVisible, onClose, onSave, listId, pinsI
         longitude
         )
       `)
-    // .eq("user_id", profile!.user_id)
-    // .eq("pin_photos.cover", true)
-    .or(`user_id.eq.${profile!.user_id},and(user_id.in.(${friendIds}),private.eq.${false})`)
+    .or(`user_id.eq.${profile!.user_id},and(user_id.in.(${friendIdsLocal}),private.eq.${false})`)
     
     if (error) {
       Alert.alert("Error", error.message);
     }
-    let pinsToAdd = data?.map((item) => ({pinId: item.pin_id, name: item.name, address: item.name, photoKey: item.pin_photos?.[0]?.photos?.key ?? null, latitude: item.locations.latitude, longitude: item.locations.longitude}))
+    let pinsToAdd = data?.map((item) => ({pinId: item.pin_id, name: item.name, address: item.name, photoKey: item.pin_photos?.[0]?.photos?.key ?? null, latitude: item.locations.latitude, longitude: item.locations.longitude, user_id: item.user_id}))
     let pinIdsInList = pinsInList.map((item) => item.id)
     pinsToAdd = pinsToAdd?.filter((item) => !pinIdsInList.includes(item.pinId))
     setPins(pinsToAdd)
@@ -115,13 +119,20 @@ export default function AddPinToList({ isVisible, onClose, onSave, listId, pinsI
     setCheckedItems({});
     getUserFriends();
     getPins();
+    setDataLoaded(true);
+  }
+  if (!isVisible) {
+    setDataLoaded(false);
   }
 }, [isVisible]);
   return (
     <View>
       <Modal animationType="fade" transparent={true} visible={isVisible}>
         <View style={styles.modalOverlay}>
-          <Pressable onPress={Keyboard.dismiss} style={styles.dismissArea}>
+          {!dataLoaded && <View style={styles.modalContent}>
+            <LoadingPage />
+            </View>}
+          {dataLoaded && <Pressable onPress={Keyboard.dismiss} style={styles.dismissArea}>
             <View style={styles.modalContent}>
               <View style={styles.titleContainer}>
                 <Text style={styles.title}>Add pins to the list</Text>
@@ -146,7 +157,7 @@ export default function AddPinToList({ isVisible, onClose, onSave, listId, pinsI
                             <Pressable
                               style={styles.cards}
                             >
-                              <ListCard name={item.name} pinId={item.pinId} loc={item.address} editList={true}/>
+                              <ListCard name={item.name} pinId={item.pinId} loc={item.address} editList={true} userIds={[item.user_id]}/>
                             </Pressable>
                           </View>
                         )}
@@ -161,7 +172,7 @@ export default function AddPinToList({ isVisible, onClose, onSave, listId, pinsI
                 </Pressable>
               </View>
             </View>
-          </Pressable>
+          </Pressable>}
         </View>
       </Modal>
     </View>
