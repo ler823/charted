@@ -174,20 +174,23 @@ function GridCard({ item, isSingle }: { item: Pin, isSingle: Boolean }) {
 
 export default function PinGridView({ pins, emptyMessage = "No pins to display yet." }: Props) {
   return (
-    <FlatList
-      data={pins}
-      keyExtractor={(item) => String(item.pinIds?.[0])}
-      numColumns={2}
-      contentContainerStyle={styles.listContainer}
-      columnWrapperStyle={styles.row}
-      showsVerticalScrollIndicator={false}
-      renderItem={({ item }) => <GridCard item={item} isSingle={pins.length == 1}/>}
-      ListEmptyComponent={
-        <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>{emptyMessage}</Text>
-        </View>
-      }
-    />
+    <View>
+      <View style={styles.spacer} />
+      <FlatList
+        data={pins}
+        keyExtractor={(item) => String(item.pinIds?.[0])}
+        numColumns={2}
+        contentContainerStyle={styles.listContainer}
+        columnWrapperStyle={styles.row}
+        showsVerticalScrollIndicator={false}
+        renderItem={({ item }) => <GridCard item={item} isSingle={pins.length == 1}/>}
+        ListEmptyComponent={
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyText}>{emptyMessage}</Text>
+          </View>
+        }
+      />
+    </View>
   );
 }
 
@@ -195,7 +198,7 @@ const styles = StyleSheet.create({
   listContainer: {
     paddingLeft: 5,
     paddingRight: 5,
-    paddingTop: 170,
+    //paddingTop: 170,
     paddingBottom: 95,
   },
 
@@ -318,5 +321,8 @@ const styles = StyleSheet.create({
     fontSize: 9,
     color: "#fefbea",
     fontFamily: Fonts.bold,
+  },
+  spacer: {
+    marginTop: 170,
   },
 });

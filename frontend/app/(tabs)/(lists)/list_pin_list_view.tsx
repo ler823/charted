@@ -2,9 +2,11 @@ import LoadingPage from "@/components/loading-page";
 import Sort from "@/components/sort-lists";
 import { Colors, Fonts } from "@/constants/theme";
 import { useAuth } from "@/context/AuthContext";
+import { getPhotoUrl } from "@/lib/photo-utils";
 import { setPinChanged } from "@/lib/pin_refresh_data";
 import { supabase } from "@/lib/supabase";
 import { Ionicons } from "@expo/vector-icons";
+import { Image } from "expo-image";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import { Alert, FlatList, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
@@ -30,6 +32,7 @@ export default function ListPinListView() {
   const [ascending, setAscending] = useState(true)
   const [loading, setLoading] = useState(true)
   const { profile } = useAuth();
+  const [coverPhoto, setCoverPhoto] = useState<string | null>(null);
 
   const handleSort = async (pin: PinWithDate[]) => {
     if (sortChoice == "date") {
@@ -125,6 +128,28 @@ export default function ListPinListView() {
     getListName(listIdToView);
   }, []);
 
+  useEffect(() => {
+    setCoverPhoto(null);
+    if (!listIdToView) return;
+
+    async function fetchCoverPhoto() {
+      const { data } = await supabase
+        .from("lists")
+        .select("photos(key)")
+        .eq("list_id", listIdToView)
+        .single();
+
+      if (data?.photos === null) return;
+      const coverEntry = data.photos.key;
+      console.log(coverEntry)
+      if (coverEntry === undefined) return;
+      const urls = await getPhotoUrl([coverEntry]);
+      if (urls?.[0]?.url) setCoverPhoto(urls[0].url);
+    }
+
+    fetchCoverPhoto();
+  }, [listIdToView]);
+
   if (loading) return <LoadingPage />;
 
   return (
@@ -160,13 +185,13 @@ export default function ListPinListView() {
           <Pressable
             style={styles.button}
             onPress={() => {
-                router.push(
-                  {
-                    pathname: "/(tabs)/(lists)/edit_list",
-                    params: { listIdToView: listIdToView }
-                  }
-                )
-              }}>
+              router.push(
+                {
+                  pathname: "/(tabs)/(lists)/edit_list",
+                  params: { listIdToView: listIdToView }
+                }
+              )
+            }}>
             <Text style={styles.buttonText}>
               Edit
             </Text>
@@ -180,7 +205,20 @@ export default function ListPinListView() {
           </Pressable>
         )}
       </View>
-      <Text ellipsizeMode="tail" style={styles.title}>{listName}</Text>
+      <View style={styles.namePhotoRow}>
+        <Image
+          source={
+            coverPhoto
+              ? { uri: coverPhoto }
+              : require("@/assets/images/no_image_default.png")
+          }
+          style={styles.img}
+          contentFit="cover"
+          transition={300}
+          placeholder="blur"
+        />
+        <Text ellipsizeMode="tail" style={styles.title}>{listName}</Text>
+      </View>
       <View style={styles.spacer} />
 
       <FlatList
@@ -346,4 +384,16 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
     elevation: 4,
   },
+  img: {
+    width: 90,
+    height: 90,
+    resizeMode: "cover",
+    aspectRatio: 1,
+    borderRadius: 9,
+  },
+  namePhotoRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 16,
+  }
 });
