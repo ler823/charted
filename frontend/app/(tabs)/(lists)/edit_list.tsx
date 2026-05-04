@@ -93,6 +93,7 @@ export default function EditList() {
               pin_id,
               name,
               address,
+              user_id,
               locations (
                 latitude,
                 longitude
@@ -100,7 +101,7 @@ export default function EditList() {
             )
           `)
       .eq("list_id", Number(listId))
-    const pinsInList: Pin[] = data?.map(pin => ({ id: pin.pins.pin_id, name: pin.pins.name, address: pin.pins.address, latitude: pin.pins.locations.latitude, longitude: pin.pins.locations.longitude }))
+    const pinsInList: Pin[] = data?.map(pin => ({ id: pin.pins.pin_id, name: pin.pins.name, address: pin.pins.address, latitude: pin.pins.locations.latitude, longitude: pin.pins.locations.longitude, user_id: pin.pins.user_id}))
     setPins(pinsInList)
     setDbPins(pinsInList)
   }
@@ -543,7 +544,7 @@ export default function EditList() {
             <Pressable
               style={styles.cards}
             >
-              <ListCard name={item.name} pinId={item.id} loc={item.address} editList={true} />
+              <ListCard name={item.name} pinId={item.id} loc={item.address} editList={true} userIds={[Number(item.user_id)]} />
             </Pressable>
           </View>
         )}
