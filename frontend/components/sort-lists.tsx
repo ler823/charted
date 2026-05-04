@@ -39,7 +39,8 @@ export default function Sort({ contentType, isVisible, onClose, sortChoice, setS
               <Checkbox
                 value={sortChoice === "date"}
                 onValueChange={() => setSortChoice("date")}
-                style={styles.checkBox}>
+                style={styles.checkBox}
+                color={Colors.light.background}>
               </Checkbox>
               {contentType == "friend" ? (
                 <Text>By Date Friended (Default)</Text>
@@ -55,7 +56,8 @@ export default function Sort({ contentType, isVisible, onClose, sortChoice, setS
               <Checkbox
                 value={sortChoice === "name"}
                 onValueChange={() => setSortChoice("name")}
-                style={styles.checkBox}>
+                style={styles.checkBox}
+                color={Colors.light.background}>
               </Checkbox>
               <Text>By Name</Text>
             </Pressable>
@@ -68,6 +70,7 @@ export default function Sort({ contentType, isVisible, onClose, sortChoice, setS
                   value={sortChoice === "location"}
                   onValueChange={() => setSortChoice("location")}
                   style={styles.checkBox}
+                  color={Colors.light.background}
                 />
                 <Text>By Location</Text>
               </Pressable>
@@ -78,7 +81,8 @@ export default function Sort({ contentType, isVisible, onClose, sortChoice, setS
               <Checkbox
                 value={ascending === true}
                 onValueChange={() => setAscending(true)}
-                style={styles.checkBox}>
+                style={styles.checkBox}
+                color={Colors.light.background}>
               </Checkbox>
               <Text>Ascending (Default)</Text>
             </Pressable>
@@ -88,7 +92,8 @@ export default function Sort({ contentType, isVisible, onClose, sortChoice, setS
               <Checkbox
                 value={ascending === false}
                 onValueChange={() => setAscending(false)}
-                style={styles.checkBox}>
+                style={styles.checkBox}
+                color={Colors.light.background}>
               </Checkbox>
               <Text>Descending</Text>
             </Pressable>
