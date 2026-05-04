@@ -30,6 +30,7 @@ export default function Filter({ isVisible, onClose, exportFilter }: Props) {
   const [suffix, setSuffix] = useState<string | null>(null);
   const [mileRadius, setMileRadius] = useState(26);
   const [timePickerVisible, setTimePickerVisible] = useState(false);
+  const [selfEnabled, setSelfEnabled] = useState(false);
 
   const getUserFriends = async () => {
     const { data, error } = await supabase
@@ -97,6 +98,7 @@ export default function Filter({ isVisible, onClose, exportFilter }: Props) {
   }
 
   const clearFilters = async () => {
+    setSelfEnabled(false);
     setFriends(friends.map((friend) => ({id: friend.id, username: friend.username, enabled: false})));
     setLists(lists.map((list) => ({id: list.id, name: list.name, enabled: false})));
     setTags(tags.map((tag) => ({id: tag.id, name: tag.name, enabled: false})));
@@ -119,6 +121,7 @@ export default function Filter({ isVisible, onClose, exportFilter }: Props) {
     }
     
     updateFilterOptions({
+      self: selfEnabled,
       friends: friendsToAdd.length == 0 ? null : friendsToAdd,
       lists: listsToAdd.length == 0 ? null : listsToAdd,
       tags: tagsToAdd.length == 0 ? null : tagsToAdd,
@@ -176,21 +179,34 @@ export default function Filter({ isVisible, onClose, exportFilter }: Props) {
           <View style={styles.modalContent}>
             <Text style={styles.titleText}>Filters</Text>
             <ScrollView style={styles.filterContent} showsVerticalScrollIndicator={false}>
-              <Text style={styles.sectionHeader}>Friends</Text>
+            <View style={styles.friendsRow}>
               <View>
-                <FlatList
-                  horizontal={true}
-                  data={friends}
-                  keyExtractor={(item) => item.id.toString()}
-                  renderItem={({ item }) => (
-                    <Pressable style={item.enabled ? styles.avatarStackEnabled : styles.avatarStackDisabled} onPress={() => { item.enabled == true ? item.enabled = false : item.enabled = true; setRefresh((prev) => !prev) }}>
-                      <View style={item.enabled ? styles.avatarEnabled : null}>
-                        <AvatarBorder users_id={item.id} />
-                      </View>
-                      <Text style={styles.username}>{item.username}</Text>
-                    </Pressable>
-                  )} />
+                <Text style={styles.sectionHeader}>Me</Text>
+                  <Pressable style={selfEnabled ? styles.avatarStackEnabled : styles.avatarStackDisabled} onPress={() => { selfEnabled == true ? setSelfEnabled(false) : setSelfEnabled(true); setRefresh((prev) => !prev) }}>
+                    <View style={selfEnabled ? styles.avatarEnabled : null}>
+                      <AvatarBorder users_id={profile?.user_id ?? 0} />
+                    </View>
+                    <Text style={styles.username}>{profile?.username ?? 0}</Text>
+                  </Pressable>
               </View>
+              <View>
+                <Text style={styles.sectionHeader}>Friends</Text>
+                <View>
+                  <FlatList
+                    horizontal={true}
+                    data={friends}
+                    keyExtractor={(item) => item.id.toString()}
+                    renderItem={({ item }) => (
+                      <Pressable style={item.enabled ? styles.avatarStackEnabled : styles.avatarStackDisabled} onPress={() => { item.enabled == true ? item.enabled = false : item.enabled = true; setRefresh((prev) => !prev) }}>
+                        <View style={item.enabled ? styles.avatarEnabled : null}>
+                          <AvatarBorder users_id={item.id} />
+                        </View>
+                        <Text style={styles.username}>{item.username}</Text>
+                      </Pressable>
+                    )} />
+                </View>
+              </View>
+            </View>
               <View style={styles.separator} />
               <Text style={styles.sectionHeader}>Lists</Text>
               <View style={styles.listTagView}>
@@ -492,5 +508,9 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 2,
     elevation: 4,
+  },
+  friendsRow: {
+    flexDirection: "row",
+    gap: 10,
   }
 })

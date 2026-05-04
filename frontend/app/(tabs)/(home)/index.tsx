@@ -237,8 +237,21 @@ export default function Home() {
   );
 
   useEffect(() => {
-    let queryPins = pins.filter((pin) => (
+    console.log()
+    pins.forEach((pin) => {
+      console.log(pin.name)  
+      console.log(
+        (filterOptions.self == false ? true : filterOptions.friends == null ? Number(pin.user_id) == profile!.user_id : (Number(pin.user_id) == profile!.user_id) || (filterOptions.friends?.includes(Number(pin.user_id)))) &&
       (filterOptions.friends == null ? true : filterOptions.friends.includes(Number(pin.user_id))) &&
+      (filterOptions.lists == null ? true : filterOptions.lists.some((id) => pin.listIds?.includes(id))) &&
+      (filterOptions.tags == null ? true : filterOptions.tags.some((id) => pin.tagIds?.includes(id))) &&
+      (filterOptions.time == null ? true : isBusinessOpen(filterOptions.time, pin.hours)) &&
+      (filterOptions.distance == null ? true : haversineDistance(pin.latitude, pin.longitude, userCoords!.latitude, userCoords!.longitude) <= filterOptions.distance)
+      )
+    })
+    let queryPins = pins.filter((pin) => (
+      (filterOptions.self == false ? (filterOptions.friends == null ? true : filterOptions.friends.includes(Number(pin.user_id))) : filterOptions.friends == null ? Number(pin.user_id) == profile!.user_id : (Number(pin.user_id) == profile!.user_id) || (filterOptions.friends?.includes(Number(pin.user_id)))) &&
+      //(filterOptions.friends == null ? true : filterOptions.friends.includes(Number(pin.user_id))) &&
       (filterOptions.lists == null ? true : filterOptions.lists.some((id) => pin.listIds?.includes(id))) &&
       (filterOptions.tags == null ? true : filterOptions.tags.some((id) => pin.tagIds?.includes(id))) &&
       (filterOptions.time == null ? true : isBusinessOpen(filterOptions.time, pin.hours)) &&

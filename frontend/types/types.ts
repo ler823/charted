@@ -43,6 +43,7 @@ export type ListType = {
 };
 
 export type FilterType = {
+  self: boolean,
   friends: number[] | null,
   lists: number[] | null,
   tags: number[] | null,

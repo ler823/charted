@@ -8,10 +8,12 @@ type FilterContextType = {
 
 const FilterContext = createContext<FilterContextType>({
     filterOptions: {
+        self: false,
         friends: null,
         lists: null,
         tags: null,
         openNow: false,
+        time: null,
         hour: null,
         minute: null,
         suffix: null,
