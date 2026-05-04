@@ -8,6 +8,7 @@ import Slider from '@react-native-community/slider';
 import React, { useEffect, useState } from "react";
 import { Alert, FlatList, Modal, Pressable, ScrollView, StyleSheet, Switch, Text, View } from "react-native";
 import AvatarBorder from "./avatar-with-colored-border";
+import LoadingPage from "./loading-page";
 import TimePicker from "./time-picker";
 
 
@@ -31,6 +32,7 @@ export default function Filter({ isVisible, onClose, exportFilter }: Props) {
   const [mileRadius, setMileRadius] = useState(26);
   const [timePickerVisible, setTimePickerVisible] = useState(false);
   const [selfEnabled, setSelfEnabled] = useState(false);
+  const [dataLoaded, setDataLoaded] = useState(false);
 
   const getUserFriends = async () => {
     const { data, error } = await supabase
@@ -152,6 +154,7 @@ export default function Filter({ isVisible, onClose, exportFilter }: Props) {
         setLists(lists);
         setTags(tags);
         updateFromContext();
+        setDataLoaded(true);
       }
       getData();
     }
@@ -163,7 +166,7 @@ export default function Filter({ isVisible, onClose, exportFilter }: Props) {
       setHour(time.getHours() % 12)
       setMinute(time.getMinutes())
       setSuffix(time.getHours() < Number(12) ? "AM" : "PM");
-      setHour(time.getHours() % 12);
+      setHour(time.getHours() % 12 == 0 ? 12 : time.getHours() % 12);
     }
     else {
       setHour(null);
@@ -176,7 +179,10 @@ export default function Filter({ isVisible, onClose, exportFilter }: Props) {
     <View>
       <Modal animationType="fade" transparent={true} visible={isVisible}>
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
+          {!dataLoaded && (<View style={styles.modalContent}>
+            <LoadingPage />
+          </View>)}
+          {dataLoaded && (<View style={styles.modalContent}>
             <Text style={styles.titleText}>Filters</Text>
             <ScrollView style={styles.filterContent} showsVerticalScrollIndicator={false}>
             <View style={styles.friendsRow}>
@@ -301,7 +307,7 @@ export default function Filter({ isVisible, onClose, exportFilter }: Props) {
                 <Text style={styles.buttonText}>Apply</Text>
               </Pressable>
             </View>
-          </View>
+          </View>)}
         </View>
       </Modal>
     </View>
@@ -318,6 +324,7 @@ const styles = StyleSheet.create({
   modalContent: {
     width: '85%',
     maxHeight: '75%',
+    minHeight: '50%',
     justifyContent: "space-between",
     backgroundColor: '#ffffff',
     borderRadius: 18,
