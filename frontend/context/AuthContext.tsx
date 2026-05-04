@@ -1,12 +1,15 @@
 // context/AuthContext.tsx
-import { registerForPushNotificationsAsync, saveExpoPushToken } from "@/lib/push-notifications";
+import {
+  registerForPushNotificationsAsync,
+  saveExpoPushToken,
+} from "@/lib/push-notifications";
 import { supabase } from "@/lib/supabase";
 import { Session, User } from "@supabase/supabase-js";
 import { createContext, useContext, useEffect, useState } from "react";
 
 export type Profile = {
-  id: string;         // auth UUID
-  user_id: number;    // integer FK used by pins, tags, lists, etc.
+  id: string; // auth UUID
+  user_id: number; // integer FK used by pins, tags, lists, etc.
   username: string;
   avatar_key: string | null;
 };
@@ -76,8 +79,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       if (session?.user) {
-        const p = await fetchProfile(session.user.id);
-        setProfile(p);
+        fetchProfile(session.user.id).then((p) => setProfile(p));
         registerPushToken(session.user.id);
       } else {
         setProfile(null);
@@ -97,7 +99,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const refreshProfile = async () => {
-    const { data: { session: currentSession } } = await supabase.auth.getSession();
+    const {
+      data: { session: currentSession },
+    } = await supabase.auth.getSession();
     const userId = currentSession?.user?.id;
     if (!userId) return;
     const p = await fetchProfile(userId);
@@ -106,7 +110,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ session, user: session?.user ?? null, profile, loading, signOut, refreshProfile }}
+      value={{
+        session,
+        user: session?.user ?? null,
+        profile,
+        loading,
+        signOut,
+        refreshProfile,
+      }}
     >
       {children}
     </AuthContext.Provider>
