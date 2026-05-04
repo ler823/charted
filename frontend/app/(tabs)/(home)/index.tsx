@@ -79,8 +79,6 @@ export default function Home() {
     const timeNow = new Date(Date.now());
     const day = timeNow.getDay()
     const filteredHours = hours.filter((entry) => entry.day == day)
-    console.log(givenTime)
-    console.log(filteredHours)
     for (let i = 0; i < filteredHours.length; i++) {
       if (Number(filteredHours[i].open) <= Number(givenTime) && Number(filteredHours[i].close) > Number(givenTime)) {
         return true;

@@ -1,5 +1,5 @@
 import { Colors, Fonts } from "@/constants/theme";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Modal, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 
 
@@ -44,6 +44,11 @@ export default function TimePicker({ isVisible, onClose, setActualHour, setActua
     setSaveDisabledHour(false);
     return true;
   }
+
+  useEffect(() => {
+    setHour(hour.padStart(2, "0"));
+    setMinute(minute.padStart(2, "0"));
+  }, [])
 
   return (
     <View>
