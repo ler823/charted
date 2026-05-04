@@ -16,7 +16,8 @@ type PinWithDate = {
   address: string;
   latitude: number;
   longitude: number;
-  date: string
+  date: string;
+  user_id: number;
 }
 
 export default function ListPinListView() {
@@ -69,6 +70,7 @@ export default function ListPinListView() {
               pin_id,
               name,
               address,
+              user_id,
               locations (
                 latitude,
                 longitude
@@ -76,7 +78,7 @@ export default function ListPinListView() {
             )
           `)
       .eq("list_id", Number(listId))
-    const pinsInList: PinWithDate[] = data?.map(pin => ({ id: pin.pins.pin_id, name: pin.pins.name, address: pin.pins.address, latitude: pin.pins.locations.latitude, longitude: pin.pins.locations.longitude, date: pin.created_at }))
+    const pinsInList: PinWithDate[] = data?.map(pin => ({ id: pin.pins.pin_id, name: pin.pins.name, address: pin.pins.address, latitude: pin.pins.locations.latitude, longitude: pin.pins.locations.longitude, date: pin.created_at, user_id: pin.pins.user_id }))
     handleSort(pinsInList)
   }
 
@@ -199,7 +201,7 @@ export default function ListPinListView() {
               )
             }}
           >
-            <ListCard name={item.name} pinId={item.id} loc={item.address} />
+            <ListCard name={item.name} pinId={item.id} loc={item.address} userIds={[item.user_id]} />
           </Pressable>
         )}
       />
