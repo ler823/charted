@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { Pressable, StyleSheet, View, Text, TextInput, Platform, Keyboard, KeyboardAvoidingView } from "react-native";
-import { useAuth } from "@/context/AuthContext";
+import { useAuth, setPasswordUpdateFlag } from "@/context/AuthContext";
 import LoadingPage from "@/components/loading-page";
 import { Colors, Fonts } from "@/constants/theme";
 import { router } from "expo-router";
@@ -11,18 +11,47 @@ import Entypo from '@expo/vector-icons/Entypo';
 
 
 export default function AccountSet() {
-    const [ogPass, setOgPass] = useState("");
+    const { signOut } = useAuth();
     const [password, setPassword] = useState("");
     const [confPass, setConfPass] = useState("");
     const [match, setMatch] = useState(true);
-    
+    const [loading, setLoading] = useState(false);
+    const [short, setShort] = useState(false);
 
+    const handleSave = async () => {
+        if (!match || !password) return;
+
+        if (password.length < 6) {
+            setShort(true);
+            return;
+        }
+
+        setLoading(true);
+        setPasswordUpdateFlag(true);
+
+        const { error } = await supabase.auth.updateUser({ password });
+
+        if (error) {
+            console.error(error.message);
+            setLoading(false);
+            setPasswordUpdateFlag(false);
+            return;
+        }
+
+        await supabase.auth.signOut();
+
+        setPasswordUpdateFlag(false);
+
+        setLoading(false);
+        router.replace("/(auth)/login");
+    };
+    
     useEffect(() => {
-            const matchPass = () => {
-                setMatch(password === confPass);
-            }
-            matchPass();
-        }, [confPass, password]);
+        const matchPass = () => {
+            setMatch(password === confPass);
+        }
+        matchPass();
+    }, [confPass, password]);
 
     return (
         <KeyboardAvoidingView
@@ -38,35 +67,29 @@ export default function AccountSet() {
                     justifyContent: "space-between",
                 }}
                 >
-                <Pressable
-                    style={styles.backButton}
-                    onPress={() => {router.back()}
-                    }
-                >
-                    <Ionicons name="chevron-back" size={20} color="#d9d9d9" />
-                    <Text
-                    style={{ fontFamily: Fonts.bold, color: "#d9d9d9", fontSize: 16 }}
+                <View style={styles.topBar}>
+                    <Pressable style={styles.cancelBtn} onPress={() => router.back()}>
+                    <Text style={styles.cancelText}>Cancel</Text>
+                    </Pressable>
+    
+                    <Pressable
+                    style={[
+                        styles.saveBtn,
+                        (!match || !password) && styles.saveBtnDisabled,
+                    ]}
+                    onPress={handleSave}
+                    disabled={!match || !password}
                     >
-                    Back
-                    </Text>
-                </Pressable>
+                    <Text style={styles.saveText}>Save</Text>
+                    </Pressable>
+                </View>
                 </View>
                 <View style={styles.title}>
                     <Text style={styles.titleText}>Change Your Password</Text>
+                    <Text style={styles.subheaderText}>You will be required to sign in again.</Text>
                 </View>
                 <View style={{alignItems: "center"}}>
                 <Pressable style={{width: "85%"}}>
-                    <View style={{flexDirection: "row", alignItems: "center", gap: 7}}>
-                        <Text style={styles.headerText}>Current Password</Text>
-                    </View>
-                    <TextInput
-                        style={styles.input}
-                        placeholder="Enter current password"
-                        placeholderTextColor={Colors.light.accent}
-                        secureTextEntry
-                        value={ogPass}
-                        onChangeText={setOgPass}
-                    />
                     <View style={{flexDirection: "row", alignItems: "center", gap: 7}}>
                         <Text style={styles.headerText}>New Password</Text>
                     </View>
@@ -91,6 +114,9 @@ export default function AccountSet() {
                     />
                     {!match && (
                         <Text style={styles.fieldError}>Passwords don't match</Text>
+                    )}
+                    {short && (
+                        <Text style={styles.fieldError}>Password needs to be at least 6 characters long</Text>
                     )}
                 </Pressable>
                 </View>
@@ -124,7 +150,7 @@ const styles = StyleSheet.create({
   },
   title: {
     alignItems: "center",
-    marginTop: 20,
+    marginTop: 70,
     marginBottom: 30,
   },
   titleText: {
@@ -149,6 +175,10 @@ const styles = StyleSheet.create({
   inputText: {
     fontFamily: Fonts.regular,
     fontSize: 16,
+  },
+  subheaderText: {
+    fontFamily: Fonts.regular_i,
+    fontSize: 14,
   },
   headerText: {
     fontFamily: Fonts.bold,
@@ -191,5 +221,61 @@ const styles = StyleSheet.create({
     marginBottom: 4,
     fontFamily: Fonts.regular,
     paddingLeft: 5,
+  },
+  topBar: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 24,
+    position: "absolute",
+    top: 10,
+    right: 16,
+    left: 16,
+    zIndex: 10,
+  },
+  cancelBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    height: 40,
+    paddingHorizontal: 16,
+    backgroundColor: Colors.light.error,
+    borderRadius: 999,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
+    elevation: 4,
+  },
+  cancelText: {
+    color: "#fff",
+    fontWeight: "bold",
+    fontSize: 16,
+    fontFamily: Fonts.bold,
+  },
+  saveBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    height: 40,
+    paddingHorizontal: 16,
+    backgroundColor: "#243e36",
+    borderRadius: 999,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
+    elevation: 4,
+  },
+  saveBtnDisabled: {
+    backgroundColor: "#888",
+    shadowOpacity: 0,
+    elevation: 0,
+  },
+  saveText: {
+    color: "#fff",
+    fontWeight: "bold",
+    fontSize: 16,
+    fontFamily: Fonts.bold,
   },
 })

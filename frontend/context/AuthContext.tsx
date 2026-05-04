@@ -20,6 +20,12 @@ type AuthContextType = {
   refreshProfile: () => Promise<void>;
 };
 
+let isUpdatingPassword = false;
+
+export const setPasswordUpdateFlag = (value: boolean) => {
+  isUpdatingPassword = value;
+};
+
 const AuthContext = createContext<AuthContextType>({
   session: null,
   user: null,
@@ -57,8 +63,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
       setSession(session);
+
+      if (isUpdatingPassword) return;
+
+      if (isUpdatingPassword && event !== "SIGNED_OUT") return;
+
+      if (event === "SIGNED_OUT") {
+        setProfile(null);
+        return;
+      }
+
       if (session?.user) {
         const p = await fetchProfile(session.user.id);
         setProfile(p);
