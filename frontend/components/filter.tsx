@@ -166,7 +166,7 @@ export default function Filter({ isVisible, onClose, exportFilter }: Props) {
       setHour(time.getHours() % 12)
       setMinute(time.getMinutes())
       setSuffix(time.getHours() < Number(12) ? "AM" : "PM");
-      setHour(time.getHours() % 12);
+      setHour(time.getHours() % 12 == 0 ? 12 : time.getHours() % 12);
     }
     else {
       setHour(null);

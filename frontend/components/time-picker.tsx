@@ -13,7 +13,7 @@ type Props = {
 
 export default function TimePicker({ isVisible, onClose, setActualHour, setActualMinute, setActualSuffix }: Props) {
   const [time, setTime] = useState(new Date(Date.now()));
-  const [hour, setHour] = useState((time.getHours() % 12).toString());
+  const [hour, setHour] = useState((time.getHours() % 12 == 0 ? 12 : time.getHours() % 12).toString());
   const [minute, setMinute] = useState(time.getMinutes().toString());
   const [suffix, setSuffix] = useState(Number(time.getHours()) - 12 >= 0 ? "PM" : "AM");
   const [saveDisabledHour, setSaveDisabledHour] = useState(false);
