@@ -98,6 +98,7 @@ export default function AccountSet() {
                     <View style={styles.title}>
                         <Text style={styles.titleText}>Change Your Email</Text>
                         <Text style={styles.subheaderText}>You will be required to sign in again.</Text>
+                        <Text style={styles.subheaderText}>Check your new email to authorize the change!</Text>
                     </View>
                     <View style={{alignItems: "center"}}>
                         <View style={{width: "85%"}}>

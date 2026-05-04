@@ -77,14 +77,6 @@ export default function AccountSet() {
             </View>
           </Pressable>
         </View>
-        <Pressable style={styles.button}>
-          <MaterialCommunityIcons
-              name="trash-can-outline"
-              size={24}
-              color="#fff"
-            />
-          <Text style={styles.buttonText}>Delete Account</Text>
-        </Pressable>
       </>
     )
 }
