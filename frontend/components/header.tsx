@@ -3,6 +3,7 @@ import { useFilterContext } from "@/context/FilterContext";
 import { useLocation } from "@/hooks/use-location";
 import { FilterType, Pin, ViewMode, ViewOption } from "@/types/types";
 import { Ionicons } from "@expo/vector-icons";
+import { router } from "expo-router";
 import { Dispatch, SetStateAction, useEffect, useRef, useState } from "react";
 import {
   Keyboard,
@@ -16,8 +17,6 @@ import {
 import Filter from "./filter";
 import PlaceSuggestionItem from "./place-suggestion-item";
 import SuggestionItem from "./suggestion-item";
-import { router } from "expo-router";
-import Settings from "@/app/(tabs)/(home)/settings";
 
 type PlacePrediction = {
   place_id: string;
@@ -120,6 +119,9 @@ export default function Header({
 
   const getFilterCount = () => {
     let count = 0;
+    if (filterOptions.self) {
+      count += 1;
+    }
     if (filterOptions.friends !== null) {
       filterOptions.friends.forEach(() => count += 1);
     }
