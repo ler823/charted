@@ -69,6 +69,7 @@ type Pin = {
       }[]
     | null;
   private: boolean | null;
+  hours: Object[] | null;
 };
 
 type Cluster = {
@@ -98,6 +99,47 @@ export default function PinPage() {
   const [photoList, setPhotoList] = useState<string[] | null>(null);
   const toggleSwitch = () => setIsEnabled((previousState) => !previousState);
 
+  const formatDay = (dayNumber: number) => {
+    let day;
+    switch (dayNumber) {
+      case 0:
+        day = "Sunday";
+        break;
+      case 1:
+        day = "Monday";
+        break;
+      case 2:
+        day = "Tuesday";
+        break;
+      case 3:
+        day = "Wednesday";
+        break;
+      case 4:
+        day = "Thursday";
+        break;
+      case 5:
+        day = "Friday";
+        break;
+      case 6:
+        day = "Saturday"
+        break;
+    }
+    return day;
+  }
+
+  const formatTime = (timeNumber: number) => {
+    let timeString = timeNumber.toString();
+    let hour = Number(timeString.slice(0, 2));
+    let minute = Number(timeString.slice(2, 4));
+    let suffix = "AM";
+    if (hour > 12) {
+      suffix = "PM";
+      hour = hour % 12;
+    }
+    timeString = hour.toString() + ":" + minute.toString().padStart(2, "0") + " " + suffix;
+    return timeString;
+  }
+
   useFocusEffect(
     useCallback(() => {
       async function fetchPin() {
@@ -120,7 +162,6 @@ export default function PinPage() {
         setPin(data as Pin);
         getPhotos(data as Pin);
       }
-
       async function getPhotos(myPin: Pin) {
         if (!myPin?.pin_photos?.length) {
           setCoverPhoto(null);
@@ -686,6 +727,20 @@ export default function PinPage() {
               ItemSeparatorComponent={() => <View style={{ width: 10 }} />}
             />
           </View>
+          <Text style={styles.subtitle}>Hours</Text>
+          <View style={styles.cardFullRow}>
+            <View style={styles.hoursBox}>
+              {pin.hours?.map((hoursObject) => (
+                <View style={styles.hoursRow} key={hoursObject.day}>
+                  <Text style={styles.dayText}>{formatDay(hoursObject.day)}</Text>
+                  <Text style={styles.hourText}>{formatTime(hoursObject.open)} - {formatTime(hoursObject.close)}</Text>
+                </View>
+              ))}
+              {pin.hours == null && (
+                <Text style = {styles.emptyText}>There are no hours associated with this pin</Text>
+              )}
+            </View>
+          </View>
           <View style={{ height: 100 }}></View>
         </View>
       </ScrollView>
@@ -865,4 +920,22 @@ const styles = StyleSheet.create({
     height: 90,
     borderRadius: 12,
   },
+  hoursRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  dayHours: {
+    flexDirection: "column",
+  },
+  hoursBox: {
+    flex: 1,
+    flexDirection: "column",
+  },
+  dayText: {
+    fontFamily: Fonts.regular,
+  },
+  hourText: {
+    fontFamily: Fonts.regular,
+  }
 });
