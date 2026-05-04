@@ -22,6 +22,21 @@ export default function TimePicker({ isVisible, onClose, setActualHour, setActua
     setActualSuffix(suffix);
     onClose();
   }
+  const validateMinute = async (minute: number) => {
+    if (minute < 0 || minute >= 60) {
+      return false;
+    }
+    setMinute(minute.toString());
+    return true;
+  }
+
+  const validateHour = async (hour: number) => {
+    if (hour < 1 || hour > 12) {
+      return false;
+    }
+    setHour(hour.toString());
+    return true;
+  }
 
   return (
     <View>
@@ -37,7 +52,7 @@ export default function TimePicker({ isVisible, onClose, setActualHour, setActua
                 keyboardType="number-pad"
                 textAlign="center"
                 selectTextOnFocus={true}
-                onChangeText={(value) => setHour(value)} 
+                onChangeText={(value) => validateHour(Number(value))} 
                 onEndEditing={(e) => hour.length == 1 ? setHour("0" + hour) : setHour(hour)}
                 style={styles.timeInput}/>
               <Text>:</Text>
@@ -48,7 +63,7 @@ export default function TimePicker({ isVisible, onClose, setActualHour, setActua
                 keyboardType="number-pad"
                 textAlign="center"
                 selectTextOnFocus={true}
-                onChangeText={(value) => setMinute(value)}
+                onChangeText={(value) => validateMinute(Number(value))}
                 onEndEditing={(e) => minute.length == 1 ? setMinute("0" + minute) : setMinute(minute)}
                 style={styles.timeInput}/>
               <Pressable 
