@@ -87,6 +87,22 @@ export default function Home() {
     return false;
   }
 
+  const filterPins = async () => {
+    let queryPins = pins.filter((pin) => (
+      (filterOptions.self == false ? (filterOptions.friends == null ? true : filterOptions.friends.includes(Number(pin.user_id))) : filterOptions.friends == null ? Number(pin.user_id) == profile!.user_id : (Number(pin.user_id) == profile!.user_id) || (filterOptions.friends?.includes(Number(pin.user_id)))) &&
+      (filterOptions.lists == null ? true : filterOptions.lists.some((id) => pin.listIds?.includes(id))) &&
+      (filterOptions.tags == null ? true : filterOptions.tags.some((id) => pin.tagIds?.includes(id))) &&
+      (filterOptions.time == null ? true : isBusinessOpen(filterOptions.time, pin.hours)) &&
+      (filterOptions.distance == null ? true : haversineDistance(pin.latitude, pin.longitude, userCoords!.latitude, userCoords!.longitude) <= filterOptions.distance)
+    ))
+    if (pinSearchQuery.trim().length > 0) {
+      queryPins = queryPins.filter(p => 
+        p.name?.toLowerCase().includes(pinSearchQuery.toLowerCase())
+      );
+    }
+    setFilteredPins(queryPins)
+  }
+
   useFocusEffect(
     useCallback(() => {
       if (!profile) return;
@@ -227,7 +243,7 @@ export default function Home() {
           .filter(Boolean) as Pin[];
 
         setPins(formattedPins);
-        setFilteredPins(formattedPins)
+        filterPins();
       }
       setPinChanged(true);
       fetchPins();
@@ -235,20 +251,8 @@ export default function Home() {
   );
 
   useEffect(() => {
-    let queryPins = pins.filter((pin) => (
-      (filterOptions.self == false ? (filterOptions.friends == null ? true : filterOptions.friends.includes(Number(pin.user_id))) : filterOptions.friends == null ? Number(pin.user_id) == profile!.user_id : (Number(pin.user_id) == profile!.user_id) || (filterOptions.friends?.includes(Number(pin.user_id)))) &&
-      (filterOptions.lists == null ? true : filterOptions.lists.some((id) => pin.listIds?.includes(id))) &&
-      (filterOptions.tags == null ? true : filterOptions.tags.some((id) => pin.tagIds?.includes(id))) &&
-      (filterOptions.time == null ? true : isBusinessOpen(filterOptions.time, pin.hours)) &&
-      (filterOptions.distance == null ? true : haversineDistance(pin.latitude, pin.longitude, userCoords!.latitude, userCoords!.longitude) <= filterOptions.distance)
-    ))
-    if (pinSearchQuery.trim().length > 0) {
-      queryPins = queryPins.filter(p => 
-        p.name?.toLowerCase().includes(pinSearchQuery.toLowerCase())
-      );
-    }
-    setFilteredPins(queryPins)
-  }, [filterOptions, pinSearchQuery])
+    filterPins();
+  }, [filterOptions, pinSearchQuery, pins])
 
   useEffect(() => {
 

@@ -24,10 +24,12 @@ const FilterContext = createContext<FilterContextType>({
 
 export const FilterProvider = ({ children }: { children: React.ReactNode }) => {
     const [filter, setFilter] = useState<FilterType>({
+        self: false,
         friends: null,
         lists: null,
         tags: null,
         openNow: false,
+        time: null,
         hour: null,
         minute: null,
         suffix: null,
