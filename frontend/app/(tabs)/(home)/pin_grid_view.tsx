@@ -199,7 +199,7 @@ const styles = StyleSheet.create({
     paddingLeft: 5,
     paddingRight: 5,
     //paddingTop: 170,
-    paddingBottom: 95,
+    paddingBottom: 270,
   },
 
   row: {
