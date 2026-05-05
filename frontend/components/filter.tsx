@@ -195,7 +195,7 @@ export default function Filter({ isVisible, onClose, exportFilter }: Props) {
                     <Text style={styles.username}>{profile?.username ?? 0}</Text>
                   </Pressable>
               </View>
-              <View>
+              <View style={styles.friendsSection}>
                 <Text style={styles.sectionHeader}>Friends</Text>
                 <View>
                   <FlatList
@@ -529,5 +529,8 @@ const styles = StyleSheet.create({
   friendsRow: {
     flexDirection: "row",
     gap: 10,
+  },
+  friendsSection: {
+    flex: 1,
   }
 })
