@@ -196,7 +196,7 @@ export default function Filter({ isVisible, onClose, exportFilter }: Props) {
                   </Pressable>
               </View>
               <View style={styles.friendsSection}>
-                <Text style={styles.sectionHeader}>Friends</Text>
+                {friends.length > 0 && (<Text style={styles.sectionHeader}>Friends</Text>)}
                 <View>
                   <FlatList
                     horizontal={true}
@@ -324,7 +324,7 @@ const styles = StyleSheet.create({
   modalContent: {
     width: '85%',
     maxHeight: '75%',
-    minHeight: '50%',
+    minHeight: '75%',
     justifyContent: "space-between",
     backgroundColor: '#ffffff',
     borderRadius: 18,
