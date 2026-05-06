@@ -33,6 +33,7 @@ export default function ListPinListView() {
   const [loading, setLoading] = useState(true)
   const { profile } = useAuth();
   const [coverPhoto, setCoverPhoto] = useState<string | null>(null);
+  const [sharedUsername, setSharedUsername] = useState<string | null>(null);
 
   const handleSort = async (pin: PinWithDate[]) => {
     if (sortChoice == "date") {
@@ -60,9 +61,17 @@ export default function ListPinListView() {
   const getListName = async (listId: any) => {
     const { data, error } = await supabase
       .from("lists")
-      .select("name")
+      .select(`
+        name,
+        users!lists_user_id_fkey (
+          username
+        )
+        `)
       .eq("list_id", listId)
     setListName(data?.[0].name);
+    if (data?.[0].user_id != profile!.user_id) {
+      setSharedUsername(data?.[0].users.username);
+    }
   }
   const getListPins = async (listId: any) => {
     const { data, error } = await supabase
@@ -217,7 +226,12 @@ export default function ListPinListView() {
           transition={300}
           placeholder="blur"
         />
-        <Text ellipsizeMode="tail" style={styles.title}>{listName}</Text>
+        <View style={styles.info}>
+          <Text ellipsizeMode="tail" style={styles.title}>{listName}</Text>
+          {sharedUsername !== null && (
+            <Text ellipsizeMode="tail" style={styles.sharedUsername}>Shared by {sharedUsername}</Text>
+          )}
+        </View>
       </View>
       <View style={styles.spacer} />
 
@@ -272,10 +286,9 @@ const styles = StyleSheet.create({
     paddingBottom: 265,
   },
   title: {
-    margin: 15,
+    marginHorizontal: 15,
     fontFamily: Fonts.bold,
     fontSize: 20,
-    textAlign: "center"
   },
   button: {
     backgroundColor: "#243e36",
@@ -395,5 +408,13 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     padding: 16,
+  },
+  info: {
+    flexDirection: "column"
+  },
+  sharedUsername: {
+    marginHorizontal: 15,
+    fontFamily: Fonts.regular,
+    fontSize: 16,
   }
 });
