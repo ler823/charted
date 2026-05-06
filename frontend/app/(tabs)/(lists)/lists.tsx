@@ -20,7 +20,8 @@ type listItems = {
   listId: string,
   name: string,
   username: string | null,
-  date: string
+  date: string,
+  userId: number,
 };
 
 export default function Lists() {
@@ -118,14 +119,14 @@ export default function Lists() {
     if (!profile) return;
     const { data, error } = await supabase
       .from("lists")
-      .select("list_id, name, created_at")
+      .select("list_id, name, created_at, user_id")
       .eq("user_id", profile.user_id);
 
     if (error) {
       Alert.alert("Error", error.message);
       return;
     }
-    const userLists = data.map((list: any) => ({ listId: list.list_id, name: list.name, username: null, date: list.created_at }));
+    const userLists = data.map((list: any) => ({ listId: list.list_id, name: list.name, username: null, date: list.created_at, userId: list.user_id }));
     handleSort(userLists);
   };
 
@@ -167,29 +168,10 @@ export default function Lists() {
         )
       `)
       .in("user_id", friends)
-    const friendLists = listMemberData.map((list: any) => ({ listId: list.list_id, name: list.lists.name, username: list.users.username, date: list.lists.created_at }))
-    const sharedLists = sharedListData?.map((list: any) => ({ listId: list.list_id, name: list.name, username: list.users.username, date: list.created_at }))
+    const friendLists = listMemberData.map((list: any) => ({ listId: list.list_id, name: list.lists.name, username: list.users.username, date: list.lists.created_at, userId: -1 }))
+    const sharedLists = sharedListData?.map((list: any) => ({ listId: list.list_id, name: list.name, username: list.users.username, date: list.created_at, userId: list.user_id }))
     sharedLists?.forEach((item) => friendLists.push(item))
     setLists(friendLists.sort((a, b) => a.date.localeCompare(b.date)))
-  }
-
-  const getListPins = async (listId: any) => {
-    const { data, error } = await supabase
-      .from("pin_lists")
-      .select(`
-        pins (
-          pin_id,
-          name,
-          address,
-          locations (
-            latitude,
-            longitude
-          )
-        )
-      `)
-      .eq("list_id", Number(listId))
-    const pinsInList: Pin[] = data?.map(pin => ({ id: pin.pins.pin_id, name: pin.pins.name, address: pin.pins.address, latitude: pin.pins.locations.latitude, longitude: pin.pins.locations.longitude }))
-    setPins(pinsInList)
   }
 
   const switchToUserView = async () => {
@@ -293,7 +275,7 @@ export default function Lists() {
               <ListItemsCard name={item.name} listId={item.listId} />
             )}
             {viewMode == "shared" && (
-              <ListItemsCard name={item.name} listId={item.listId} user={item.username} />
+              <ListItemsCard name={item.name} listId={item.listId} user={item.username} userIds={[item.userId]} />
             )}
           </Pressable>
         )}
