@@ -76,7 +76,17 @@ export default function PinMarkers({
         ? getUserColor(String(friend.user_id))
         : color;
 
-  if (loading) return <LoadingPage />;
+  if (loading) return (
+
+    <View style={styles.wrapper}>
+      <View style={[styles.outer, { backgroundColor: "#b7bcb8" }]}>
+        <View style={[styles.avatar, { backgroundColor: "#ecf1ed"}]} />
+      </View>
+      <View style={styles.stem} />
+      <View style={{height: 62}}/>
+    </View>
+
+  );
   
   return (
     <View style={styles.wrapper}>
