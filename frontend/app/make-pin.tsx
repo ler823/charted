@@ -594,7 +594,7 @@ export default function MakePin() {
     const detailsRes = await fetch(detailsUrl);
     const detailsJson = await detailsRes.json();
     const hoursUnformatted = detailsJson.result.opening_hours?.periods;
-    const hoursFormatted = (hoursUnformatted ?? []).map((hours) => ({day: hours.close.day, open: hours.open.time, close: hours.close.time})).sort((a, b) => {if (a.day < b.day) {return -1} else if (a.day > b.day) {return 1} else {return 0}})
+    const hoursFormatted = (hoursUnformatted ?? []).map((hours) => ({day: hours.close?.day, open: hours.open?.time, close: hours.close?.time})).sort((a, b) => {if ((a?.day ?? 0) < (b?.day ?? 0)) {return -1} else if ((a?.day ?? 0) > (b?.day ?? 0)) {return 1} else {return 0}})
     setHours(hoursFormatted);
     setPlaceId(placeId);
     const formatted =
