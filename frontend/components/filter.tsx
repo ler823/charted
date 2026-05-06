@@ -6,7 +6,7 @@ import { FilterType } from "@/types/types";
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import Slider from '@react-native-community/slider';
 import React, { useEffect, useRef, useState } from "react";
-import { Alert, Animated, FlatList, Modal, Pressable, ScrollView, StyleSheet, Switch, Text, View } from "react-native";
+import { Alert, Animated, Modal, Pressable, ScrollView, StyleSheet, Switch, Text, View } from "react-native";
 import AvatarBorder from "./avatar-with-colored-border";
 import TimePicker from "./time-picker";
 
@@ -33,15 +33,15 @@ export default function Filter({ isVisible, onClose, exportFilter }: Props) {
   const [selfEnabled, setSelfEnabled] = useState(false);
   const [dataLoaded, setDataLoaded] = useState(false);
   const pulseAnim = useRef(new Animated.Value(1)).current;
-  
-    useEffect(() => {
-      Animated.loop(
-        Animated.sequence([
-          Animated.timing(pulseAnim, { toValue: 0.4, duration: 700, useNativeDriver: true }),
-          Animated.timing(pulseAnim, { toValue: 1, duration: 700, useNativeDriver: true }),
-        ])
-      ).start();
-    }, [pulseAnim]);
+
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, { toValue: 0.4, duration: 700, useNativeDriver: true }),
+        Animated.timing(pulseAnim, { toValue: 1, duration: 700, useNativeDriver: true }),
+      ])
+    ).start();
+  }, [pulseAnim]);
 
   const getUserFriends = async () => {
     const { data, error } = await supabase
@@ -63,18 +63,18 @@ export default function Filter({ isVisible, onClose, exportFilter }: Props) {
     }
 
     var friendsFromDb = data?.map(({ requester, target }) => ({
-        id:
-          requester.user_id == profile?.user_id
-            ? Number(target.user_id)
-            : Number(requester.user_id),
-        username:
-          requester.user_id == profile?.user_id
-            ? target.username
-            : requester.username,
-        enabled: false
-      })) ?? []
+      id:
+        requester.user_id == profile?.user_id
+          ? Number(target.user_id)
+          : Number(requester.user_id),
+      username:
+        requester.user_id == profile?.user_id
+          ? target.username
+          : requester.username,
+      enabled: false
+    })) ?? []
     const selectedFriends = filterOptions.friends ?? [];
-    const preSelectedFriends = friendsFromDb.map((friend) => ({...friend, enabled: selectedFriends.includes(friend.id)}))
+    const preSelectedFriends = friendsFromDb.map((friend) => ({ ...friend, enabled: selectedFriends.includes(friend.id) }))
     setFriends(preSelectedFriends)
   }
 
@@ -89,7 +89,7 @@ export default function Filter({ isVisible, onClose, exportFilter }: Props) {
     }
     const listsFromDb = data.map((list) => ({ id: list.list_id, name: list.name, enabled: false }));
     const selectedLists = filterOptions.lists ?? [];
-    const preSelectedLists = listsFromDb.map((list) => ({...list, enabled: selectedLists.includes(list.id)}))
+    const preSelectedLists = listsFromDb.map((list) => ({ ...list, enabled: selectedLists.includes(list.id) }))
     return preSelectedLists
   }
 
@@ -104,15 +104,15 @@ export default function Filter({ isVisible, onClose, exportFilter }: Props) {
     }
     const tagsFromDb = data.map((tag) => ({ id: tag.tag_id, name: tag.name, enabled: false }));
     const selectedTags = filterOptions.tags ?? [];
-    const preSelectedTags = tagsFromDb.map((tag) => ({...tag, enabled: selectedTags.includes(tag.id)}))
+    const preSelectedTags = tagsFromDb.map((tag) => ({ ...tag, enabled: selectedTags.includes(tag.id) }))
     return preSelectedTags
   }
 
   const clearFilters = async () => {
     setSelfEnabled(false);
-    setFriends(friends.map((friend) => ({id: friend.id, username: friend.username, enabled: false})));
-    setLists(lists.map((list) => ({id: list.id, name: list.name, enabled: false})));
-    setTags(tags.map((tag) => ({id: tag.id, name: tag.name, enabled: false})));
+    setFriends(friends.map((friend) => ({ id: friend.id, username: friend.username, enabled: false })));
+    setLists(lists.map((list) => ({ id: list.id, name: list.name, enabled: false })));
+    setTags(tags.map((tag) => ({ id: tag.id, name: tag.name, enabled: false })));
     setOpenNow(false);
     setHour(null);
     setMinute(null);
@@ -130,7 +130,7 @@ export default function Filter({ isVisible, onClose, exportFilter }: Props) {
       militaryHour = suffix == "AM" ? hour : hour! + 12;
       time = militaryHour! * 100 + minute!
     }
-    
+
     updateFilterOptions({
       self: selfEnabled,
       friends: friendsToAdd.length == 0 ? null : friendsToAdd,
@@ -193,46 +193,54 @@ export default function Filter({ isVisible, onClose, exportFilter }: Props) {
       <Modal animationType="fade" transparent={true} visible={isVisible}>
         <View style={styles.modalOverlay}>
           {!dataLoaded && (
-            <View style={styles.modalContent}>
+            <View style={[styles.modalContent, {paddingHorizontal: 16}]}>
               <Text style={styles.titleText}>Filters</Text>
               <View style={styles.skeletonFriendsRow}>
-                <Animated.View style={[styles.skeletonFriends, {opacity: pulseAnim}]}/>
-                <Animated.View style={[styles.skeletonFriends, {opacity: pulseAnim}]}/>
-                <Animated.View style={[styles.skeletonFriends, {opacity: pulseAnim}]}/>
-                <Animated.View style={[styles.skeletonFriends, {opacity: pulseAnim}]}/>
-                <Animated.View style={[styles.skeletonFriends, {opacity: pulseAnim}]}/>
+                <Animated.View style={[styles.skeletonFriends, { opacity: pulseAnim }]} />
+                <Animated.View style={[styles.skeletonFriends, { opacity: pulseAnim }]} />
+                <Animated.View style={[styles.skeletonFriends, { opacity: pulseAnim }]} />
+                <Animated.View style={[styles.skeletonFriends, { opacity: pulseAnim }]} />
+                <Animated.View style={[styles.skeletonFriends, { opacity: pulseAnim }]} />
               </View>
               <View style={styles.skeletonTextBoxesColumn}>
-                <Animated.View style={[styles.skeletonTextBox, {opacity: pulseAnim}]} />
-                <Animated.View style={[styles.skeletonTextBox, {opacity: pulseAnim}]} />
-                <Animated.View style={[styles.skeletonTextBox, {opacity: pulseAnim}]} />
-                <Animated.View style={[styles.skeletonTextBox, {opacity: pulseAnim}]} />
-                <Animated.View style={[styles.skeletonTextBox, {opacity: pulseAnim}]} />
-                <Animated.View style={[styles.skeletonTextBox, {opacity: pulseAnim}]} />
-                <Animated.View style={[styles.skeletonTextBox, {opacity: pulseAnim}]} />
-                <Animated.View style={[styles.skeletonTextBox, {opacity: pulseAnim}]} />
-                <Animated.View style={[styles.skeletonTextBox, {opacity: pulseAnim}]} />
-                <Animated.View style={[styles.skeletonTextBox, {opacity: pulseAnim}]} />
+                <Animated.View style={[styles.skeletonTextBox, { opacity: pulseAnim }]} />
+                <Animated.View style={[styles.skeletonTextBox, { opacity: pulseAnim }]} />
+                <Animated.View style={[styles.skeletonTextBox, { opacity: pulseAnim }]} />
+                <Animated.View style={[styles.skeletonTextBox, { opacity: pulseAnim }]} />
+                <Animated.View style={[styles.skeletonTextBox, { opacity: pulseAnim }]} />
+                <Animated.View style={[styles.skeletonTextBox, { opacity: pulseAnim }]} />
+                <Animated.View style={[styles.skeletonTextBox, { opacity: pulseAnim }]} />
+                <Animated.View style={[styles.skeletonTextBox, { opacity: pulseAnim }]} />
+                <Animated.View style={[styles.skeletonTextBox, { opacity: pulseAnim }]} />
+                <Animated.View style={[styles.skeletonTextBox, { opacity: pulseAnim }]} />
               </View>
             </View>
-        )}
+          )}
           {dataLoaded && (<View style={styles.modalContent}>
             <Text style={styles.titleText}>Filters</Text>
             <ScrollView style={styles.filterContent} showsVerticalScrollIndicator={false}>
-            <View style={styles.friendsRow}>
-              <View>
-                <Text style={styles.sectionHeader}>Me</Text>
+              <ScrollView horizontal style={styles.friendsRow}>
+                <View style={{paddingLeft: 16}}>
+                  <Text style={[styles.sectionHeader, {paddingLeft: 5}]}>Me</Text>
                   <Pressable style={selfEnabled ? styles.avatarStackEnabled : styles.avatarStackDisabled} onPress={() => { selfEnabled == true ? setSelfEnabled(false) : setSelfEnabled(true); setRefresh((prev) => !prev) }}>
                     <View style={selfEnabled ? styles.avatarEnabled : null}>
                       <AvatarBorder users_id={profile?.user_id ?? 0} />
                     </View>
                     <Text style={styles.username}>{profile?.username ?? 0}</Text>
                   </Pressable>
-              </View>
-              <View style={styles.friendsSection}>
-                {friends.length > 0 && (<Text style={styles.sectionHeader}>Friends</Text>)}
-                <View>
-                  <FlatList
+                </View>
+                <View style={[styles.friendsSection, {paddingRight: 16}]}>
+                  {friends.length > 0 && (<Text style={[styles.sectionHeader, {paddingLeft: 5}]}>Friends</Text>)}
+                  <View style={{ flexDirection: "row" }}>
+                    {friends.map((item) => (
+                      <Pressable key={item.id} style={item.enabled ? styles.avatarStackEnabled : styles.avatarStackDisabled} onPress={() => { item.enabled == true ? item.enabled = false : item.enabled = true; setRefresh((prev) => !prev) }}>
+                        <View style={item.enabled ? styles.avatarEnabled : null}>
+                          <AvatarBorder users_id={item.id} />
+                        </View>
+                        <Text style={styles.username}>{item.username}</Text>
+                      </Pressable>
+                    ))}
+                    {/* <FlatList
                     horizontal={true}
                     data={friends}
                     keyExtractor={(item) => item.id.toString()}
@@ -243,92 +251,94 @@ export default function Filter({ isVisible, onClose, exportFilter }: Props) {
                         </View>
                         <Text style={styles.username}>{item.username}</Text>
                       </Pressable>
-                    )} />
+                    )} /> */}
+                  </View>
                 </View>
-              </View>
-            </View>
-              <View style={styles.separator} />
-              <Text style={styles.sectionHeader}>Lists</Text>
-              <View style={styles.listTagView}>
-                {lists.length == 0 && (
-                  <Text style={styles.emptyListTag}>You have no tags</Text>
-                )}
-                {lists.map((list) => (
-                  <Pressable style={list.enabled ? styles.listTagEnabled : styles.listTagDisabled} onPress={() => { list.enabled == true ? list.enabled = false : list.enabled = true; setRefresh((prev) => !prev) }} key={list.id}>
-                    <Text style={styles.regularText}>{list.name}</Text>
-                  </Pressable>
-                ))}
-              </View>
-              <View style={styles.separator} />
-              <Text style={styles.sectionHeader}>Tags</Text>
-              <View style={styles.listTagView}>
-                {tags.length == 0 && (
-                  <Text style={styles.emptyListTag}>You have no tags</Text>
-                )}
-                {tags.map((tag) => (
-                  <Pressable style={tag.enabled ? styles.listTagEnabled : styles.listTagDisabled} onPress={() => { tag.enabled == true ? tag.enabled = false : tag.enabled = true; setRefresh((prev) => !prev) }} key={tag.id}>
-                    <Text style={styles.regularText}>{tag.name}</Text>
-                  </Pressable>
-                ))}
-              </View>
-              <View style={styles.separator} />
-              <Text style={styles.sectionHeader}>Hours</Text>
-              <View>
-                <View style={styles.hourContentRow}>
-                  <Text style={styles.regularText}>Open Now</Text>
-                  <Switch
-                    trackColor={{
-                      false: Colors.light.text,
-                      true: Colors.light.accent,
-                    }}
-                    thumbColor="#FFF"
-                    ios_backgroundColor={Colors.light.text}
-                    onValueChange={() => setOpenNow((prev) => !prev)}
-                    value={openNow} />
-                </View>
-                <View style={openNow ? styles.hourContentRowDisabled : styles.hourContentRow}>
-                  <Text style={styles.regularText}>Open at...</Text>
-                  <Pressable
-                    onPress={() => { if (!openNow) setTimePickerVisible(true) }}
-                    style={styles.hoursButton}>
-                    {(hour == null || minute == null || suffix == null) && (
-                      <Text style={styles.regularText}>--:--</Text>
-                    )}
-                    {(hour != null && minute != null && suffix != null) && (
-                      <Text style={styles.regularText}>{hour < 10 ? "0" + hour.toString() : hour}:{minute < 10 ? "0" + minute.toString() : minute} {suffix}</Text>
-                    )}
-                  </Pressable>
-                  {(hour != null && minute != null && suffix != null) && (
-                    <Pressable 
-                    onPress={() => {if (!openNow) { setHour(null); setMinute(null); setSuffix(null); }}}
-                    style={styles.clearButton}>
-                      <MaterialIcons name="highlight-remove" size={17} color="white" />
-                    </Pressable>
+              </ScrollView>
+              <View style={{paddingHorizontal: 16}}>
+                <View style={styles.separator} />
+                <Text style={styles.sectionHeader}>Lists</Text>
+                <View style={styles.listTagView}>
+                  {lists.length == 0 && (
+                    <Text style={styles.emptyListTag}>You have no tags</Text>
                   )}
-                  <TimePicker isVisible={timePickerVisible} onClose={() => setTimePickerVisible(false)} setActualHour={setHour} setActualMinute={setMinute} setActualSuffix={setSuffix} />
+                  {lists.map((list) => (
+                    <Pressable style={list.enabled ? styles.listTagEnabled : styles.listTagDisabled} onPress={() => { list.enabled == true ? list.enabled = false : list.enabled = true; setRefresh((prev) => !prev) }} key={list.id}>
+                      <Text style={styles.regularText}>{list.name}</Text>
+                    </Pressable>
+                  ))}
                 </View>
-              </View>
-              <View style={styles.separator} />
-              <Text style={styles.sectionHeader}>Distance</Text>
-              <View>
-                {mileRadius < 26 && (
-                  <Text style={styles.regularText}>Radius of search (in miles) {mileRadius}</Text>
-                )}
-                {mileRadius == 26 && (
-                  <Text style={styles.regularText}>Locations of all distances will be returned</Text>
-                )}
-                <Slider
-                  value={mileRadius}
-                  minimumValue={1}
-                  maximumValue={26}
-                  minimumTrackTintColor={Colors.light.accent}
-                  maximumTrackTintColor="#536161"
-                  onValueChange={(value) => setMileRadius(value)}
-                  step={1} 
-                  style={styles.distanceSlider}/>
+                <View style={styles.separator} />
+                <Text style={styles.sectionHeader}>Tags</Text>
+                <View style={styles.listTagView}>
+                  {tags.length == 0 && (
+                    <Text style={styles.emptyListTag}>You have no tags</Text>
+                  )}
+                  {tags.map((tag) => (
+                    <Pressable style={tag.enabled ? styles.listTagEnabled : styles.listTagDisabled} onPress={() => { tag.enabled == true ? tag.enabled = false : tag.enabled = true; setRefresh((prev) => !prev) }} key={tag.id}>
+                      <Text style={styles.regularText}>{tag.name}</Text>
+                    </Pressable>
+                  ))}
+                </View>
+                <View style={styles.separator} />
+                <Text style={styles.sectionHeader}>Hours</Text>
+                <View>
+                  <View style={styles.hourContentRow}>
+                    <Text style={styles.regularText}>Open Now</Text>
+                    <Switch
+                      trackColor={{
+                        false: Colors.light.text,
+                        true: Colors.light.accent,
+                      }}
+                      thumbColor="#FFF"
+                      ios_backgroundColor={Colors.light.text}
+                      onValueChange={() => setOpenNow((prev) => !prev)}
+                      value={openNow} />
+                  </View>
+                  <View style={openNow ? styles.hourContentRowDisabled : styles.hourContentRow}>
+                    <Text style={styles.regularText}>Open at...</Text>
+                    <Pressable
+                      onPress={() => { if (!openNow) setTimePickerVisible(true) }}
+                      style={styles.hoursButton}>
+                      {(hour == null || minute == null || suffix == null) && (
+                        <Text style={styles.regularText}>--:--</Text>
+                      )}
+                      {(hour != null && minute != null && suffix != null) && (
+                        <Text style={styles.regularText}>{hour < 10 ? "0" + hour.toString() : hour}:{minute < 10 ? "0" + minute.toString() : minute} {suffix}</Text>
+                      )}
+                    </Pressable>
+                    {(hour != null && minute != null && suffix != null) && (
+                      <Pressable
+                        onPress={() => { if (!openNow) { setHour(null); setMinute(null); setSuffix(null); } }}
+                        style={styles.clearButton}>
+                        <MaterialIcons name="highlight-remove" size={17} color="white" />
+                      </Pressable>
+                    )}
+                    <TimePicker isVisible={timePickerVisible} onClose={() => setTimePickerVisible(false)} setActualHour={setHour} setActualMinute={setMinute} setActualSuffix={setSuffix} />
+                  </View>
+                </View>
+                <View style={styles.separator} />
+                <Text style={styles.sectionHeader}>Distance</Text>
+                <View>
+                  {mileRadius < 26 && (
+                    <Text style={styles.regularText}>Radius of search (in miles) {mileRadius}</Text>
+                  )}
+                  {mileRadius == 26 && (
+                    <Text style={styles.regularText}>Locations of all distances will be returned</Text>
+                  )}
+                  <Slider
+                    value={mileRadius}
+                    minimumValue={1}
+                    maximumValue={26}
+                    minimumTrackTintColor={Colors.light.accent}
+                    maximumTrackTintColor="#536161"
+                    onValueChange={(value) => setMileRadius(value)}
+                    step={1}
+                    style={styles.distanceSlider} />
+                </View>
               </View>
             </ScrollView>
-            <View style={{alignItems: "center"}}>
+            <View style={{ alignItems: "center" }}>
               <Pressable onPress={clearFilters} style={styles.clearFiltersButton}>
                 <Text style={styles.buttonText}>Clear all Filters</Text>
               </Pressable>
@@ -362,8 +372,8 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     backgroundColor: '#ffffff',
     borderRadius: 18,
-    paddingLeft: 16,
-    paddingRight: 16,
+    //paddingLeft: 16,
+    //paddingRight: 16,
     paddingTop: 10,
     paddingBottom: 10,
     shadowColor: "#000",
@@ -373,7 +383,8 @@ const styles = StyleSheet.create({
   },
   buttonRow: {
     flexDirection: "row",
-    alignItems: "center"
+    alignItems: "center",
+    paddingHorizontal: 16,
   },
   checkBox: {
     margin: 10,
@@ -447,7 +458,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
     paddingBottom: 10,
     opacity: 1,
-    
+
   },
   avatarStackDisabled: {
     paddingHorizontal: 4,
