@@ -241,9 +241,10 @@ export default function Home() {
             };
           })
           .filter(Boolean) as Pin[];
-
-        setPins(formattedPins);
-        filterPins();
+        if (formattedPins.length !== pins.length) {
+          setPins(formattedPins);
+          filterPins();
+        }
       }
       setPinChanged(true);
       fetchPins();
