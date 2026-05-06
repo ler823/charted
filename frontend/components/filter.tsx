@@ -307,7 +307,7 @@ export default function Filter({ isVisible, onClose, exportFilter }: Props) {
                         <Text style={styles.regularText}>{hour < 10 ? "0" + hour.toString() : hour}:{minute < 10 ? "0" + minute.toString() : minute} {suffix}</Text>
                       )}
                     </Pressable>
-                    {(hour != null && minute != null && suffix != null) && (
+                    {(hour != null && minute != null && suffix != null && !openNow) && (
                       <Pressable
                         onPress={() => { if (!openNow) { setHour(null); setMinute(null); setSuffix(null); } }}
                         style={styles.clearButton}>
@@ -505,7 +505,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    margin: 5,
+    marginVertical: 5,
     opacity: 0.3
   },
   timePicker: {
