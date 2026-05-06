@@ -1,12 +1,11 @@
 import { Stars } from "@/components/light-stars";
-import LoadingPage from "@/components/loading-page";
 import { Colors, Fonts } from "@/constants/theme";
 import { getPhotoUrl } from "@/lib/photo-utils";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { router } from "expo-router";
-import { useEffect, useState, useCallback } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { useEffect, useRef, useState, useCallback } from "react";
+import { Animated, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 
 import { useAuth } from "@/context/AuthContext";
@@ -30,6 +29,16 @@ type VisPin = {
 
 export default function Account() {
   const { profile, loading: authLoading, signOut } = useAuth();
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, { toValue: 0.4, duration: 700, useNativeDriver: true }),
+        Animated.timing(pulseAnim, { toValue: 1, duration: 700, useNativeDriver: true }),
+      ])
+    ).start();
+  }, [pulseAnim]);
   const [username, setUsername] = useState("");
   const [location, setLocation] = useState<string | null>(null);
   const [bio, setBio] = useState<string | null>(null);
@@ -308,7 +317,25 @@ export default function Account() {
     fetchActivity();
   }, [profile]);
 
-  if (loading) return <LoadingPage />;
+  if (loading) {
+    return (
+      <ScrollView>
+        <View style={{ height: 15 }} />
+        <View style={{ marginTop: 45, marginHorizontal: 10, flexDirection: "row", justifyContent: "flex-end" }}>
+          <Animated.View style={[styles.editAccountButton, { width: 130, opacity: pulseAnim, backgroundColor: "#c5d4c8" }]} />
+        </View>
+        <View style={styles.container}>
+          <Animated.View style={[styles.avatar, { opacity: pulseAnim, backgroundColor: "#c5d4c8" }]} />
+          <Animated.View style={{ height: 26, width: 160, borderRadius: 8, backgroundColor: "#c5d4c8", marginBottom: 8, opacity: pulseAnim }} />
+          <Animated.View style={{ height: 17, width: 110, borderRadius: 8, backgroundColor: "#c5d4c8", marginBottom: 8, opacity: pulseAnim }} />
+          <Animated.View style={{ height: 15, width: 200, borderRadius: 8, backgroundColor: "#c5d4c8", marginBottom: 10, opacity: pulseAnim }} />
+          <Animated.View style={[styles.infoBox, { opacity: pulseAnim, backgroundColor: "#c5d4c8" }]} />
+          <Animated.View style={[styles.infoBox, { opacity: pulseAnim, backgroundColor: "#c5d4c8" }]} />
+        </View>
+        <View style={{ height: 105 }} />
+      </ScrollView>
+    );
+  }
 
   return (
     <ScrollView>
