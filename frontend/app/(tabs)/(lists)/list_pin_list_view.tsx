@@ -23,7 +23,7 @@ type PinWithDate = {
 }
 
 export default function ListPinListView() {
-  const { listIdToView, isShared } = useLocalSearchParams();
+  const { listIdToView, isShared, canLeave } = useLocalSearchParams();
   const [pins, setPins] = useState<PinWithDate[]>([]);
   const [listName, setListName] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
@@ -33,6 +33,7 @@ export default function ListPinListView() {
   const [loading, setLoading] = useState(true)
   const { profile } = useAuth();
   const [coverPhoto, setCoverPhoto] = useState<string | null>(null);
+  console.log(canLeave + ", " + isShared)
 
   const handleSort = async (pin: PinWithDate[]) => {
     if (sortChoice == "date") {
@@ -197,7 +198,7 @@ export default function ListPinListView() {
             </Text>
           </Pressable>
         )}
-        {isShared == "true" && (
+        {isShared == "true" && canLeave == "true" && (
           <Pressable
             style={styles.cancelButton}
             onPress={onLeaveList}>

@@ -22,6 +22,7 @@ type listItems = {
   username: string | null,
   date: string,
   userId: number,
+  public: boolean,
 };
 
 export default function Lists() {
@@ -126,7 +127,7 @@ export default function Lists() {
       Alert.alert("Error", error.message);
       return;
     }
-    const userLists = data.map((list: any) => ({ listId: list.list_id, name: list.name, username: null, date: list.created_at, userId: list.user_id }));
+    const userLists = data.map((list: any) => ({ listId: list.list_id, name: list.name, username: null, date: list.created_at, userId: list.user_id, public: false }));
     handleSort(userLists);
   };
 
@@ -144,7 +145,8 @@ export default function Lists() {
           created_at
         ),
         users!list_members_creator_id_fkey (
-          username
+          username,
+          user_id
         )
       `,
       )
@@ -168,8 +170,9 @@ export default function Lists() {
         )
       `)
       .in("user_id", friends)
-    const friendLists = listMemberData.map((list: any) => ({ listId: list.list_id, name: list.lists.name, username: list.users.username, date: list.lists.created_at, userId: -1 }))
-    const sharedLists = sharedListData?.map((list: any) => ({ listId: list.list_id, name: list.name, username: list.users.username, date: list.created_at, userId: list.user_id }))
+      .eq("privacy", 2)
+    const friendLists = listMemberData.map((list: any) => ({ listId: list.list_id, name: list.lists.name, username: list.users.username, date: list.lists.created_at, userId: list.users.user_id, public: false }))
+    const sharedLists = sharedListData?.map((list: any) => ({ listId: list.list_id, name: list.name, username: list.users.username, date: list.created_at, userId: list.user_id, public: true }))
     sharedLists?.forEach((item) => friendLists.push(item))
     setLists(friendLists.sort((a, b) => a.date.localeCompare(b.date)))
   }
@@ -266,7 +269,7 @@ export default function Lists() {
               router.push(
                 {
                   pathname: "/(tabs)/(lists)/list_pin_list_view",
-                  params: { listIdToView: String(item.listId), isShared: viewMode == "user" ? "false" : "true" }
+                  params: { listIdToView: String(item.listId), isShared: viewMode == "user" ? "false" : "true", canLeave: item.public ? "false": "true" }
                 }
               )
             }}
