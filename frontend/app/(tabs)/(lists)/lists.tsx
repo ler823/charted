@@ -1,5 +1,4 @@
 import AddTagOrList from "@/components/add-tag";
-import LoadingPage from "@/components/loading-page";
 import Sort from "@/components/sort-lists";
 import { Colors, Fonts } from "@/constants/theme";
 import { useAuth } from "@/context/AuthContext";
@@ -7,8 +6,8 @@ import { supabase } from "@/lib/supabase";
 import { Pin } from "@/types/types";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useFocusEffect, useRouter } from "expo-router";
-import { useCallback, useState } from "react";
-import { Alert, FlatList, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Alert, Animated, FlatList, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import ListItemsCard from "../(home)/list_item_card";
 
 type ListType = {
@@ -23,9 +22,33 @@ type listItems = {
   date: string
 };
 
+const SKELETON_COUNT = 7;
+
+function SkeletonCard({ opacity, shared }: { opacity: Animated.Value; shared: boolean }) {
+  return (
+    <Animated.View style={[styles.skeletonCard, { opacity }]}>
+      <View style={styles.skeletonImg} />
+      <View style={styles.skeletonText}>
+        <View style={styles.skeletonTitle} />
+        {shared && <View style={styles.skeletonSub} />}
+      </View>
+    </Animated.View>
+  );
+}
+
 export default function Lists() {
   const router = useRouter();
   const { profile } = useAuth();
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, { toValue: 0.4, duration: 700, useNativeDriver: true }),
+        Animated.timing(pulseAnim, { toValue: 1, duration: 700, useNativeDriver: true }),
+      ])
+    ).start();
+  }, [pulseAnim]);
   const [lists, setLists] = useState<listItems[]>([]);
   const [pins, setPins] = useState<Pin[]>([]);
   const [addListModalVisible, setAddListModalVisible] = useState(false)
@@ -168,7 +191,6 @@ export default function Lists() {
     refreshLists();
   }, [viewMode, sortModalVisible]))
 
-  if (loading) return <LoadingPage />;
   return (
     <View style={styles.container}>
       <Text style={styles.heading}>Lists</Text>
@@ -218,40 +240,48 @@ export default function Lists() {
       </View>
       <View style={styles.spacer} />
 
-      <FlatList
-        data={filteredLists}
-        keyExtractor={(item) => item.name}
-        contentContainerStyle={styles.listContent}
-        ListEmptyComponent={() => viewMode == "shared" ? (searchQuery == "" ? (
-          <Text style={styles.text}>Your friends are not sharing any lists with their friends</Text>
-        ) : (
-          <Text style={styles.text}>No lists found matching the query</Text>
-        )) : (searchQuery == "" ? (
-          <Text style={styles.text}>You do not have any lists</Text>
-        ) : (
-          <Text style={styles.text}>No lists found matching the query</Text>
-        ))}
-        renderItem={({ item }) => (
-          <Pressable
-            style={styles.cards}
-            onPress={() => {
-              router.push(
-                {
-                  pathname: "/(tabs)/(lists)/list_pin_list_view",
-                  params: { listIdToView: String(item.listId), isShared: viewMode == "user" ? "false" : "true" }
-                }
-              )
-            }}
-          >
-            {viewMode == "user" && (
-              <ListItemsCard name={item.name} listId={item.listId} />
-            )}
-            {viewMode == "shared" && (
-              <ListItemsCard name={item.name} listId={item.listId} user={item.username} />
-            )}
-          </Pressable>
-        )}
-      />
+      {loading ? (
+        <View style={styles.listContent}>
+          {Array.from({ length: SKELETON_COUNT }).map((_, i) => (
+            <SkeletonCard key={i} opacity={pulseAnim} shared={viewMode === "shared"} />
+          ))}
+        </View>
+      ) : (
+        <FlatList
+          data={filteredLists}
+          keyExtractor={(item) => item.name}
+          contentContainerStyle={styles.listContent}
+          ListEmptyComponent={() => viewMode == "shared" ? (searchQuery == "" ? (
+            <Text style={styles.text}>Your friends are not sharing any lists with their friends</Text>
+          ) : (
+            <Text style={styles.text}>No lists found matching the query</Text>
+          )) : (searchQuery == "" ? (
+            <Text style={styles.text}>You do not have any lists</Text>
+          ) : (
+            <Text style={styles.text}>No lists found matching the query</Text>
+          ))}
+          renderItem={({ item }) => (
+            <Pressable
+              style={styles.cards}
+              onPress={() => {
+                router.push(
+                  {
+                    pathname: "/(tabs)/(lists)/list_pin_list_view",
+                    params: { listIdToView: String(item.listId), isShared: viewMode == "user" ? "false" : "true" }
+                  }
+                )
+              }}
+            >
+              {viewMode == "user" && (
+                <ListItemsCard name={item.name} listId={item.listId} />
+              )}
+              {viewMode == "shared" && (
+                <ListItemsCard name={item.name} listId={item.listId} user={item.username} />
+              )}
+            </Pressable>
+          )}
+        />
+      )}
       {viewMode == "user" && (
         <Pressable
           style={styles.plusButton}
@@ -408,5 +438,45 @@ const styles = StyleSheet.create({
   },
   pill: {
     flexDirection: "row"
-  }
+  },
+  skeletonCard: {
+    backgroundColor: "#DEE9E0",
+    padding: 12,
+    margin: 5,
+    borderRadius: 5,
+    height: 80,
+    width: "92%",
+    flexDirection: "row",
+    alignItems: "center",
+    alignSelf: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
+    elevation: 4,
+  },
+  skeletonImg: {
+    width: 65,
+    height: 65,
+    borderRadius: 9,
+    backgroundColor: "#c5d4c8",
+  },
+  skeletonText: {
+    flex: 1,
+    marginLeft: 15,
+    justifyContent: "center",
+    gap: 6,
+  },
+  skeletonTitle: {
+    height: 16,
+    width: "55%",
+    borderRadius: 8,
+    backgroundColor: "#c5d4c8",
+  },
+  skeletonSub: {
+    height: 12,
+    width: "35%",
+    borderRadius: 8,
+    backgroundColor: "#c5d4c8",
+  },
 });
