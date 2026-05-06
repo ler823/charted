@@ -5,6 +5,7 @@ import { StyleSheet, View, Text } from "react-native";
 import LoadingPage from "./loading-page";
 import { getPhotoUrl } from "@/lib/photo-utils";
 import { Image } from "expo-image";
+import PinSkeleton from "./pin-marker-skeleton";
 interface PinMarkerProps {
   color?: string;
   users_id: number;
@@ -76,7 +77,7 @@ export default function PinMarkers({
         ? getUserColor(String(friend.user_id))
         : color;
 
-  if (loading) return <LoadingPage />;
+  if (loading) return <PinSkeleton />;
   
   return (
     <View style={styles.wrapper}>
