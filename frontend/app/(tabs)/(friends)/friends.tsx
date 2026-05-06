@@ -2,10 +2,9 @@ import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/lib/supabase";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useFocusEffect, useRouter, Stack } from "expo-router";
-import React, { useCallback, useState } from "react";
-import { FlatList, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import { Animated, FlatList, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { Colors, Fonts } from "../../../constants/theme";
-import LoadingPage from "@/components/loading-page";
 import { getPhotoUrl } from "@/lib/photo-utils";
 import { Image } from "expo-image";
 import Sort from "@/components/sort-lists";
@@ -19,9 +18,33 @@ type UserCard = {
   date: string | null;
 };
 
+const SKELETON_COUNT = 8;
+
+function SkeletonCard({ opacity }: { opacity: Animated.Value }) {
+  return (
+    <Animated.View style={[styles.card, { opacity }]}>
+      <View style={styles.skeletonAvatar} />
+      <View style={styles.cardInfo}>
+        <View style={styles.skeletonName} />
+        <View style={styles.skeletonLocation} />
+      </View>
+    </Animated.View>
+  );
+}
+
 export default function Friends() {
   const router = useRouter();
   const { profile, loading: authLoading } = useAuth();
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, { toValue: 0.4, duration: 700, useNativeDriver: true }),
+        Animated.timing(pulseAnim, { toValue: 1, duration: 700, useNativeDriver: true }),
+      ])
+    ).start();
+  }, [pulseAnim]);
   const [friends, setFriends] = useState<UserCard[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
@@ -141,8 +164,6 @@ export default function Friends() {
     return ascending ? aTime - bTime : bTime - aTime;
   });
 
-  if (loading) return <LoadingPage />;
-
   return (
     <View style={styles.container}>
       <Stack.Screen options={{ title: "Friends" }} />
@@ -151,6 +172,7 @@ export default function Friends() {
         <MaterialCommunityIcons name="plus" size={45} color="#fefbea" />
       </Pressable>
 
+      <Text style={styles.heading}>Friends</Text>
       <View style={styles.header}>
         <View style={styles.searchBar}>
           <TextInput
@@ -172,49 +194,57 @@ export default function Friends() {
         </Pressable>
       </View>
 
-      <FlatList
-        data={sortedFriends}
-        keyExtractor={(item) => item.profileId}
-        contentContainerStyle={styles.list}
-        ListEmptyComponent={
-          <Text style={styles.emptyText}>No friends yet. Tap + to find people.</Text>
-        }
-        renderItem={({ item }) => (
-          <Pressable
-            style={styles.card}
-            onPress={() =>
-              router.push({
-                pathname: "/friend_profiles/[friendid]",
-                params: { friendid: String(item.user_id) },
-              })
-            }
-          >
-            <View style={styles.avatar}>
-              {item.avatarUrl ? (
-                <Image
-                  source={{ uri: item.avatarUrl }}
-                  style={StyleSheet.absoluteFill}
-                  contentFit="cover"
-                  transition={300}
-                />
-              ) : (
-                <Text style={styles.avatarInitial}>
-                  {item.username?.[0]?.toUpperCase()}
-                </Text>
-              )}
-            </View>
-            <View style={styles.cardInfo}>
-              <Text style={styles.username}>{item.username}</Text>
-              {item.location ? (
-                <View style={styles.locationRow}>
-                  <Ionicons name="location-sharp" size={13} color="#111" />
-                  <Text style={[styles.location, { paddingLeft: 2 }]}>{item.location}</Text>
-                </View>
-              ) : null}
-            </View>
-          </Pressable>
-        )}
-      />
+      {loading ? (
+        <View style={styles.list}>
+          {Array.from({ length: SKELETON_COUNT }).map((_, i) => (
+            <SkeletonCard key={i} opacity={pulseAnim} />
+          ))}
+        </View>
+      ) : (
+        <FlatList
+          data={sortedFriends}
+          keyExtractor={(item) => item.profileId}
+          contentContainerStyle={styles.list}
+          ListEmptyComponent={
+            <Text style={styles.emptyText}>No friends yet. Tap + to find people.</Text>
+          }
+          renderItem={({ item }) => (
+            <Pressable
+              style={styles.card}
+              onPress={() =>
+                router.push({
+                  pathname: "/friend_profiles/[friendid]",
+                  params: { friendid: String(item.user_id) },
+                })
+              }
+            >
+              <View style={styles.avatar}>
+                {item.avatarUrl ? (
+                  <Image
+                    source={{ uri: item.avatarUrl }}
+                    style={StyleSheet.absoluteFill}
+                    contentFit="cover"
+                    transition={300}
+                  />
+                ) : (
+                  <Text style={styles.avatarInitial}>
+                    {item.username?.[0]?.toUpperCase()}
+                  </Text>
+                )}
+              </View>
+              <View style={styles.cardInfo}>
+                <Text style={styles.username}>{item.username}</Text>
+                {item.location ? (
+                  <View style={styles.locationRow}>
+                    <Ionicons name="location-sharp" size={13} color="#111" />
+                    <Text style={[styles.location, { paddingLeft: 2 }]}>{item.location}</Text>
+                  </View>
+                ) : null}
+              </View>
+            </Pressable>
+          )}
+        />
+      )}
       <Sort 
         contentType="friend"
         isVisible={sortModalVisible} 
@@ -231,8 +261,15 @@ export default function Friends() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+  heading: {
+    fontFamily: Fonts.bold,
+    fontSize: 28,
+    color: "#243e36",
+    paddingHorizontal: 16,
+    paddingTop: 50,
+    paddingBottom: 10,
+  },
   header: {
-    paddingTop: 60,
     paddingBottom: 18,
     paddingHorizontal: 16,
     flexDirection: "row",
@@ -360,5 +397,26 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: Fonts.bold,
     color: "#fefbea",
+  },
+  skeletonAvatar: {
+    width: 65,
+    height: 65,
+    borderRadius: 999,
+    backgroundColor: "#c5d4c8",
+  },
+  skeletonName: {
+    height: 16,
+    width: "55%",
+    borderRadius: 8,
+    backgroundColor: "#c5d4c8",
+    marginLeft: 15,
+    marginBottom: 6,
+  },
+  skeletonLocation: {
+    height: 12,
+    width: "35%",
+    borderRadius: 8,
+    backgroundColor: "#c5d4c8",
+    marginLeft: 15,
   },
 });

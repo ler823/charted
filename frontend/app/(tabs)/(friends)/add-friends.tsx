@@ -1,11 +1,13 @@
+import { Fonts } from "@/constants/theme";
 import { useAuth } from "@/context/AuthContext";
 import { getPhotoUrl } from "@/lib/photo-utils";
 import { supabase } from "@/lib/supabase";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { router } from "expo-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
+  Animated,
   FlatList,
   Pressable,
   StyleSheet,
@@ -13,24 +15,44 @@ import {
   TextInput,
   View,
 } from "react-native";
-import { Fonts } from "@/constants/theme";
-import LoadingPage from "@/components/loading-page";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 type UserCard = {
   profileId: string;
   user_id: number;
   username: string;
   avatarUrl?: string | null;
-  users: {
-    discoverable: boolean;
-  }
 };
+
+const SKELETON_COUNT = 8;
+
+function SkeletonCard({ opacity }: { opacity: Animated.Value }) {
+  return (
+    <Animated.View style={[styles.card, { opacity }]}>
+      <View style={styles.skeletonAvatar} />
+      <View style={styles.cardInfo}>
+        <View style={styles.skeletonName} />
+      </View>
+    </Animated.View>
+  );
+}
 
 export default function AddFriends() {
   const { profile } = useAuth();
+  const { bottom } = useSafeAreaInsets();
   const [searchQuery, setSearchQuery] = useState("");
   const [results, setResults] = useState<UserCard[]>([]);
   const [loading, setLoading] = useState(true);
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, { toValue: 0.4, duration: 700, useNativeDriver: true }),
+        Animated.timing(pulseAnim, { toValue: 1, duration: 700, useNativeDriver: true }),
+      ])
+    ).start();
+  }, [pulseAnim]);
 
   useEffect(() => {
     fetchDiscover("");
@@ -79,7 +101,7 @@ export default function AddFriends() {
           username: p.username,
           avatarUrl,
         };
-      })
+      }),
     );
 
     setResults(enriched);
@@ -91,8 +113,6 @@ export default function AddFriends() {
     fetchDiscover(text);
   };
 
-  if (loading) return <LoadingPage />;
-
   return (
     <View style={styles.container}>
       <View style={styles.topBar}>
@@ -101,56 +121,65 @@ export default function AddFriends() {
           <Text style={styles.backText}>Back</Text>
         </Pressable>
       </View>
+      <Text style={styles.heading}>Add Friends</Text>
       <View style={styles.searchBarRow}>
         <View style={styles.searchBar}>
           <TextInput
             style={styles.searchInput}
-            placeholder="Search"
+            placeholder="Enter a username"
             placeholderTextColor="#fefbea"
             value={searchQuery}
             onChangeText={handleSearchChange}
-            />
+          />
           <Ionicons name="search" size={16} color="#fefbea" />
         </View>
       </View>
 
-      <FlatList
-        data={results}
-        keyExtractor={(item) => item.profileId}
-        contentContainerStyle={styles.list}
-        ListEmptyComponent={
-          <Text style={styles.emptyText}>No users found.</Text>
-        }
-        renderItem={({ item }) => (
-          <Pressable
-            style={styles.card}
-            onPress={() =>
-              router.push({
-                pathname: "/user_profiles/[userid]",
-                params: { userid: item.profileId },
-              })
-            }
-          >
-            <View style={styles.avatar}>
-              {item.avatarUrl ? (
-                <Image
-                  source={{ uri: item.avatarUrl }}
-                  style={StyleSheet.absoluteFill}
-                  contentFit="cover"
-                  transition={300}
-                />
-              ) : (
-                <Text style={styles.avatarInitial}>
-                  {item.username?.[0]?.toUpperCase()}
-                </Text>
-              )}
-            </View>
-            <View style={styles.cardInfo}>
-              <Text style={styles.username}>{item.username}</Text>
-            </View>
-          </Pressable>
-        )}
-      />
+      {loading ? (
+        <View style={[styles.list, { paddingBottom: bottom + 64 }]}>
+          {Array.from({ length: SKELETON_COUNT }).map((_, i) => (
+            <SkeletonCard key={i} opacity={pulseAnim} />
+          ))}
+        </View>
+      ) : (
+        <FlatList
+          data={results}
+          keyExtractor={(item) => item.profileId}
+          contentContainerStyle={[styles.list, { paddingBottom: bottom + 64 }]}
+          ListEmptyComponent={
+            <Text style={styles.emptyText}>No users found.</Text>
+          }
+          renderItem={({ item }) => (
+            <Pressable
+              style={styles.card}
+              onPress={() =>
+                router.push({
+                  pathname: "/user_profiles/[userid]",
+                  params: { userid: item.profileId },
+                })
+              }
+            >
+              <View style={styles.avatar}>
+                {item.avatarUrl ? (
+                  <Image
+                    source={{ uri: item.avatarUrl }}
+                    style={StyleSheet.absoluteFill}
+                    contentFit="cover"
+                    transition={300}
+                  />
+                ) : (
+                  <Text style={styles.avatarInitial}>
+                    {item.username?.[0]?.toUpperCase()}
+                  </Text>
+                )}
+              </View>
+              <View style={styles.cardInfo}>
+                <Text style={styles.username}>{item.username}</Text>
+              </View>
+            </Pressable>
+          )}
+        />
+      )}
     </View>
   );
 }
@@ -164,6 +193,13 @@ const styles = StyleSheet.create({
     paddingTop: 55,
     paddingHorizontal: 16,
     paddingBottom: 12,
+  },
+  heading: {
+    fontFamily: Fonts.bold,
+    fontSize: 28,
+    color: "#243e36",
+    paddingHorizontal: 16,
+    paddingBottom: 10,
   },
   searchBarRow: {
     paddingHorizontal: 16,
@@ -210,7 +246,7 @@ const styles = StyleSheet.create({
     color: "#fefbea",
     fontFamily: Fonts.bold,
   },
-  list: { alignItems: "center", paddingBottom: 20 },
+  list: { alignItems: "center" },
   card: {
     backgroundColor: "#DEE9E0",
     padding: 12,
@@ -225,6 +261,19 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 2,
     elevation: 4,
+  },
+  skeletonAvatar: {
+    width: 65,
+    height: 65,
+    borderRadius: 999,
+    backgroundColor: "#c5d4c8",
+  },
+  skeletonName: {
+    height: 16,
+    width: "55%",
+    borderRadius: 8,
+    backgroundColor: "#c5d4c8",
+    marginLeft: 15,
   },
   avatar: {
     width: 65,

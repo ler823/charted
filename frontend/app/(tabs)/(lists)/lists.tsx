@@ -171,6 +171,7 @@ export default function Lists() {
   if (loading) return <LoadingPage />;
   return (
     <View style={styles.container}>
+      <Text style={styles.heading}>Lists</Text>
       <View style={styles.searchRow}>
         <View style={styles.searchBar}>
           <TextInput
@@ -285,6 +286,13 @@ const styles = StyleSheet.create({
     paddingTop: 50,
     flex: 1,
   },
+  heading: {
+    fontFamily: Fonts.bold,
+    fontSize: 28,
+    color: "#243e36",
+    paddingHorizontal: 16,
+    paddingBottom: 10,
+  },
   cards: {
     width: "100%",
     alignItems: "center",
@@ -353,9 +361,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingBottom: 10,
     gap: 10,
-
   },
   searchBar: {
     flex: 1,
