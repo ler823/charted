@@ -33,7 +33,6 @@ export default function ListPinListView() {
   const [loading, setLoading] = useState(true)
   const { profile } = useAuth();
   const [coverPhoto, setCoverPhoto] = useState<string | null>(null);
-  console.log(canLeave + ", " + isShared)
 
   const handleSort = async (pin: PinWithDate[]) => {
     if (sortChoice == "date") {
