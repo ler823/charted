@@ -5,10 +5,9 @@ import { supabase } from "@/lib/supabase";
 import { FilterType } from "@/types/types";
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import Slider from '@react-native-community/slider';
-import React, { useEffect, useState } from "react";
-import { Alert, FlatList, Modal, Pressable, ScrollView, StyleSheet, Switch, Text, View } from "react-native";
+import React, { useEffect, useRef, useState } from "react";
+import { Alert, Animated, FlatList, Modal, Pressable, ScrollView, StyleSheet, Switch, Text, View } from "react-native";
 import AvatarBorder from "./avatar-with-colored-border";
-import LoadingPage from "./loading-page";
 import TimePicker from "./time-picker";
 
 
@@ -33,6 +32,16 @@ export default function Filter({ isVisible, onClose, exportFilter }: Props) {
   const [timePickerVisible, setTimePickerVisible] = useState(false);
   const [selfEnabled, setSelfEnabled] = useState(false);
   const [dataLoaded, setDataLoaded] = useState(false);
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+  
+    useEffect(() => {
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(pulseAnim, { toValue: 0.4, duration: 700, useNativeDriver: true }),
+          Animated.timing(pulseAnim, { toValue: 1, duration: 700, useNativeDriver: true }),
+        ])
+      ).start();
+    }, [pulseAnim]);
 
   const getUserFriends = async () => {
     const { data, error } = await supabase
@@ -175,13 +184,38 @@ export default function Filter({ isVisible, onClose, exportFilter }: Props) {
     }
   }, [openNow])
 
+  if (!dataLoaded) {
+
+  }
+
   return (
     <View>
       <Modal animationType="fade" transparent={true} visible={isVisible}>
         <View style={styles.modalOverlay}>
-          {!dataLoaded && (<View style={styles.modalContent}>
-            <LoadingPage />
-          </View>)}
+          {!dataLoaded && (
+            <View style={styles.modalContent}>
+              <Text style={styles.titleText}>Filters</Text>
+              <View style={styles.skeletonFriendsRow}>
+                <Animated.View style={[styles.skeletonFriends, {opacity: pulseAnim}]}/>
+                <Animated.View style={[styles.skeletonFriends, {opacity: pulseAnim}]}/>
+                <Animated.View style={[styles.skeletonFriends, {opacity: pulseAnim}]}/>
+                <Animated.View style={[styles.skeletonFriends, {opacity: pulseAnim}]}/>
+                <Animated.View style={[styles.skeletonFriends, {opacity: pulseAnim}]}/>
+              </View>
+              <View style={styles.skeletonTextBoxesColumn}>
+                <Animated.View style={[styles.skeletonTextBox, {opacity: pulseAnim}]} />
+                <Animated.View style={[styles.skeletonTextBox, {opacity: pulseAnim}]} />
+                <Animated.View style={[styles.skeletonTextBox, {opacity: pulseAnim}]} />
+                <Animated.View style={[styles.skeletonTextBox, {opacity: pulseAnim}]} />
+                <Animated.View style={[styles.skeletonTextBox, {opacity: pulseAnim}]} />
+                <Animated.View style={[styles.skeletonTextBox, {opacity: pulseAnim}]} />
+                <Animated.View style={[styles.skeletonTextBox, {opacity: pulseAnim}]} />
+                <Animated.View style={[styles.skeletonTextBox, {opacity: pulseAnim}]} />
+                <Animated.View style={[styles.skeletonTextBox, {opacity: pulseAnim}]} />
+                <Animated.View style={[styles.skeletonTextBox, {opacity: pulseAnim}]} />
+              </View>
+            </View>
+        )}
           {dataLoaded && (<View style={styles.modalContent}>
             <Text style={styles.titleText}>Filters</Text>
             <ScrollView style={styles.filterContent} showsVerticalScrollIndicator={false}>
@@ -532,5 +566,29 @@ const styles = StyleSheet.create({
   },
   friendsSection: {
     flex: 1,
+  },
+  skeletonFriends: {
+    borderRadius: 100,
+    backgroundColor: "#d8d8d8",
+    width: 50,
+    height: 50,
+    margin: 5,
+  },
+  skeletonFriendsRow: {
+    flexDirection: "row",
+    flex: 0.1,
+    marginVertical: 20,
+    marginBottom: 40,
+  },
+  skeletonTextBox: {
+    borderRadius: 8,
+    backgroundColor: "#d8d8d8",
+    width: "100%",
+    height: 25,
+    margin: 10,
+  },
+  skeletonTextBoxesColumn: {
+    flex: 1,
+    alignItems: "center"
   }
 })
