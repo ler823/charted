@@ -36,7 +36,7 @@ export default function Lists() {
   const [sortChoice, setSortChoice] = useState("date")
   const [ascending, setAscending] = useState(true)
   const [loading, setLoading] = useState(true)
-  
+
   const filteredLists = lists.filter((item) =>
     item.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -81,9 +81,38 @@ export default function Lists() {
       return;
     }
     setAddListModalVisible(false);
-    setNewList({name: "", privacy: 1})
+    setNewList({ name: "", privacy: 1 })
     refreshLists();
   };
+
+  const getUserFriends = async () => {
+    const { data, error } = await supabase
+      .from("user_relationships1")
+      .select(`
+            requester:profiles!user_relationships_requester_id_fkey (
+            user_id,
+            username
+            ),
+            target:profiles!user_relationships_target_id_fkey (
+            user_id,
+            username
+            )
+            `)
+      .or(`requester_id.eq.${profile?.id},target_id.eq.${profile?.id}`)
+      .eq("status", "accepted");
+    if (error) {
+      Alert.alert("Error", error.message);
+    }
+
+    var friendsFromDb = data?.map(({ requester, target }) => (
+
+      requester.user_id == profile?.user_id
+        ? Number(target.user_id)
+        : Number(requester.user_id)
+    )) ?? []
+
+    return friendsFromDb
+  }
 
   const getUserLists = async () => {
     if (!profile) return;
@@ -101,7 +130,8 @@ export default function Lists() {
   };
 
   const getFriendLists = async () => {
-    const { data, error } = await supabase
+    const friends = await getUserFriends();
+    const { data: listMemberData, error: listMemberError } = await supabase
       .from("list_members")
       .select(
         `
@@ -119,12 +149,28 @@ export default function Lists() {
       )
       .eq("viewer_id", profile?.user_id ?? 0)
 
-    if (error) {
-      Alert.alert("Error", error.message);
+    if (listMemberError) {
+      Alert.alert("Error", listMemberError.message);
       return;
     }
-  const friendLists = data.map((list: any) => ({ listId: list.list_id, name: list.lists.name, username: list.users.username, date: list.lists.created_at }))
-  setLists(friendLists.sort((a, b) => a.date.localeCompare(b.date)))
+
+    const { data: sharedListData, error: sharedListError } = await supabase
+      .from("lists")
+      .select(`
+        list_id,
+        user_id,
+        name,
+        privacy,
+        created_at,
+        users!lists_user_id_fkey (
+          username
+        )
+      `)
+      .in("user_id", friends)
+    const friendLists = listMemberData.map((list: any) => ({ listId: list.list_id, name: list.lists.name, username: list.users.username, date: list.lists.created_at }))
+    const sharedLists = sharedListData?.map((list: any) => ({ listId: list.list_id, name: list.name, username: list.users.username, date: list.created_at }))
+    sharedLists?.forEach((item) => friendLists.push(item))
+    setLists(friendLists.sort((a, b) => a.date.localeCompare(b.date)))
   }
 
   const getListPins = async (listId: any) => {
@@ -268,14 +314,14 @@ export default function Lists() {
         newEntry={newList}
         setNewEntry={setNewList}
       />
-      <Sort 
-      contentType="list"
-      isVisible={sortModalVisible} 
-      onClose={() => setSortModalVisible(false)}
-      sortChoice={sortChoice}
-      setSortChoice={setSortChoice}
-      ascending={ascending}
-      setAscending={setAscending}
+      <Sort
+        contentType="list"
+        isVisible={sortModalVisible}
+        onClose={() => setSortModalVisible(false)}
+        sortChoice={sortChoice}
+        setSortChoice={setSortChoice}
+        ascending={ascending}
+        setAscending={setAscending}
       />
     </View>
   );
@@ -311,7 +357,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
     paddingHorizontal: 30,
   },
-  
+
   plusButton: {
     position: "absolute",
     bottom: 115,
