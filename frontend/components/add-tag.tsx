@@ -18,9 +18,9 @@ type Props = PropsWithChildren<{
 }>;
 
 export default function AddTagOrList({ name, isVisible, onClose, onSave, newEntry, setNewEntry }: Props) {
-  const publicDescription = "All of your friends can view this pin";
+  const publicDescription = "All of your friends can view this list";
   const selectivePrivateDescription = "Only friends you choose can view this list\nYou can choose these friends from the edit list page"
-  const privateDescription = "Only you can view this pin";
+  const privateDescription = "Only you can view this list";
   const [privacyDescription, setPrivacyDescription] = useState(name == "tag" ? publicDescription : selectivePrivateDescription);
   const [isPrivate, setIsPrivate] = useState(false)
   const [privacy, setPrivacy] = useState(1)
