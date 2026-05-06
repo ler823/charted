@@ -150,7 +150,6 @@ export default function ListPinListView() {
 
       if (data?.photos === null) return;
       const coverEntry = data.photos.key;
-      console.log(coverEntry)
       if (coverEntry === undefined) return;
       const urls = await getPhotoUrl([coverEntry]);
       if (urls?.[0]?.url) setCoverPhoto(urls[0].url);
@@ -228,7 +227,7 @@ export default function ListPinListView() {
         />
         <View style={styles.info}>
           <Text ellipsizeMode="tail" style={styles.title}>{listName}</Text>
-          {sharedUsername !== null && (
+          {sharedUsername !== null && isShared === "true" && (
             <Text ellipsizeMode="tail" style={styles.sharedUsername}>Shared by {sharedUsername}</Text>
           )}
         </View>

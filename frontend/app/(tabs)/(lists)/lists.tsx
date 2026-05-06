@@ -179,10 +179,12 @@ export default function Lists() {
 
   const switchToUserView = async () => {
     setViewMode("user")
+    setLoading(true)
   }
 
   const switchToSharedView = async () => {
     setViewMode("shared")
+    setLoading(true)
   }
 
   const refreshLists = async () => {
