@@ -237,7 +237,7 @@ export default function Filter({ isVisible, onClose, exportFilter }: Props) {
                         <View style={item.enabled ? styles.avatarEnabled : null}>
                           <AvatarBorder users_id={item.id} />
                         </View>
-                        <Text style={styles.username}>{item.username}</Text>
+                        <Text numberOfLines={1} ellipsizeMode="tail" style={styles.username}>{item.username}</Text>
                       </Pressable>
                     ))}
                     {/* <FlatList
@@ -451,19 +451,21 @@ const styles = StyleSheet.create({
   },
   username: {
     textAlign: "center",
-    fontFamily: Fonts.bold,
+    fontFamily: Fonts.regular,
+    fontSize: 13,
     marginTop: 5,
+    maxWidth: 64
   },
   avatarStackEnabled: {
-    paddingHorizontal: 4,
+    paddingHorizontal: 6,
     paddingBottom: 10,
     opacity: 1,
 
   },
   avatarStackDisabled: {
-    paddingHorizontal: 4,
+    paddingHorizontal: 6,
     paddingBottom: 10,
-    opacity: 0.3
+    opacity: 0.3,
   },
   listTagView: {
     flexDirection: "row",
