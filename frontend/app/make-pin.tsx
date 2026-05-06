@@ -567,6 +567,9 @@ export default function MakePin() {
     }
   };
 
+  const buildPlacePhotoUrl = (photoReference: string) =>
+    `https://maps.googleapis.com/maps/api/place/photo?maxwidth=800&photo_reference=${photoReference}&key=${process.env.EXPO_PUBLIC_GOOGLE_PLACES_KEY}`;
+
   const fetchNearestPlace = async () => {
     if (!lat || !lng) return;
 
@@ -579,6 +582,12 @@ export default function MakePin() {
     if (!nearest) return;
 
     setName(nearest.name ?? "");
+
+    const photoRef = nearest.photos?.[0]?.photo_reference;
+    if (photoRef) {
+      setCoverPhotoUrl(buildPlacePhotoUrl(photoRef));
+      setCoverPhotoChanged(true);
+    }
 
     const placeId = nearest.place_id;
     const detailsUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&fields=formatted_address,opening_hours&key=${process.env.EXPO_PUBLIC_GOOGLE_PLACES_KEY}`;
@@ -697,6 +706,11 @@ export default function MakePin() {
                         const hoursFormatted = (hoursUnformatted ?? []).map((hours) => ({day: hours.close.day, open: hours.open.time, close: hours.close.time}))
                         setHours(hoursFormatted)
                         setPlaceId(data["place_id"])
+                        const photoRef = (details as any)?.photos?.[0]?.photo_reference;
+                        if (photoRef && !coverPhotoUrl) {
+                          setCoverPhotoUrl(buildPlacePhotoUrl(photoRef));
+                          setCoverPhotoChanged(true);
+                        }
                       }}
                       query={{
                         key: process.env.EXPO_PUBLIC_GOOGLE_PLACES_KEY,
