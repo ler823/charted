@@ -1,3 +1,5 @@
+import LoadingPage from "@/components/loading-page";
+import { Fonts } from "@/constants/theme";
 import { useAuth } from "@/context/AuthContext";
 import { getPhotoUrl } from "@/lib/photo-utils";
 import { supabase } from "@/lib/supabase";
@@ -13,8 +15,7 @@ import {
   TextInput,
   View,
 } from "react-native";
-import { Fonts } from "@/constants/theme";
-import LoadingPage from "@/components/loading-page";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 type UserCard = {
   profileId: string;
@@ -23,11 +24,12 @@ type UserCard = {
   avatarUrl?: string | null;
   users: {
     discoverable: boolean;
-  }
+  };
 };
 
 export default function AddFriends() {
   const { profile } = useAuth();
+  const { bottom } = useSafeAreaInsets();
   const [searchQuery, setSearchQuery] = useState("");
   const [results, setResults] = useState<UserCard[]>([]);
   const [loading, setLoading] = useState(true);
@@ -79,7 +81,7 @@ export default function AddFriends() {
           username: p.username,
           avatarUrl,
         };
-      })
+      }),
     );
 
     setResults(enriched);
@@ -101,15 +103,16 @@ export default function AddFriends() {
           <Text style={styles.backText}>Back</Text>
         </Pressable>
       </View>
+      <Text style={styles.heading}>Add Friends</Text>
       <View style={styles.searchBarRow}>
         <View style={styles.searchBar}>
           <TextInput
             style={styles.searchInput}
-            placeholder="Search"
+            placeholder="Enter a username"
             placeholderTextColor="#fefbea"
             value={searchQuery}
             onChangeText={handleSearchChange}
-            />
+          />
           <Ionicons name="search" size={16} color="#fefbea" />
         </View>
       </View>
@@ -117,7 +120,7 @@ export default function AddFriends() {
       <FlatList
         data={results}
         keyExtractor={(item) => item.profileId}
-        contentContainerStyle={styles.list}
+        contentContainerStyle={[styles.list, { paddingBottom: bottom + 64 }]}
         ListEmptyComponent={
           <Text style={styles.emptyText}>No users found.</Text>
         }
@@ -165,6 +168,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 12,
   },
+  heading: {
+    fontFamily: Fonts.bold,
+    fontSize: 28,
+    color: "#243e36",
+    paddingHorizontal: 16,
+    paddingBottom: 10,
+  },
   searchBarRow: {
     paddingHorizontal: 16,
     paddingBottom: 14,
@@ -210,7 +220,7 @@ const styles = StyleSheet.create({
     color: "#fefbea",
     fontFamily: Fonts.bold,
   },
-  list: { alignItems: "center", paddingBottom: 20 },
+  list: { alignItems: "center" },
   card: {
     backgroundColor: "#DEE9E0",
     padding: 12,
