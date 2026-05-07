@@ -218,6 +218,7 @@ export default function MakePin() {
       Alert.alert("Error", error);
       return;
     }
+    console.log(hours)
     const { data, error: pinInfoError } = await supabase
       .from("pins")
       .update({
@@ -502,7 +503,7 @@ export default function MakePin() {
       Alert.alert("Error", error);
       return;
     }
-
+    console.log(hours)
     const { data, error: pinInfoError } = await supabase
       .from("pins")
       .update({
@@ -733,7 +734,8 @@ export default function MakePin() {
                       onPress={(data, details = null) => {
                         handleNameChange(data.structured_formatting.main_text);
                         handleAddressChange(details?.formatted_address ?? "");
-                        const hoursUnformatted = details?.["current_opening_hours"].periods;
+                        console.log(details?.["opening_hours"].periods)
+                        const hoursUnformatted = details?.["opening_hours"].periods;
                         const hoursFormatted = (hoursUnformatted ?? []).map((hours) => ({day: hours.close.day, open: hours.open.time, close: hours.close.time}))
                         setHours(hoursFormatted)
                         setPlaceId(data["place_id"])
