@@ -4,9 +4,10 @@ import { supabase } from "@/lib/supabase";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   Alert,
+  Animated,
   FlatList,
   Pressable,
   ScrollView,
@@ -15,7 +16,6 @@ import {
   View,
 } from "react-native";
 //import { AutoSkeletonView } from "react-native-auto-skeleton";
-import LoadingPage from "@/components/loading-page";
 import { useAuth } from "@/context/AuthContext";
 import { getPhotoUrl } from "@/lib/photo-utils";
 
@@ -97,7 +97,18 @@ export default function PinPage() {
   const [isEnabled, setIsEnabled] = useState(false);
   const [coverPhoto, setCoverPhoto] = useState<string | null>(null);
   const [photoList, setPhotoList] = useState<string[] | null>(null);
+  const [dataLoaded, setDataLoaded] = useState(false)
   const toggleSwitch = () => setIsEnabled((previousState) => !previousState);
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+    
+      useEffect(() => {
+        Animated.loop(
+          Animated.sequence([
+            Animated.timing(pulseAnim, { toValue: 0.4, duration: 700, useNativeDriver: true }),
+            Animated.timing(pulseAnim, { toValue: 1, duration: 700, useNativeDriver: true }),
+          ])
+        ).start();
+      }, [pulseAnim]);
 
   const formatDay = (dayNumber: number) => {
     let day;
@@ -191,6 +202,9 @@ export default function PinPage() {
         }
       }
       fetchPin();
+      if (friends.length !== 0) {
+        setDataLoaded(true)
+      }
     }, [pinid]),
   );
 
@@ -310,6 +324,9 @@ export default function PinPage() {
       setFriends(enriched);
     }
     fetchUsers();
+    if (pin) {
+      setDataLoaded(true)
+    }
   }, [cluster, pin?.user_id]);
 
   useEffect(() => {
@@ -431,9 +448,23 @@ export default function PinPage() {
     }
     fetchUserNotes();
   }, [cluster, pin?.user_id]);
-
-  if (!pin || !friends) {
-    return <LoadingPage />;
+  if (!dataLoaded) {
+    return (
+      <View>
+        <Animated.View style={[styles.skeletonPhoto, {opacity: pulseAnim}]} />
+        <View style={styles.skeletonContentContainer}>
+          <Animated.View style={[styles.skeletonContent, {opacity: pulseAnim}]} />
+          <Animated.View style={[styles.skeletonContent, {opacity: pulseAnim}]} />
+          <Animated.View style={[styles.skeletonContent, {opacity: pulseAnim}]} />
+          <Animated.View style={[styles.skeletonContent, {opacity: pulseAnim}]} />
+          <Animated.View style={[styles.skeletonContent, {opacity: pulseAnim}]} />
+          <Animated.View style={[styles.skeletonContent, {opacity: pulseAnim}]} />
+          <Animated.View style={[styles.skeletonContent, {opacity: pulseAnim}]} />
+          <Animated.View style={[styles.skeletonContent, {opacity: pulseAnim}]} />
+          <Animated.View style={[styles.skeletonContent, {opacity: pulseAnim}]} />
+        </View>
+      </View>
+    );
   }
 
   return (
@@ -453,10 +484,10 @@ export default function PinPage() {
           placeholderContentFit="cover"
         />
 
-        {pin.user_id !== profile?.user_id && (
+        {pin?.user_id !== profile?.user_id && (
           <View style={{backgroundColor: "#243e36", padding: 7, paddingRight: 14, alignSelf: "flex-start", borderTopRightRadius: 16, top: 167, position: "absolute"}}>
             <Text style={{ fontFamily: Fonts.bold_i, color: "#d9d9d9", fontSize: 16, marginLeft: 3 }}>
-              {pin.users?.username || "No username available"}'s Pin
+              {pin?.users?.username || "No username available"}'s Pin
             </Text>
           </View>
         )}
@@ -475,11 +506,11 @@ export default function PinPage() {
               },
             ]}
           >
-            <Text style={styles.title}>{pin.name ?? "No pin name"}</Text>
-            {pin.private === true && (
+            <Text style={styles.title}>{pin?.name ?? "No pin name"}</Text>
+            {pin?.private === true && (
               <Ionicons name="lock-closed" size={20} color="#243e36" />
             )}
-            {pin.private === false && (
+            {pin?.private === false && (
               <Ionicons name="people" size={20} color="#243e36" />
             )}
           </View>
@@ -487,13 +518,13 @@ export default function PinPage() {
           {/* Address */}
           <View>
             <Text style={styles.address}>
-              {pin.address ?? "No pin address"}
+              {pin?.address ?? "No pin address"}
             </Text>
           </View>
 
           {/* Stars */}
           <View style={styles.starRow}>
-            <Stars starnum={pin.user_rating} />
+            <Stars starnum={pin?.user_rating} />
           </View>
 
           {/* Friend Visits */}
@@ -557,8 +588,8 @@ export default function PinPage() {
           {/* Notes */}
           <Text style={styles.subtitle}>My Notes</Text>
           <View style={styles.cardFullRow}>
-            <Text style={pin.user_note? styles.boxText : styles.emptyText}>
-              {pin.user_note || "You have no notes yet"}
+            <Text style={pin?.user_note? styles.boxText : styles.emptyText}>
+              {pin?.user_note || "You have no notes yet"}
             </Text>
           </View>
 
@@ -617,7 +648,7 @@ export default function PinPage() {
           )}
 
           {/* Tags */}
-          {pin.user_id === profile?.user_id && (
+          {pin?.user_id === profile?.user_id && (
             <View>
             <View style={styles.editRow}>
               <Text style={styles.subtitle}>Tags</Text>
@@ -630,10 +661,10 @@ export default function PinPage() {
                   flexWrap: "wrap",
                 }}
               >
-                {pin.pin_tags?.length === 0 && (
+                {pin?.pin_tags?.length === 0 && (
                   <Text style={styles.emptyText}>You have no tags yet</Text>
                 )}
-                {pin.pin_tags?.map((pin_tag) => (
+                {pin?.pin_tags?.map((pin_tag) => (
                   <Text key={pin_tag.tags?.tag_id} style={styles.boxText}>
                     {pin_tag.tags?.name ?? "Unnamed tag"}
                   </Text>
@@ -656,10 +687,10 @@ export default function PinPage() {
                 flexWrap: "wrap",
               }}
             >
-              {pin.pin_lists?.length === 0 && (
+              {pin?.pin_lists?.length === 0 && (
                 <Text style={styles.emptyText}>You have no lists yet</Text>
               )}
-              {pin.pin_lists?.map((pin_list) => (
+              {pin?.pin_lists?.map((pin_list) => (
                 <Text key={pin_list.lists?.list_id} style={styles.boxText}>
                   {pin_list.lists?.name ?? "Unnamed list"}
                 </Text>
@@ -680,12 +711,12 @@ export default function PinPage() {
             ]}
           >
             <ScrollView>
-              {pin.pin_visits?.length === 0 && (
+              {pin?.pin_visits?.length === 0 && (
                 <Text style={[styles.emptyText, { marginTop: 20 }]}>
                   You have no logged visits
                 </Text>
               )}
-              {pin.pin_visits?.map((pin_visit) => {
+              {pin?.pin_visits?.map((pin_visit) => {
                 if (!pin_visit.visit_timestamp) return null;
                 const [year, month, day] = pin_visit.visit_timestamp
                   .split("-")
@@ -730,13 +761,13 @@ export default function PinPage() {
           <Text style={styles.subtitle}>Hours</Text>
           <View style={styles.cardFullRow}>
             <View style={styles.hoursBox}>
-              {pin.hours?.map((hoursObject) => (
+              {pin?.hours?.map((hoursObject) => (
                 <View style={styles.hoursRow} key={hoursObject.day}>
                   <Text style={styles.dayText}>{formatDay(hoursObject.day)}</Text>
                   <Text style={styles.hourText}>{formatTime(hoursObject.open)} - {formatTime(hoursObject.close)}</Text>
                 </View>
               ))}
-              {pin.hours == null && (
+              {pin?.hours == null && (
                 <Text style = {styles.emptyText}>There are no hours associated with this pin</Text>
               )}
             </View>
@@ -761,14 +792,14 @@ export default function PinPage() {
               Back
             </Text>
           </Pressable>
-          {pin.user_id === profile?.user_id && (
+          {pin?.user_id === profile?.user_id && (
             <Pressable
             style={styles.button}
             onPress={() => {
               router.push({
                 pathname: "/make-pin",
                 params: {
-                  pinId: pin.pin_id,
+                  pinId: pin?.pin_id,
                   viewMode: viewMode,
                 },
               });
@@ -937,5 +968,19 @@ const styles = StyleSheet.create({
   },
   hourText: {
     fontFamily: Fonts.regular,
+  },
+  skeletonPhoto: {
+    backgroundColor: "#d8d8d8",
+    width: "100%",
+    height: 200,
+  },
+  skeletonContent: {
+    backgroundColor: "#d8d8d8",
+    height: 50,
+    borderRadius: 8,
+  },
+  skeletonContentContainer: {
+    margin: 10,
+    gap: 10,
   }
 });
