@@ -1,4 +1,3 @@
-import LoadingPage from "@/components/loading-page";
 import Sort from "@/components/sort-lists";
 import { Colors, Fonts } from "@/constants/theme";
 import { useAuth } from "@/context/AuthContext";
@@ -8,8 +7,8 @@ import { supabase } from "@/lib/supabase";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
-import { useCallback, useEffect, useState } from "react";
-import { Alert, FlatList, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Alert, Animated, FlatList, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import ListCard from "../(home)/list_card";
 
 type PinWithDate = {
@@ -20,6 +19,20 @@ type PinWithDate = {
   longitude: number;
   date: string;
   user_id: number;
+}
+
+const SKELETON_COUNT = 7;
+
+function SkeletonCard({ opacity }: { opacity: Animated.Value; }) {
+  return (
+    <Animated.View style={[styles.skeletonCard, { opacity }]}>
+      <View style={styles.skeletonImg} />
+      <View style={styles.skeletonText}>
+        <View style={styles.skeletonTitle} />
+        <View style={styles.skeletonSub} />
+      </View>
+    </Animated.View>
+  );
 }
 
 export default function ListPinListView() {
@@ -34,6 +47,16 @@ export default function ListPinListView() {
   const { profile } = useAuth();
   const [coverPhoto, setCoverPhoto] = useState<string | null>(null);
   const [sharedUsername, setSharedUsername] = useState<string | null>(null);
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, { toValue: 0.4, duration: 700, useNativeDriver: true }),
+        Animated.timing(pulseAnim, { toValue: 1, duration: 700, useNativeDriver: true }),
+      ])
+    ).start();
+  }, [pulseAnim]);
 
   const handleSort = async (pin: PinWithDate[]) => {
     if (sortChoice == "date") {
@@ -158,8 +181,6 @@ export default function ListPinListView() {
     fetchCoverPhoto();
   }, [listIdToView]);
 
-  if (loading) return <LoadingPage />;
-
   return (
     <View style={styles.container}>
       <View style={styles.searchRow}>
@@ -233,29 +254,36 @@ export default function ListPinListView() {
         </View>
       </View>
       <View style={styles.spacer} />
-
-      <FlatList
-        data={filteredPins}
-        keyExtractor={(item) => item.id}
-        ListEmptyComponent={(
-          <Text style={styles.text}>There are no pins in this list</Text>
-        )}
-        contentContainerStyle={styles.listContent}
-        renderItem={({ item }) => (
-          <Pressable
-            style={styles.cards}
-            onPress={() => {
-              router.push({
-                pathname: "/pins/[pinid]",
-                params: { pinid: Number(item.id), viewMode: "" }
-              }
-              )
-            }}
-          >
-            <ListCard name={item.name} pinId={item.id} loc={item.address} userIds={[item.user_id]} />
-          </Pressable>
-        )}
-      />
+      {loading ? (
+        <View style={styles.listContent}>
+          {Array.from({ length: SKELETON_COUNT }).map((_, i) => (
+            <SkeletonCard key={i} opacity={pulseAnim} />
+          ))}
+        </View>
+      ) : (
+        <FlatList
+          data={filteredPins}
+          keyExtractor={(item) => item.id}
+          ListEmptyComponent={(
+            <Text style={styles.text}>There are no pins in this list</Text>
+          )}
+          contentContainerStyle={styles.listContent}
+          renderItem={({ item }) => (
+            <Pressable
+              style={styles.cards}
+              onPress={() => {
+                router.push({
+                  pathname: "/pins/[pinid]",
+                  params: { pinid: Number(item.id), viewMode: "" }
+                }
+                )
+              }}
+            >
+              <ListCard name={item.name} pinId={item.id} loc={item.address} userIds={[item.user_id]} />
+            </Pressable>
+          )}
+        />
+      )}
       <Sort
         contentType="list"
         isVisible={sortModalVisible}
@@ -415,5 +443,45 @@ const styles = StyleSheet.create({
     marginHorizontal: 15,
     fontFamily: Fonts.regular,
     fontSize: 16,
-  }
+  },
+  skeletonCard: {
+    backgroundColor: "#DEE9E0",
+    padding: 12,
+    margin: 5,
+    borderRadius: 5,
+    height: 80,
+    width: "92%",
+    flexDirection: "row",
+    alignItems: "center",
+    alignSelf: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
+    elevation: 4,
+  },
+  skeletonImg: {
+    width: 65,
+    height: 65,
+    borderRadius: 9,
+    backgroundColor: "#c5d4c8",
+  },
+  skeletonText: {
+    flex: 1,
+    marginLeft: 15,
+    justifyContent: "center",
+    gap: 6,
+  },
+  skeletonTitle: {
+    height: 16,
+    width: "55%",
+    borderRadius: 8,
+    backgroundColor: "#c5d4c8",
+  },
+  skeletonSub: {
+    height: 12,
+    width: "35%",
+    borderRadius: 8,
+    backgroundColor: "#c5d4c8",
+  },
 });
