@@ -64,7 +64,6 @@ export default function EditListFriends({ isVisible, onClose, onSave, listId, pi
   }
 
   const getUserFriends = async () => {
-    console.log(profile!.user_id);
     const { data, error } = await supabase
       .from("user_relationships1")
       .select(`
@@ -76,7 +75,6 @@ export default function EditListFriends({ isVisible, onClose, onSave, listId, pi
       `)
       .or(`requester_id.eq.${profile!.id},target_id.eq.${profile!.id}`)
       .eq("status", "accepted");
-    console.log(data)
     if (error) {
       Alert.alert("Error", error.message);
     }
@@ -98,7 +96,6 @@ export default function EditListFriends({ isVisible, onClose, onSave, listId, pi
       return updated;
     });
     const friendIdList = data?.map(({ requester, target }) => requester.user_id == profile!.user_id ? Number(target.user_id) : Number(requester.user_id)) ?? []
-    console.log(friendIdList)
     const { data: friendData, error: friendDataError } = await supabase
       .from("users")
       .select(`
@@ -110,7 +107,6 @@ export default function EditListFriends({ isVisible, onClose, onSave, listId, pi
         )
         `)
       .in("user_id", friendIdList)
-    console.log(friendData)
     if (friendDataError) {
       Alert.alert("Error", friendDataError.message)
     }
