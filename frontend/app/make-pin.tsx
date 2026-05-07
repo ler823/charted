@@ -11,6 +11,7 @@ import { Image } from "expo-image";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
   Animated,
   FlatList,
@@ -1084,6 +1085,11 @@ export default function MakePin() {
           </Pressable>
         </View>
       </KeyboardAwareScrollView>
+      {saveUpdateInitiated && (
+        <View style={styles.savingOverlay}>
+          <ActivityIndicator size="large" color="#fff" />
+        </View>
+      )}
     </View>
   );
 }
@@ -1410,5 +1416,12 @@ const styles = StyleSheet.create({
   skeletonContainer: {
     marginHorizontal: 16,
     gap: 10
-  }
+  },
+  savingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0,0,0,0.45)",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 100,
+  },
 });
