@@ -3,7 +3,6 @@ import AddTagOrList from "@/components/add-tag";
 import AddVisit from "@/components/add-visit";
 import CoverPhotoModal from "@/components/cover-photo-modal";
 import DeletePhotoModal from "@/components/delete-photo";
-import LoadingPage from "@/components/loading-page";
 import { PressableStars } from "@/components/pressable-stars";
 import { Colors, Fonts } from "@/constants/theme";
 import { supabase } from "@/lib/supabase";
@@ -13,6 +12,7 @@ import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
 import {
   Alert,
+  Animated,
   FlatList,
   Keyboard,
   NativeSyntheticEvent,
@@ -128,6 +128,16 @@ export default function MakePin() {
   const { userCoords } = useLocation();
   const [hours, setHours] = useState();
   const [placeId, setPlaceId] = useState();
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+  
+    useEffect(() => {
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(pulseAnim, { toValue: 0.4, duration: 700, useNativeDriver: true }),
+          Animated.timing(pulseAnim, { toValue: 1, duration: 700, useNativeDriver: true }),
+        ])
+      ).start();
+    }, [pulseAnim]);
 
   // Debounce duplicate address checks so we don't fire on every keystroke
   useEffect(() => {
@@ -621,7 +631,28 @@ export default function MakePin() {
   }, []);
 
   if (!dataLoaded) {
-    return <LoadingPage />;
+    return (
+      <View style={styles.skeletonContainer}>
+        <View style={styles.skeletonPicNameLocContainer}>
+          <Animated.View style={[styles.skeletonPicture, {opacity: pulseAnim}]}/>
+          <View style={styles.skeletonNameLocContainer}>
+            <Animated.View style={[styles.skeletonNameLoc, {opacity: pulseAnim}]}/>
+            <Animated.View style={[styles.skeletonNameLoc, {opacity: pulseAnim}]}/>
+          </View>
+        </View>
+        <Animated.View style={[styles.skeletonNameLoc, {opacity: pulseAnim}]}/>
+        <Animated.View style={[styles.skeletonNameLoc, {opacity: pulseAnim}]}/>
+        <Animated.View style={[styles.skeletonNameLoc, {opacity: pulseAnim}]}/>
+        <Animated.View style={[styles.skeletonNameLoc, {opacity: pulseAnim}]}/>
+        <Animated.View style={[styles.skeletonNameLoc, {opacity: pulseAnim}]}/>
+        <Animated.View style={[styles.skeletonNameLoc, {opacity: pulseAnim}]}/>
+        <Animated.View style={[styles.skeletonNameLoc, {opacity: pulseAnim}]}/>
+        <Animated.View style={[styles.skeletonNameLoc, {opacity: pulseAnim}]}/>
+        <Animated.View style={[styles.skeletonNameLoc, {opacity: pulseAnim}]}/>
+        <Animated.View style={[styles.skeletonNameLoc, {opacity: pulseAnim}]}/>
+        <Animated.View style={[styles.skeletonNameLoc, {opacity: pulseAnim}]}/>
+      </View>
+    );
   }
 
   const saveDisabled = !name || !!duplicateAddressError;
@@ -1357,4 +1388,28 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.regular,
     paddingVertical: 10,
   },
+  skeletonPicture: {
+    backgroundColor: "#d8d8d8",
+    width: 90,
+    height: 90,
+    borderRadius: 12,
+  },
+  skeletonNameLoc: {
+    backgroundColor: "#d8d8d8",
+    height: 40,
+    borderRadius: 8,
+  },
+  skeletonPicNameLocContainer: {
+    flexDirection: "row",
+    gap: 10,
+    marginTop: 120,
+  },
+  skeletonNameLocContainer: {
+    flex: 1,
+    gap: 10,
+  },
+  skeletonContainer: {
+    marginHorizontal: 16,
+    gap: 10
+  }
 });
