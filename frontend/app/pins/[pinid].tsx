@@ -38,36 +38,36 @@ type Pin = {
     username: string | null;
   } | null;
   pin_tags:
-    | {
-        tags: {
-          tag_id: number | null;
-          name: string | null;
-        } | null;
-      }[]
-    | null;
+  | {
+    tags: {
+      tag_id: number | null;
+      name: string | null;
+    } | null;
+  }[]
+  | null;
   pin_lists:
-    | {
-        lists: {
-          list_id: number | null;
-          name: string | null;
-        } | null;
-      }[]
-    | null;
+  | {
+    lists: {
+      list_id: number | null;
+      name: string | null;
+    } | null;
+  }[]
+  | null;
   pin_visits:
-    | {
-        visit_id: number | null;
-        visit_timestamp: string | null;
-      }[]
-    | null;
+  | {
+    visit_id: number | null;
+    visit_timestamp: string | null;
+  }[]
+  | null;
   pin_photos:
-    | {
-        photos: {
-          photo_id: number | null;
-          key: string | null;
-        } | null;
-        cover: boolean | null;
-      }[]
-    | null;
+  | {
+    photos: {
+      photo_id: number | null;
+      key: string | null;
+    } | null;
+    cover: boolean | null;
+  }[]
+  | null;
   private: boolean | null;
   hours: Object[] | null;
 };
@@ -91,7 +91,7 @@ export default function PinPage() {
   const { profile } = useAuth();
 
   const [pin, setPin] = useState<Pin | null>(null);
-  const [friends, setFriends] = useState<Friend[] | null>([]);
+  const [friends, setFriends] = useState<Friend[] | null>(null);
   const [cluster, setCluster] = useState<Cluster | null>(null);
   const [notes, setNotes] = useState<Notes[] | null>([]);
   const [isEnabled, setIsEnabled] = useState(false);
@@ -100,15 +100,15 @@ export default function PinPage() {
   const [dataLoaded, setDataLoaded] = useState(false)
   const toggleSwitch = () => setIsEnabled((previousState) => !previousState);
   const pulseAnim = useRef(new Animated.Value(1)).current;
-    
-      useEffect(() => {
-        Animated.loop(
-          Animated.sequence([
-            Animated.timing(pulseAnim, { toValue: 0.4, duration: 700, useNativeDriver: true }),
-            Animated.timing(pulseAnim, { toValue: 1, duration: 700, useNativeDriver: true }),
-          ])
-        ).start();
-      }, [pulseAnim]);
+
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, { toValue: 0.4, duration: 700, useNativeDriver: true }),
+        Animated.timing(pulseAnim, { toValue: 1, duration: 700, useNativeDriver: true }),
+      ])
+    ).start();
+  }, [pulseAnim]);
 
   const formatDay = (dayNumber: number) => {
     let day;
@@ -202,9 +202,6 @@ export default function PinPage() {
         }
       }
       fetchPin();
-      if (friends.length !== 0) {
-        setDataLoaded(true)
-      }
     }, [pinid]),
   );
 
@@ -304,29 +301,26 @@ export default function PinPage() {
 
       const enriched = await Promise.all(
         data
-        .filter((user) => user.user_id !== pin.user_id)
-        .map(async (user) => {
-          let avatarUrl = null;
-          if (user.avatar_key) {
-            const urls = await getPhotoUrl([user.avatar_key]);
-            avatarUrl = urls?.[0]?.url ?? null;
-          }
+          .filter((user) => user.user_id !== pin.user_id)
+          .map(async (user) => {
+            let avatarUrl = null;
+            if (user.avatar_key) {
+              const urls = await getPhotoUrl([user.avatar_key]);
+              avatarUrl = urls?.[0]?.url ?? null;
+            }
 
-          return {
-            user_id: user.user_id,
-            username: user.username,
-            location: null,
-            avatarUrl,
-          };
-        })
+            return {
+              user_id: user.user_id,
+              username: user.username,
+              location: null,
+              avatarUrl,
+            };
+          })
       );
 
       setFriends(enriched);
     }
     fetchUsers();
-    if (pin) {
-      setDataLoaded(true)
-    }
   }, [cluster, pin?.user_id]);
 
   useEffect(() => {
@@ -392,7 +386,7 @@ export default function PinPage() {
         if (row.private && row.user_id !== currentUserId) return false;
 
         if (row.user_id === pin.user_id) return false;
-        
+
         return true;
       });
 
@@ -407,22 +401,22 @@ export default function PinPage() {
         (profileData ?? []).map((p) => [p.user_id, p.avatar_key])
       );
 
-        const normalized = filteredData
-          .map((row) => {
-            const user = Array.isArray(row.users)
-              ? row.users[0]
-              : row.users;
+      const normalized = filteredData
+        .map((row) => {
+          const user = Array.isArray(row.users)
+            ? row.users[0]
+            : row.users;
 
-            const key = avatarKeyMap[row.user_id] ?? null;
+          const key = avatarKeyMap[row.user_id] ?? null;
 
-            return {
-              user_id: row.user_id,
-              user_note: row.user_note,
-              users: user ?? null,
-              avatarKey: key,
-              avatarUrl: null,
-            };
-          });
+          return {
+            user_id: row.user_id,
+            user_note: row.user_note,
+            users: user ?? null,
+            avatarKey: key,
+            avatarUrl: null,
+          };
+        });
 
       const enriched = await Promise.all(
         normalized.map(async (item) => {
@@ -448,20 +442,27 @@ export default function PinPage() {
     }
     fetchUserNotes();
   }, [cluster, pin?.user_id]);
+
+  useEffect(() => {
+    if (pin && friends !== null) {
+  setDataLoaded(true);
+}
+  }, [pin, friends]);
+
   if (!dataLoaded) {
     return (
       <View>
-        <Animated.View style={[styles.skeletonPhoto, {opacity: pulseAnim}]} />
+        <Animated.View style={[styles.skeletonPhoto, { opacity: pulseAnim }]} />
         <View style={styles.skeletonContentContainer}>
-          <Animated.View style={[styles.skeletonContent, {opacity: pulseAnim}]} />
-          <Animated.View style={[styles.skeletonContent, {opacity: pulseAnim}]} />
-          <Animated.View style={[styles.skeletonContent, {opacity: pulseAnim}]} />
-          <Animated.View style={[styles.skeletonContent, {opacity: pulseAnim}]} />
-          <Animated.View style={[styles.skeletonContent, {opacity: pulseAnim}]} />
-          <Animated.View style={[styles.skeletonContent, {opacity: pulseAnim}]} />
-          <Animated.View style={[styles.skeletonContent, {opacity: pulseAnim}]} />
-          <Animated.View style={[styles.skeletonContent, {opacity: pulseAnim}]} />
-          <Animated.View style={[styles.skeletonContent, {opacity: pulseAnim}]} />
+          <Animated.View style={[styles.skeletonContent, { opacity: pulseAnim }]} />
+          <Animated.View style={[styles.skeletonContent, { opacity: pulseAnim }]} />
+          <Animated.View style={[styles.skeletonContent, { opacity: pulseAnim }]} />
+          <Animated.View style={[styles.skeletonContent, { opacity: pulseAnim }]} />
+          <Animated.View style={[styles.skeletonContent, { opacity: pulseAnim }]} />
+          <Animated.View style={[styles.skeletonContent, { opacity: pulseAnim }]} />
+          <Animated.View style={[styles.skeletonContent, { opacity: pulseAnim }]} />
+          <Animated.View style={[styles.skeletonContent, { opacity: pulseAnim }]} />
+          <Animated.View style={[styles.skeletonContent, { opacity: pulseAnim }]} />
         </View>
       </View>
     );
@@ -485,7 +486,7 @@ export default function PinPage() {
         />
 
         {pin?.user_id !== profile?.user_id && (
-          <View style={{backgroundColor: "#243e36", padding: 7, paddingRight: 14, alignSelf: "flex-start", borderTopRightRadius: 16, top: 167, position: "absolute"}}>
+          <View style={{ backgroundColor: "#243e36", padding: 7, paddingRight: 14, alignSelf: "flex-start", borderTopRightRadius: 16, top: 167, position: "absolute" }}>
             <Text style={{ fontFamily: Fonts.bold_i, color: "#d9d9d9", fontSize: 16, marginLeft: 3 }}>
               {pin?.users?.username || "No username available"}'s Pin
             </Text>
@@ -588,7 +589,7 @@ export default function PinPage() {
           {/* Notes */}
           <Text style={styles.subtitle}>My Notes</Text>
           <View style={styles.cardFullRow}>
-            <Text style={pin?.user_note? styles.boxText : styles.emptyText}>
+            <Text style={pin?.user_note ? styles.boxText : styles.emptyText}>
               {pin?.user_note || "You have no notes yet"}
             </Text>
           </View>
@@ -650,27 +651,27 @@ export default function PinPage() {
           {/* Tags */}
           {pin?.user_id === profile?.user_id && (
             <View>
-            <View style={styles.editRow}>
-              <Text style={styles.subtitle}>Tags</Text>
-            </View>
-            <View style={styles.cardFullRow}>
-              <ScrollView
-                contentContainerStyle={{
-                  flexDirection: "row",
-                  gap: 20,
-                  flexWrap: "wrap",
-                }}
-              >
-                {pin?.pin_tags?.length === 0 && (
-                  <Text style={styles.emptyText}>You have no tags yet</Text>
-                )}
-                {pin?.pin_tags?.map((pin_tag) => (
-                  <Text key={pin_tag.tags?.tag_id} style={styles.boxText}>
-                    {pin_tag.tags?.name ?? "Unnamed tag"}
-                  </Text>
-                ))}
-              </ScrollView>
-            </View>
+              <View style={styles.editRow}>
+                <Text style={styles.subtitle}>Tags</Text>
+              </View>
+              <View style={styles.cardFullRow}>
+                <ScrollView
+                  contentContainerStyle={{
+                    flexDirection: "row",
+                    gap: 20,
+                    flexWrap: "wrap",
+                  }}
+                >
+                  {pin?.pin_tags?.length === 0 && (
+                    <Text style={styles.emptyText}>You have no tags yet</Text>
+                  )}
+                  {pin?.pin_tags?.map((pin_tag) => (
+                    <Text key={pin_tag.tags?.tag_id} style={styles.boxText}>
+                      {pin_tag.tags?.name ?? "Unnamed tag"}
+                    </Text>
+                  ))}
+                </ScrollView>
+              </View>
             </View>
 
           )}
@@ -768,7 +769,7 @@ export default function PinPage() {
                 </View>
               ))}
               {pin?.hours == null && (
-                <Text style = {styles.emptyText}>There are no hours associated with this pin</Text>
+                <Text style={styles.emptyText}>There are no hours associated with this pin</Text>
               )}
             </View>
           </View>
@@ -794,23 +795,23 @@ export default function PinPage() {
           </Pressable>
           {pin?.user_id === profile?.user_id && (
             <Pressable
-            style={styles.button}
-            onPress={() => {
-              router.push({
-                pathname: "/make-pin",
-                params: {
-                  pinId: pin?.pin_id,
-                  viewMode: viewMode,
-                },
-              });
-            }}
-          >
-            <Text
-              style={{ fontFamily: Fonts.bold, color: "#d9d9d9", fontSize: 16 }}
+              style={styles.button}
+              onPress={() => {
+                router.push({
+                  pathname: "/make-pin",
+                  params: {
+                    pinId: pin?.pin_id,
+                    viewMode: viewMode,
+                  },
+                });
+              }}
             >
-              Edit
-            </Text>
-          </Pressable>
+              <Text
+                style={{ fontFamily: Fonts.bold, color: "#d9d9d9", fontSize: 16 }}
+              >
+                Edit
+              </Text>
+            </Pressable>
           )}
         </View>
       </View>
