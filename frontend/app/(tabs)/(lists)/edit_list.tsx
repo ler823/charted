@@ -106,14 +106,6 @@ export default function EditList() {
     setDbPins(pinsInList)
   }
 
-  const printSelectedPins = async () => {
-    Object.entries(checkedItems).forEach(([id, isChecked]) => {
-      if (isChecked) {
-        console.log(id);
-      }
-    })
-  };
-
   const processImage = async (uri: string) => {
     const result = await ImageManipulator.manipulateAsync(
       uri,

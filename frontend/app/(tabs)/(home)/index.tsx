@@ -85,7 +85,6 @@ export default function Home() {
         close += 2400;
         givenTime += 2400;
       }
-      console.log(filteredHours[i].open + ", " + close + ": " + givenTime)
       if (Number(filteredHours[i].open) <= Number(givenTime) && close > Number(givenTime)) {
         return true;
       }
