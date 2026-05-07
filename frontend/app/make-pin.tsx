@@ -506,7 +506,7 @@ export default function MakePin() {
       .from("pins")
       .update({
         "place_id": placeId,
-        "hours": hours,
+        "hours": hours ?? null,
       })
       .eq("pin_id", pinId!);
     if (pinInfoError) {
