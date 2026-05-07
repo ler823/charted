@@ -121,7 +121,7 @@ export default function Friends() {
       })
     );
 
-    setFriends(enriched);
+    handleSort(enriched);
     setLoading(false);
   };
 
@@ -139,30 +139,47 @@ export default function Friends() {
     f.username.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const sortedFriends = [...filteredFriends].sort((a, b) => {
+  const handleSort = (friendList: UserCard[]) => {
+    const sorted = [...friendList];
+
     if (sortChoice === "name") {
-      return ascending
-        ? a.username.localeCompare(b.username)
-        : b.username.localeCompare(a.username);
+      sorted.sort((a, b) =>
+        ascending
+          ? a.username.localeCompare(b.username)
+          : b.username.localeCompare(a.username)
+      );
     }
 
-    if (sortChoice === "location") {
-      const aEmpty = !a.location;
-      const bEmpty = !b.location;
+    else if (sortChoice === "location") {
+      sorted.sort((a, b) => {
+        const aEmpty = !a.location;
+        const bEmpty = !b.location;
 
-      if (aEmpty && bEmpty) return 0;
-      if (aEmpty) return 1;
-      if (bEmpty) return -1;
+        if (aEmpty && bEmpty) return 0;
+        if (aEmpty) return 1;
+        if (bEmpty) return -1;
 
-      return ascending
-        ? a.location!.localeCompare(b.location!)
-        : b.location!.localeCompare(a.location!);
+        return ascending
+          ? a.location!.localeCompare(b.location!)
+          : b.location!.localeCompare(a.location!);
+      });
     }
-    const aTime = a.date ? new Date(a.date).getTime() : 0;
-    const bTime = b.date ? new Date(b.date).getTime() : 0;
 
-    return ascending ? aTime - bTime : bTime - aTime;
-  });
+    else {
+      sorted.sort((a, b) => {
+        const aTime = a.date ? new Date(a.date).getTime() : 0;
+        const bTime = b.date ? new Date(b.date).getTime() : 0;
+
+        return ascending ? aTime - bTime : bTime - aTime;
+      });
+    }
+
+    setFriends(sorted);
+  };
+
+  useEffect(() => {
+    handleSort(friends);
+  }, [sortModalVisible]);
 
   return (
     <View style={styles.container}>
@@ -202,7 +219,7 @@ export default function Friends() {
         </View>
       ) : (
         <FlatList
-          data={sortedFriends}
+          data={filteredFriends}
           keyExtractor={(item) => item.profileId}
           contentContainerStyle={styles.list}
           ListEmptyComponent={
