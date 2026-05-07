@@ -2,16 +2,21 @@ import * as ImageManipulator from "expo-image-manipulator";
 import * as ImagePicker from "expo-image-picker";
 
 export async function getPhotoUrl(keys: string[]) {
-  const res = await fetch(
-    "https://4nm4iifq65.execute-api.us-east-2.amazonaws.com/downloadphotourl",
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ keys }),
-    },
-  );
-  const { urls } = await res.json();
-  return urls;
+  let success = false;
+  while (!success) {
+    const res = await fetch(
+      "https://4nm4iifq65.execute-api.us-east-2.amazonaws.com/downloadphotourl",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ keys }),
+      },
+    );
+    const { urls } = await res.json();
+    if (urls !== undefined) {
+      return urls;
+    }
+  }
 }
 
 export async function processImage(uri: string) {
