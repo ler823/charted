@@ -2,11 +2,18 @@ import { Stars } from "@/components/light-stars";
 import { Colors, Fonts } from "@/constants/theme";
 import { getPhotoUrl } from "@/lib/photo-utils";
 import { Ionicons } from "@expo/vector-icons";
+import { useFocusEffect } from "@react-navigation/native";
 import { Image } from "expo-image";
 import { router } from "expo-router";
-import { useEffect, useRef, useState, useCallback } from "react";
-import { Animated, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import { useFocusEffect } from "@react-navigation/native";
+import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  Animated,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/lib/supabase";
@@ -34,9 +41,17 @@ export default function Account() {
   useEffect(() => {
     Animated.loop(
       Animated.sequence([
-        Animated.timing(pulseAnim, { toValue: 0.4, duration: 700, useNativeDriver: true }),
-        Animated.timing(pulseAnim, { toValue: 1, duration: 700, useNativeDriver: true }),
-      ])
+        Animated.timing(pulseAnim, {
+          toValue: 0.4,
+          duration: 700,
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulseAnim, {
+          toValue: 1,
+          duration: 700,
+          useNativeDriver: true,
+        }),
+      ]),
     ).start();
   }, [pulseAnim]);
   const [username, setUsername] = useState("");
@@ -63,7 +78,6 @@ export default function Account() {
   const [recentVisitPinId, setRecentVisitPinId] = useState<number | null>(null);
   const [recentFriendId, setRecentFriendId] = useState<number | null>(null);
   const [recentPinId, setRecentPinId] = useState<number | null>(null);
-
 
   useFocusEffect(
     useCallback(() => {
@@ -113,7 +127,7 @@ export default function Account() {
       return () => {
         isActive = false;
       };
-    }, [profile?.user_id])
+    }, [profile?.user_id]),
   );
 
   useEffect(() => {
@@ -147,6 +161,7 @@ export default function Account() {
         .select("*")
         .eq("user_id", profile!.user_id)
         .eq("private", false)
+        .gt("visit_count", 0)
         .order("visit_count", { ascending: false })
         .order("last_visited", { ascending: false })
         .limit(1)
@@ -321,16 +336,70 @@ export default function Account() {
     return (
       <ScrollView>
         <View style={{ height: 15 }} />
-        <View style={{ marginTop: 45, marginHorizontal: 10, flexDirection: "row", justifyContent: "flex-end" }}>
-          <Animated.View style={[styles.editAccountButton, { width: 130, opacity: pulseAnim, backgroundColor: "#c5d4c8" }]} />
+        <View
+          style={{
+            marginTop: 45,
+            marginHorizontal: 10,
+            flexDirection: "row",
+            justifyContent: "flex-end",
+          }}
+        >
+          <Animated.View
+            style={[
+              styles.editAccountButton,
+              { width: 130, opacity: pulseAnim, backgroundColor: "#c5d4c8" },
+            ]}
+          />
         </View>
         <View style={styles.container}>
-          <Animated.View style={[styles.avatar, { opacity: pulseAnim, backgroundColor: "#c5d4c8" }]} />
-          <Animated.View style={{ height: 26, width: 160, borderRadius: 8, backgroundColor: "#c5d4c8", marginBottom: 8, opacity: pulseAnim }} />
-          <Animated.View style={{ height: 17, width: 110, borderRadius: 8, backgroundColor: "#c5d4c8", marginBottom: 8, opacity: pulseAnim }} />
-          <Animated.View style={{ height: 15, width: 200, borderRadius: 8, backgroundColor: "#c5d4c8", marginBottom: 10, opacity: pulseAnim }} />
-          <Animated.View style={[styles.infoBox, { opacity: pulseAnim, backgroundColor: "#c5d4c8" }]} />
-          <Animated.View style={[styles.infoBox, { opacity: pulseAnim, backgroundColor: "#c5d4c8" }]} />
+          <Animated.View
+            style={[
+              styles.avatar,
+              { opacity: pulseAnim, backgroundColor: "#c5d4c8" },
+            ]}
+          />
+          <Animated.View
+            style={{
+              height: 26,
+              width: 160,
+              borderRadius: 8,
+              backgroundColor: "#c5d4c8",
+              marginBottom: 8,
+              opacity: pulseAnim,
+            }}
+          />
+          <Animated.View
+            style={{
+              height: 17,
+              width: 110,
+              borderRadius: 8,
+              backgroundColor: "#c5d4c8",
+              marginBottom: 8,
+              opacity: pulseAnim,
+            }}
+          />
+          <Animated.View
+            style={{
+              height: 15,
+              width: 200,
+              borderRadius: 8,
+              backgroundColor: "#c5d4c8",
+              marginBottom: 10,
+              opacity: pulseAnim,
+            }}
+          />
+          <Animated.View
+            style={[
+              styles.infoBox,
+              { opacity: pulseAnim, backgroundColor: "#c5d4c8" },
+            ]}
+          />
+          <Animated.View
+            style={[
+              styles.infoBox,
+              { opacity: pulseAnim, backgroundColor: "#c5d4c8" },
+            ]}
+          />
         </View>
         <View style={{ height: 105 }} />
       </ScrollView>
@@ -410,53 +479,30 @@ export default function Account() {
               <View style={styles.statsWindows}>
                 {favPhoto && (
                   <Image
-                    source={
-                      favPhoto
-                        ? { uri: favPhoto }
-                        : require("@/assets/images/no_image_default.png")
-                    }
+                    source={{ uri: favPhoto }}
                     style={styles.image}
                     contentFit="cover"
                     transition={300}
                     placeholder="blur"
                   />
                 )}
-                {!favPhoto && (
-                  <Text
-                    style={{
-                      fontFamily: Fonts.bold,
-                      fontSize: 13,
-                      textAlign: "center",
-                      marginTop: 15,
-                      marginHorizontal: 2,
-                    }}
-                  >
-                    {favorite?.name ? (
-                      <>
-                        {favorite.name}
-                        {"\n"}
-                        <Text
-                          style={{ fontFamily: Fonts.regular_i, fontSize: 11 }}
-                        >
-                          No photo set
-                        </Text>
-                      </>
-                    ) : (
-                      "This user has no pins yet."
-                    )}
-                  </Text>
-                )}
               </View>
-              <View style={styles.statsBar}>
-                <View
-                  style={{
-                    flexDirection: "row",
-                    gap: 1,
-                    justifyContent: "center",
-                  }}
-                >
-                  <Stars starnum={favorite?.user_rating ?? 0} />
-                </View>
+              <Text
+                style={styles.statPinName}
+                numberOfLines={2}
+                ellipsizeMode="tail"
+              >
+                {favorite?.name ?? "—"}
+              </Text>
+              <View
+                style={{
+                  flexDirection: "row",
+                  gap: 1,
+                  justifyContent: "center",
+                  marginBottom: 8,
+                }}
+              >
+                <Stars starnum={favorite?.user_rating ?? 0} />
               </View>
             </Pressable>
             <Pressable
@@ -465,69 +511,49 @@ export default function Account() {
                 { width: "42%", alignItems: "center" },
               ]}
               onPress={() => {
+                if (!visited) return;
                 router.push({
                   pathname: "/pins/[pinid]",
-                  params: { pinid: String(visited?.pin_id) },
+                  params: { pinid: String(visited.pin_id) },
                 });
               }}
             >
               <Text style={styles.subHeader}>Top Visited</Text>
-              <View style={styles.statsWindows}>
-                {visPhoto && (
-                  <Image
-                    source={
-                      visPhoto
-                        ? { uri: visPhoto }
-                        : require("@/assets/images/no_image_default.png")
-                    }
-                    style={styles.image}
-                    contentFit="cover"
-                    transition={300}
-                    placeholder="blur"
-                  />
-                )}
-                {!visPhoto && (
-                  <Text
-                    style={{
-                      fontFamily: Fonts.bold,
-                      fontSize: 13,
-                      textAlign: "center",
-                      marginTop: 15,
-                      marginHorizontal: 2,
-                    }}
-                  >
-                    {visited?.name ? (
-                      <>
-                        {visited.name}
-                        {"\n"}
-                        <Text
-                          style={{ fontFamily: Fonts.regular_i, fontSize: 11 }}
-                        >
-                          No photo set
-                        </Text>
-                      </>
-                    ) : (
-                      "This user has no pins yet."
+              {visited ? (
+                <>
+                  <View style={styles.statsWindows}>
+                    {visPhoto && (
+                      <Image
+                        source={{ uri: visPhoto }}
+                        style={styles.image}
+                        contentFit="cover"
+                        transition={300}
+                        placeholder="blur"
+                      />
                     )}
+                  </View>
+                  <Text
+                    style={styles.statPinName}
+                    numberOfLines={2}
+                    ellipsizeMode="tail"
+                  >
+                    {visited.name}
                   </Text>
-                )}
-              </View>
-              <View style={styles.statsBar}>
-                <Text
-                  style={{
-                    fontFamily: Fonts.regular,
-                    fontSize: 16,
-                    color: "#fefbea",
-                    marginHorizontal: 7,
-                    flexShrink: 1,
-                  }}
-                  numberOfLines={1}
-                  ellipsizeMode="tail"
-                >
-                  {visited?.visit_count ?? "-"}{" "}
-                  {visited?.visit_count === 1 ? "Visit" : "Visits"}
-                </Text>
-              </View>
+                  <Text style={styles.statMeta}>
+                    {visited.visit_count}{" "}
+                    {visited.visit_count === 1 ? "Visit" : "Visits"}
+                  </Text>
+                </>
+              ) : (
+                <View style={styles.emptyState}>
+                  <Text style={styles.emptyStateTitle}>
+                    No visits logged yet
+                  </Text>
+                  <Text style={styles.emptyStateSub}>
+                    Check in to a spot and it'll show up here
+                  </Text>
+                </View>
+              )}
             </Pressable>
           </View>
         </View>
@@ -571,7 +597,7 @@ export default function Account() {
                 numberOfLines={1}
                 ellipsizeMode="tail"
               >
-                {recentVisit ?? "—"}
+                {recentVisit ?? "No visits logged yet"}
               </Text>
             </Pressable>
             <View style={styles.divider} />
@@ -749,11 +775,11 @@ const styles = StyleSheet.create({
     marginVertical: 5,
   },
   infoBox: {
+    paddingBottom: 12,
     alignItems: "center",
     borderRadius: 20,
     backgroundColor: "#DEE9E0",
     marginVertical: 12,
-    height: 225,
     width: "90%",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
@@ -762,46 +788,75 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   header: {
-    fontFamily: Fonts.regular,
-    fontSize: 35,
-    color: "#333",
+    fontFamily: Fonts.bold,
+    fontSize: 24,
+    color: Colors.light.background,
     marginTop: 10,
+    alignSelf: "flex-start",
+    marginLeft: 15,
   },
   subHeader: {
-    fontFamily: Fonts.regular_i,
-    fontSize: 23,
+    fontFamily: Fonts.bold,
+    fontSize: 16,
     color: "#333",
     marginVertical: 5,
+    alignSelf: "flex-start",
+    paddingLeft: 8,
   },
   infoWindow: {
-    height: 145,
     width: "90%",
     backgroundColor: "#fff",
     borderStyle: "solid",
     borderWidth: 2,
     borderColor: "#7CA982",
     marginVertical: 10,
+    paddingVertical: 8,
     alignItems: "center",
   },
   statsWindows: {
-    height: 96,
+    height: 90,
     width: "88%",
     backgroundColor: "#d9d9d9",
+  },
+  statPinName: {
+    fontFamily: Fonts.bold,
+    fontSize: 11,
+    color: "#333",
+    textAlign: "center",
+    marginTop: 5,
+    marginHorizontal: 5,
+  },
+  statMeta: {
+    fontFamily: Fonts.regular,
+    fontSize: 11,
+    color: "#555",
+    textAlign: "center",
+    marginTop: 2,
+    marginBottom: 8,
+  },
+  emptyState: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 10,
+    paddingVertical: 16,
+  },
+  emptyStateTitle: {
+    fontFamily: Fonts.bold,
+    fontSize: 12,
+    color: "#555",
+    textAlign: "center",
+    marginBottom: 5,
+  },
+  emptyStateSub: {
+    fontFamily: Fonts.regular_i,
+    fontSize: 10,
+    color: "#888",
+    textAlign: "center",
   },
   image: {
     width: "100%",
     height: "100%",
-  },
-  statsBar: {
-    backgroundColor: "#243e36",
-    width: "65%",
-    height: 25,
-    position: "absolute",
-    alignSelf: "flex-start",
-    marginTop: 118,
-    marginLeft: -2,
-    borderTopRightRadius: 12,
-    justifyContent: "center",
   },
   button: {
     flexDirection: "row",
