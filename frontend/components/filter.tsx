@@ -128,6 +128,7 @@ export default function Filter({ isVisible, onClose, exportFilter }: Props) {
     var time = null;
     if (hour !== null && minute !== null && suffix !== null) {
       militaryHour = suffix == "AM" ? hour : hour! + 12;
+      militaryHour = militaryHour == 12 || militaryHour == 24 ? militaryHour - 12 : militaryHour
       time = militaryHour! * 100 + minute!
     }
 
