@@ -737,7 +737,7 @@ export default function MakePin() {
                         setHours(hoursFormatted)
                         setPlaceId(data["place_id"])
                         const photoRef = (details as any)?.photos?.[0]?.photo_reference;
-                        if (photoRef && !coverPhotoUrl) {
+                        if (photoRef) {
                           setCoverPhotoUrl(buildPlacePhotoUrl(photoRef));
                           setCoverPhotoChanged(true);
                         }
