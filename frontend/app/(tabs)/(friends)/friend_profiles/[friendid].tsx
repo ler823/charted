@@ -534,7 +534,7 @@ export default function FriendProfilePage() {
         {/* Map */}
         <View style={styles.infoBox}>
           <Text style={styles.header}>Map</Text>
-          <View style={styles.infoWindow}>
+          <View style={[styles.infoWindow, { height: 145, paddingVertical: 0 }]}>
             <ClusteredMapView
               initialRegion={
                 validPins.length > 0
@@ -605,53 +605,30 @@ export default function FriendProfilePage() {
               <View style={styles.statsWindows}>
                 {favPhoto && (
                   <Image
-                    source={
-                      favPhoto
-                        ? { uri: favPhoto }
-                        : require("@/assets/images/no_image_default.png")
-                    }
+                    source={{ uri: favPhoto }}
                     style={styles.image}
                     contentFit="cover"
                     transition={300}
                     placeholder="blur"
                   />
                 )}
-                {!favPhoto && (
-                  <Text
-                    style={{
-                      fontFamily: Fonts.bold,
-                      fontSize: 13,
-                      textAlign: "center",
-                      marginTop: 15,
-                      marginHorizontal: 2,
-                    }}
-                  >
-                    {favorite?.name ? (
-                      <>
-                        {favorite.name}
-                        {"\n"}
-                        <Text
-                          style={{ fontFamily: Fonts.regular_i, fontSize: 11 }}
-                        >
-                          No photo set
-                        </Text>
-                      </>
-                    ) : (
-                      "This user has no pins yet."
-                    )}
-                  </Text>
-                )}
               </View>
-              <View style={styles.statsBar}>
-                <View
-                  style={{
-                    flexDirection: "row",
-                    gap: 1,
-                    justifyContent: "center",
-                  }}
-                >
-                  <Stars starnum={favorite?.user_rating ?? 0} />
-                </View>
+              <Text
+                style={styles.statPinName}
+                numberOfLines={2}
+                ellipsizeMode="tail"
+              >
+                {favorite?.name ?? "—"}
+              </Text>
+              <View
+                style={{
+                  flexDirection: "row",
+                  gap: 1,
+                  justifyContent: "center",
+                  marginBottom: 8,
+                }}
+              >
+                <Stars starnum={favorite?.user_rating ?? 0} />
               </View>
             </Pressable>
             <Pressable
@@ -667,62 +644,41 @@ export default function FriendProfilePage() {
               }}
             >
               <Text style={styles.subHeader}>Top Visited</Text>
-              <View style={styles.statsWindows}>
-                {visPhoto && (
-                  <Image
-                    source={
-                      visPhoto
-                        ? { uri: visPhoto }
-                        : require("@/assets/images/no_image_default.png")
-                    }
-                    style={styles.image}
-                    contentFit="cover"
-                    transition={300}
-                    placeholder="blur"
-                  />
-                )}
-                {!visPhoto && (
-                  <Text
-                    style={{
-                      fontFamily: Fonts.bold,
-                      fontSize: 13,
-                      textAlign: "center",
-                      marginTop: 15,
-                      marginHorizontal: 2,
-                    }}
-                  >
-                    {visited?.name ? (
-                      <>
-                        {visited.name}
-                        {"\n"}
-                        <Text
-                          style={{ fontFamily: Fonts.regular_i, fontSize: 11 }}
-                        >
-                          No photo set
-                        </Text>
-                      </>
-                    ) : (
-                      "This user has no pins yet."
+              {visited ? (
+                <>
+                  <View style={styles.statsWindows}>
+                    {visPhoto && (
+                      <Image
+                        source={{ uri: visPhoto }}
+                        style={styles.image}
+                        contentFit="cover"
+                        transition={300}
+                        placeholder="blur"
+                      />
                     )}
+                  </View>
+                  <Text
+                    style={styles.statPinName}
+                    numberOfLines={2}
+                    ellipsizeMode="tail"
+                  >
+                    {visited.name}
                   </Text>
-                )}
-              </View>
-              <View style={styles.statsBar}>
-                <Text
-                  style={{
-                    fontFamily: Fonts.regular,
-                    fontSize: 16,
-                    color: "#fefbea",
-                    marginHorizontal: 7,
-                    flexShrink: 1,
-                  }}
-                  numberOfLines={1}
-                  ellipsizeMode="tail"
-                >
-                  {visited?.visit_count ?? "-"}{" "}
-                  {visited?.visit_count === 1 ? "Visit" : "Visits"}
-                </Text>
-              </View>
+                  <Text style={styles.statMeta}>
+                    {visited.visit_count}{" "}
+                    {visited.visit_count === 1 ? "Visit" : "Visits"}
+                  </Text>
+                </>
+              ) : (
+                <View style={styles.emptyState}>
+                  <Text style={styles.emptyStateTitle}>
+                    No visits logged yet
+                  </Text>
+                  <Text style={styles.emptyStateSub}>
+                    Check in to a spot and it'll show up here
+                  </Text>
+                </View>
+              )}
             </Pressable>
           </View>
         </View>
@@ -946,11 +902,11 @@ const styles = StyleSheet.create({
     width: "93%",
   },
   infoBox: {
+    paddingBottom: 12,
     alignItems: "center",
     borderRadius: 20,
     backgroundColor: "#DEE9E0",
     marginVertical: 12,
-    height: 225,
     width: "90%",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
@@ -959,25 +915,29 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   header: {
-    fontFamily: Fonts.regular,
-    fontSize: 35,
-    color: "#333",
-    marginTop: 10,
+    fontFamily: Fonts.bold,
+    fontSize: 24,
+    color: Colors.light.background,
+    marginTop: 16,
+    alignSelf: "flex-start",
+    marginLeft: 15,
   },
   subHeader: {
-    fontFamily: Fonts.regular_i,
-    fontSize: 23,
+    fontFamily: Fonts.bold,
+    fontSize: 16,
     color: "#333",
     marginVertical: 5,
+    alignSelf: "flex-start",
+    paddingLeft: 8,
   },
   infoWindow: {
-    height: 145,
     width: "90%",
     backgroundColor: "#fff",
     borderStyle: "solid",
     borderWidth: 2,
     borderColor: "#7CA982",
-    marginVertical: 10,
+    marginVertical: 16,
+    paddingVertical: 4,
     alignItems: "center",
   },
   image: {
@@ -1002,20 +962,45 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   statsWindows: {
-    height: 96,
+    height: 90,
     width: "88%",
     backgroundColor: "#d9d9d9",
   },
-  statsBar: {
-    backgroundColor: "#243e36",
-    width: "65%",
-    height: 25,
-    position: "absolute",
-    alignSelf: "flex-start",
-    marginTop: 118,
-    marginLeft: -2,
-    borderTopRightRadius: 12,
+  statPinName: {
+    fontFamily: Fonts.bold,
+    fontSize: 11,
+    color: "#333",
+    textAlign: "center",
+    marginTop: 5,
+    marginHorizontal: 5,
+  },
+  statMeta: {
+    fontFamily: Fonts.regular,
+    fontSize: 11,
+    color: "#555",
+    textAlign: "center",
+    marginTop: 2,
+    marginBottom: 8,
+  },
+  emptyState: {
+    flex: 1,
+    alignItems: "center",
     justifyContent: "center",
+    paddingHorizontal: 10,
+    paddingVertical: 16,
+  },
+  emptyStateTitle: {
+    fontFamily: Fonts.bold,
+    fontSize: 12,
+    color: "#555",
+    textAlign: "center",
+    marginBottom: 5,
+  },
+  emptyStateSub: {
+    fontFamily: Fonts.regular_i,
+    fontSize: 10,
+    color: "#888",
+    textAlign: "center",
   },
   modalBackdrop: {
     flex: 1,
