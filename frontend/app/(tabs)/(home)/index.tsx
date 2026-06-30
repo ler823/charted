@@ -1,3 +1,4 @@
+import FriendsBar from "@/components/friends-bar";
 import PinMarker from "@/components/pin-marker";
 import { supabase } from "@/lib/supabase";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
@@ -274,7 +275,7 @@ export default function Home() {
             setIsDroppingPin(true);
           }}
         >
-          <MaterialCommunityIcons name="plus" size={45} color="#d9d9d9" />
+          <MaterialCommunityIcons name="plus" size={24} color="#d9d9d9" />
         </Pressable>
       )}
       {!isDroppingPin && (
@@ -387,6 +388,8 @@ export default function Home() {
         <PinOverlay selectedPin={selectedPin} setSelectedPin={setSelectedPin} />
       )}
 
+      {!isDroppingPin && <FriendsBar />}
+
       {isDroppingPin && (
         <DroppingPinOverlay coords={pinCoords} viewMode={viewMode} />
       )}
@@ -409,14 +412,14 @@ const styles = StyleSheet.create({
   },
   plusButton: {
     position: "absolute",
-    bottom: 115,
-    right: 25,
+    top: 108,
+    right: 15,
     zIndex: 20,
-    width: 50,
-    height: 50,
+    width: 40,
+    height: 40,
     alignItems: "center",
     justifyContent: "center",
-    borderRadius: 100,
+    borderRadius: 999,
     backgroundColor: "#243e36",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
