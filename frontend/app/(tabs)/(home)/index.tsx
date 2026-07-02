@@ -3,23 +3,37 @@ import PinMarker from "@/components/pin-marker";
 import { supabase } from "@/lib/supabase";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { Pressable, StyleSheet, View } from "react-native";
+import {
+  Keyboard,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableWithoutFeedback,
+  View,
+} from "react-native";
 import ClusteredMapView from "react-native-map-clustering";
 import { Marker } from "react-native-maps";
 import PinListView from "./pin_list_view";
 
 import PinGridView from "@/app/(tabs)/(home)/pin_grid_view";
 import DroppingPinOverlay from "@/components/dropping-pin-overlay";
+import Filter from "@/components/filter";
 import Header from "@/components/header";
 import PinMarkers from "@/components/pin-markers";
 import SharedPinMarkers from "@/components/pin-markers-shared";
 import PinOverlay from "@/components/pin-overlay";
+import PlaceSuggestionItem from "@/components/place-suggestion-item";
+import SuggestionItem from "@/components/suggestion-item";
+import { Colors, Fonts } from "@/constants/theme";
 import { useAuth } from "@/context/AuthContext";
 import { useDroppingPin } from "@/context/DroppingPinContext";
 import { useFilterContext } from "@/context/FilterContext";
 import { useLocation } from "@/hooks/use-location";
 import { Coords, Pin, ViewMode, ViewOption } from "@/types/types";
-import { useFocusEffect, useLocalSearchParams } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
+import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { setPinChanged } from "../../../lib/pin_refresh_data";
 
 const CSULB = {
@@ -36,6 +50,17 @@ const VIEW_OPTIONS: ViewOption[] = [
   { mode: "list", icon: "list" },
   { mode: "grid", icon: "grid" },
 ];
+
+// Height of the bottom search bar row (excluding safe area inset)
+const BOTTOM_BAR_HEIGHT = 60;
+
+type PlacePrediction = {
+  place_id: string;
+  structured_formatting: {
+    main_text: string;
+    secondary_text?: string;
+  };
+};
 
 export default function Home() {
   const { viewMode: incomingViewMode } = useLocalSearchParams<{
@@ -54,32 +79,42 @@ export default function Home() {
   const [region, setRegion] = useState(INITIAL_REGION);
   const { filterOptions } = useFilterContext();
   const { userCoords } = useLocation();
+  const insets = useSafeAreaInsets();
+
+  // Search state
+  const [query, setQuery] = useState("");
+  const [isFocused, setIsFocused] = useState(false);
+  const [suggestionsType, setSuggestionsType] = useState<"pins" | "places">("pins");
+  const [placeSuggestions, setPlaceSuggestions] = useState<PlacePrediction[]>([]);
+  const [placesLoading, setPlacesLoading] = useState(false);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Filter state
+  const [filterModalVisible, setFilterModalVisible] = useState(false);
+
+  const isMapView = viewMode === "map";
+  const showSuggestions = isMapView && isFocused && query.trim().length > 0;
 
   const haversineDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
-    const R = 3956.0; // Earth radius in mi
+    const R = 3956.0;
     const lat1Rad = lat1 * Math.PI / 180;
     const lon1Rad = lon1 * Math.PI / 180;
     const lat2Rad = lat2 * Math.PI / 180;
     const lon2Rad = lon2 * Math.PI / 180;
-
     const deltaLat = lat2Rad - lat1Rad;
     const deltaLon = lon2Rad - lon1Rad;
-
     const a = Math.sin(deltaLat / 2) ** 2 +
       Math.cos(lat1Rad) * Math.cos(lat2Rad) *
       Math.sin(deltaLon / 2) ** 2;
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-
     return R * c;
-  }
+  };
 
   const isBusinessOpen = (givenTime: number, hours: any) => {
-    if (hours == null) {
-      return false;
-    }
+    if (hours == null) return false;
     const timeNow = new Date(Date.now());
-    const day = timeNow.getDay()
-    const filteredHours = hours.filter((entry) => entry.day == day)
+    const day = timeNow.getDay();
+    const filteredHours = hours.filter((entry: any) => entry.day == day);
     for (let i = 0; i < filteredHours.length; i++) {
       let close = Number(filteredHours[i].close);
       if (Number(filteredHours[i].open > Number(filteredHours[i].close))) {
@@ -91,7 +126,7 @@ export default function Home() {
       }
     }
     return false;
-  }
+  };
 
   const filterPins = async () => {
     let queryPins = pins.filter((pin) => (
@@ -100,14 +135,14 @@ export default function Home() {
       (filterOptions.tags == null ? true : filterOptions.tags.some((id) => pin.tagIds?.includes(id))) &&
       (filterOptions.time == null ? true : isBusinessOpen(filterOptions.time, pin.hours)) &&
       (filterOptions.distance == null ? true : haversineDistance(pin.latitude, pin.longitude, userCoords!.latitude, userCoords!.longitude) <= filterOptions.distance)
-    ))
+    ));
     if (pinSearchQuery.trim().length > 0) {
-      queryPins = queryPins.filter(p => 
+      queryPins = queryPins.filter(p =>
         p.name?.toLowerCase().includes(pinSearchQuery.toLowerCase())
       );
     }
-    setFilteredPins(queryPins)
-  }
+    setFilteredPins(queryPins);
+  };
 
   useFocusEffect(
     useCallback(() => {
@@ -117,29 +152,22 @@ export default function Home() {
         const currentUserId = profile!.user_id;
         const currentUserUuid = profile!.id;
 
-        // Get accepted friends from user_relationships1. Gonna use this to decide what pins from DB to display
         const { data: relData, error: relError } = await supabase
           .from("user_relationships1")
           .select("requester_id, target_id")
           .eq("status", "accepted")
-          .or(
-            `requester_id.eq.${currentUserUuid},target_id.eq.${currentUserUuid}`,
-          );
+          .or(`requester_id.eq.${currentUserUuid},target_id.eq.${currentUserUuid}`);
 
         if (relError) {
           console.log("Failed to fetch friends:", relError.message);
         }
 
-        // Collect friend UUIDs
         const friendUuids: string[] = [];
         (relData ?? []).forEach((r: any) => {
-          const other =
-            r.requester_id === currentUserUuid ? r.target_id : r.requester_id;
+          const other = r.requester_id === currentUserUuid ? r.target_id : r.requester_id;
           friendUuids.push(other);
         });
 
-        // Convert friend UUIDs to integer user_ids (profiles to users basically)
-        // THis is how the relationship is between 'profiles' and 'users' tables
         let allUserIds: number[] = [currentUserId];
         if (friendUuids.length > 0) {
           const { data: profileData } = await supabase
@@ -154,7 +182,6 @@ export default function Home() {
           }
         }
 
-        // Fetch pin clusters that overlap with any of these user_ids
         const { data: clusters, error } = await supabase
           .from("pin_clusters")
           .select("*")
@@ -165,9 +192,7 @@ export default function Home() {
           return;
         }
 
-        const allPinIds = [
-          ...new Set(clusters.flatMap((c: any) => c.pin_ids || [])),
-        ];
+        const allPinIds = [...new Set(clusters.flatMap((c: any) => c.pin_ids || []))];
 
         let pinsMap: Record<number, any> = {};
 
@@ -175,29 +200,22 @@ export default function Home() {
           const { data: pinData, error } = await supabase
             .from("pins")
             .select(`
-              pin_id, 
-              user_id, 
-              private, 
-              name, 
-              address, 
+              pin_id,
+              user_id,
+              private,
+              name,
+              address,
               location_id,
               hours,
-              pin_lists (
-                list_id
-              ),
-              pin_tags (
-                tag_id
-              )
-              `)
+              pin_lists (list_id),
+              pin_tags (tag_id)
+            `)
             .in("pin_id", allPinIds);
           if (error) {
             console.error("Failed to fetch pins:", error.message);
             return;
           }
-
-          pinsMap = Object.fromEntries(
-            (pinData || []).map((p: any) => [p.pin_id, p]),
-          );
+          pinsMap = Object.fromEntries((pinData || []).map((p: any) => [p.pin_id, p]));
         }
 
         const formattedPins: Pin[] = clusters
@@ -206,10 +224,8 @@ export default function Home() {
               .map((id: number) => pinsMap[id])
               .filter((p: any) => {
                 if (!p) return false;
-
                 const isAllowedUser = allUserIds.includes(p.user_id);
                 const isVisible = !p.private || p.user_id === currentUserId;
-
                 return isAllowedUser && isVisible;
               });
 
@@ -218,18 +234,15 @@ export default function Home() {
             const userIds = [...new Set(validPins.map((p: any) => p.user_id))];
             const pinIds = validPins.map((p: any) => p.pin_id);
 
-            var list_ids = []
-            validPins.forEach((pin) => list_ids = [...list_ids, ...pin.pin_lists.map((pin_list) => pin_list.list_id)])
+            let list_ids: number[] = [];
+            validPins.forEach((pin: any) => { list_ids = [...list_ids, ...pin.pin_lists.map((pin_list: any) => pin_list.list_id)]; });
 
-            var tag_ids = []
-            validPins.forEach((pin) => tag_ids = [...tag_ids, ...pin.pin_tags.map((pin_tag) => pin_tag.tag_id)])
+            let tag_ids: number[] = [];
+            validPins.forEach((pin: any) => { tag_ids = [...tag_ids, ...pin.pin_tags.map((pin_tag: any) => pin_tag.tag_id)]; });
 
-
-            const userPin = validPins.find(
-              (p: any) => p.user_id === currentUserId,
-            );
-
+            const userPin = validPins.find((p: any) => p.user_id === currentUserId);
             const displayPin = userPin ?? validPins[0];
+
             return {
               id: String(cluster.cluster_id),
               latitude: cluster.latitude,
@@ -247,8 +260,10 @@ export default function Home() {
             };
           })
           .filter(Boolean) as Pin[];
+
         setPins(formattedPins);
       }
+
       setPinChanged(true);
       fetchPins();
     }, [profile]),
@@ -256,47 +271,76 @@ export default function Home() {
 
   useEffect(() => {
     filterPins();
-  }, [filterOptions, pinSearchQuery, pins])
+  }, [filterOptions, pinSearchQuery, pins]);
 
   useEffect(() => {
+    if (suggestionsType !== "places" || query.trim().length === 0) {
+      setPlaceSuggestions([]);
+      return;
+    }
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(async () => {
+      setPlacesLoading(true);
+      try {
+        const url = `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(query)}&language=en&key=${process.env.EXPO_PUBLIC_GOOGLE_PLACES_KEY}`;
+        const res = await fetch(url);
+        const json = await res.json();
+        setPlaceSuggestions(json.predictions?.slice(0, 5) ?? []);
+      } catch {
+        setPlaceSuggestions([]);
+      } finally {
+        setPlacesLoading(false);
+      }
+    }, 300);
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+  }, [query, suggestionsType]);
 
-  }, [filteredPins])
+  async function handlePlaceSelect(placeId: string) {
+    Keyboard.dismiss();
+    setIsFocused(false);
+    try {
+      const url = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&fields=geometry&key=${process.env.EXPO_PUBLIC_GOOGLE_PLACES_KEY}`;
+      const res = await fetch(url);
+      const json = await res.json();
+      const loc = json.result?.geometry?.location;
+      if (loc) {
+        mapRef.current?.animateToRegion(
+          { latitude: loc.lat, longitude: loc.lng, latitudeDelta: 0.01, longitudeDelta: 0.01 },
+          400,
+        );
+      }
+    } catch {
+      // silently fail — map stays where it is
+    }
+  }
+
+  const matchingPins = query.trim().length > 0
+    ? pins
+        .filter((p) => p.name?.toLowerCase().includes(query.toLowerCase()))
+        .sort((a, b) => {
+          const q = query.toLowerCase();
+          const aStarts = a.name?.toLowerCase().startsWith(q);
+          const bStarts = b.name?.toLowerCase().startsWith(q);
+          if (aStarts && !bStarts) return -1;
+          if (!aStarts && bStarts) return 1;
+          return 0;
+        })
+    : [];
+
+  const pinSuggestions = matchingPins.slice(0, 5);
+
+  const handleCurrentLocation = () => {
+    if (!userCoords) return;
+    mapRef.current?.animateToRegion(
+      { latitude: userCoords.latitude, longitude: userCoords.longitude, latitudeDelta: 0.01, longitudeDelta: 0.01 },
+      400,
+    );
+  };
 
   return (
     <View style={styles.container}>
-      {!isDroppingPin && viewMode === "map" && (
-        <Pressable
-          style={styles.plusButton}
-          onPress={() => {
-            setPinCoords({
-              latitude: region.latitude,
-              longitude: region.longitude,
-            });
-            setIsDroppingPin(true);
-          }}
-        >
-          <MaterialCommunityIcons name="plus" size={24} color="#d9d9d9" />
-        </Pressable>
-      )}
       {!isDroppingPin && (
-        <Header
-          viewMode={viewMode}
-          setViewMode={setViewMode}
-          viewOptions={VIEW_OPTIONS}
-          pins={pins}
-          onPlaceSelect={(lat, lng) => {
-            mapRef.current?.animateToRegion(
-              {
-                latitude: lat,
-                longitude: lng,
-                latitudeDelta: 0.01,
-                longitudeDelta: 0.01,
-              },
-              400,
-            );
-          }}
-          onQueryChange={setPinSearchQuery}
-        />
+        <Header viewMode={viewMode} setViewMode={setViewMode} viewOptions={VIEW_OPTIONS} />
       )}
 
       {viewMode === "map" && (
@@ -305,10 +349,7 @@ export default function Home() {
           style={styles.map}
           ref={mapRef}
           onRegionChangeComplete={(r) => {
-            setPinCoords({
-              latitude: r.latitude,
-              longitude: r.longitude,
-            });
+            setPinCoords({ latitude: r.latitude, longitude: r.longitude });
             setRegion(r);
           }}
           onLongPress={(e) => {
@@ -319,10 +360,8 @@ export default function Home() {
               {
                 latitude,
                 longitude,
-                latitudeDelta:
-                  region.latitudeDelta > 0.01 ? 0.01 : region.latitudeDelta,
-                longitudeDelta:
-                  region.longitudeDelta > 0.01 ? 0.01 : region.longitudeDelta,
+                latitudeDelta: region.latitudeDelta > 0.01 ? 0.01 : region.latitudeDelta,
+                longitudeDelta: region.longitudeDelta > 0.01 ? 0.01 : region.longitudeDelta,
               },
               300,
             );
@@ -337,18 +376,12 @@ export default function Home() {
             .map((pin) => (
               <Marker
                 key={pin.id}
-                coordinate={{
-                  latitude: pin.latitude,
-                  longitude: pin.longitude,
-                }}
+                coordinate={{ latitude: pin.latitude, longitude: pin.longitude }}
                 onPress={() => setSelectedPin(pin)}
                 tracksViewChanges={false}
               >
                 {pin.isShared ? (
-                  <SharedPinMarkers
-                    users_id={pin.userIds!}
-                    number_shared={pin.pinCount!}
-                  />
+                  <SharedPinMarkers users_id={pin.userIds!} number_shared={pin.pinCount!} />
                 ) : Number(pin.user_id) === profile?.user_id ? (
                   <PinMarker />
                 ) : (
@@ -363,23 +396,16 @@ export default function Home() {
         <View style={styles.cardsContainer}>
           <PinListView
             pins={filteredPins ?? pins}
-            emptyMessage={
-              pinSearchQuery
-                ? `No pins matched "${pinSearchQuery}"`
-                : "No pins to display yet."
-            }
+            emptyMessage={pinSearchQuery ? `No pins matched "${pinSearchQuery}"` : "No pins to display yet."}
           />
         </View>
       )}
+
       {viewMode === "grid" && (
         <View>
           <PinGridView
             pins={filteredPins ?? pins}
-            emptyMessage={
-              pinSearchQuery
-                ? `No pins matched "${pinSearchQuery}"`
-                : "No pins to display yet."
-            }
+            emptyMessage={pinSearchQuery ? `No pins matched "${pinSearchQuery}"` : "No pins to display yet."}
           />
         </View>
       )}
@@ -393,6 +419,121 @@ export default function Home() {
       {isDroppingPin && (
         <DroppingPinOverlay coords={pinCoords} viewMode={viewMode} />
       )}
+
+      {!isDroppingPin && (
+        <>
+          {/* Backdrop to dismiss search */}
+          {isFocused && (
+            <TouchableWithoutFeedback
+              onPress={() => { Keyboard.dismiss(); setIsFocused(false); }}
+            >
+              <View style={styles.backdrop} />
+            </TouchableWithoutFeedback>
+          )}
+
+          {/* Search suggestions — expand upward above the bottom bar */}
+          {showSuggestions && (
+            <View style={[styles.suggestionsWrapper, { bottom: BOTTOM_BAR_HEIGHT + insets.bottom }]}>
+              <View style={styles.suggestionsPill}>
+                <Pressable
+                  onPress={() => setSuggestionsType("pins")}
+                  style={[styles.suggestionsPillOption, suggestionsType === "pins" && styles.suggestionsPillOptionActive]}
+                >
+                  <Text style={[styles.suggestionsPillText, suggestionsType === "pins" && styles.suggestionsPillTextActive]}>
+                    Pins
+                  </Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => setSuggestionsType("places")}
+                  style={[styles.suggestionsPillOption, suggestionsType === "places" && styles.suggestionsPillOptionActive]}
+                >
+                  <Text style={[styles.suggestionsPillText, suggestionsType === "places" && styles.suggestionsPillTextActive]}>
+                    Places
+                  </Text>
+                </Pressable>
+              </View>
+              <View style={styles.suggestions}>
+                {suggestionsType === "pins" ? (
+                  pinSuggestions.length > 0 ? (
+                    pinSuggestions.map((item) => <SuggestionItem key={item.id} item={item} />)
+                  ) : (
+                    <View style={styles.noResults}>
+                      <Ionicons name="search-outline" size={16} color={Colors.light.accent} />
+                      <Text style={styles.noResultsText}>No pins found</Text>
+                    </View>
+                  )
+                ) : placesLoading ? (
+                  <View style={styles.noResults}>
+                    <Ionicons name="search-outline" size={16} color={Colors.light.accent} />
+                    <Text style={styles.noResultsText}>Searching...</Text>
+                  </View>
+                ) : placeSuggestions.length > 0 ? (
+                  placeSuggestions.map((item) => (
+                    <PlaceSuggestionItem key={item.place_id} item={item} onPress={handlePlaceSelect} />
+                  ))
+                ) : (
+                  <View style={styles.noResults}>
+                    <Ionicons name="search-outline" size={16} color={Colors.light.accent} />
+                    <Text style={styles.noResultsText}>No places found</Text>
+                  </View>
+                )}
+              </View>
+            </View>
+          )}
+
+          {/* Action pill — above the friends bar */}
+          <View style={[styles.actionPill, { bottom: BOTTOM_BAR_HEIGHT + 98 + insets.bottom }]}>
+            <Pressable
+              style={styles.actionButton}
+              onPress={() => {
+                setPinCoords({ latitude: region.latitude, longitude: region.longitude });
+                setIsDroppingPin(true);
+              }}
+            >
+              <MaterialCommunityIcons name="plus" size={22} color={Colors.light.background} />
+            </Pressable>
+            <View style={styles.actionDivider} />
+            <Pressable style={styles.actionButton} onPress={() => setFilterModalVisible(true)}>
+              <Ionicons name="options" size={22} color={Colors.light.background} />
+            </Pressable>
+            <View style={styles.actionDivider} />
+            <Pressable style={styles.actionButton} onPress={handleCurrentLocation}>
+              <Ionicons name="locate" size={22} color={Colors.light.background} />
+            </Pressable>
+          </View>
+
+          {/* Bottom bar — search + user icon */}
+          <View style={[styles.bottomBar, { paddingBottom: 8 + insets.bottom }]}>
+            <View style={[styles.searchbar, isFocused && styles.searchbarFocused]}>
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Find a place"
+                placeholderTextColor={Colors.light.accent}
+                value={query}
+                onChangeText={(text) => { setQuery(text); setPinSearchQuery(text); }}
+                onFocus={() => setIsFocused(true)}
+                onBlur={() => setTimeout(() => setIsFocused(false), 150)}
+              />
+              {query.length > 0 ? (
+                <Pressable onPress={() => { setQuery(""); setPinSearchQuery(""); }} hitSlop={8}>
+                  <Ionicons name="close-circle" size={16} color={Colors.light.background} />
+                </Pressable>
+              ) : (
+                <Ionicons name="search" size={16} color={Colors.light.background} />
+              )}
+            </View>
+            <Pressable style={styles.userButton} onPress={() => router.push("/account")}>
+              <Ionicons name="person" size={22} color={Colors.light.background} />
+            </Pressable>
+          </View>
+
+          <Filter
+            isVisible={filterModalVisible}
+            onClose={() => setFilterModalVisible(false)}
+            exportFilter={() => {}}
+          />
+        </>
+      )}
     </View>
   );
 }
@@ -405,30 +546,154 @@ const styles = StyleSheet.create({
   cardsContainer: {
     flex: 1,
   },
-  placeholder: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
+  map: {
+    width: "100%",
+    height: "100%",
   },
-  plusButton: {
+  backdrop: {
     position: "absolute",
-    top: 108,
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 19,
+  },
+
+  // Suggestions (expand upward)
+  suggestionsWrapper: {
+    position: "absolute",
+    left: 15,
     right: 15,
-    zIndex: 20,
-    width: 40,
-    height: 40,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 999,
+    zIndex: 25,
+  },
+  suggestionsPill: {
+    flexDirection: "row",
     backgroundColor: "#243e36",
+    borderRadius: 999,
+    alignSelf: "flex-start",
+    marginBottom: 6,
+    padding: 3,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 2,
     elevation: 4,
   },
-  map: {
-    width: "100%",
-    height: "100%",
+  suggestionsPillOption: {
+    paddingHorizontal: 18,
+    paddingVertical: 7,
+    borderRadius: 999,
+  },
+  suggestionsPillOptionActive: {
+    backgroundColor: Colors.light.accent,
+  },
+  suggestionsPillText: {
+    fontFamily: Fonts.bold,
+    fontSize: 13,
+    color: Colors.light.accent,
+  },
+  suggestionsPillTextActive: {
+    color: "#fefbea",
+  },
+  suggestions: {
+    backgroundColor: "#1a2e27",
+    borderRadius: 16,
+    overflow: "hidden",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.35,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  noResults: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    paddingVertical: 16,
+  },
+  noResultsText: {
+    fontFamily: Fonts.bold,
+    color: Colors.light.accent,
+    fontSize: 14,
+  },
+
+  // Action pill (vertical, bottom right)
+  actionPill: {
+    position: "absolute",
+    right: 15,
+    zIndex: 20,
+    backgroundColor: "#fff",
+    borderRadius: 999,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: Colors.light.accentLight,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  actionButton: {
+    width: 44,
+    height: 44,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  actionDivider: {
+    width: 24,
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: Colors.light.accentLight,
+  },
+
+  // Bottom bar (search + user icon)
+  bottomBar: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 15,
+    paddingTop: 8,
+    gap: 8,
+    zIndex: 20,
+    backgroundColor: "rgba(255,255,255,0.95)",
+  },
+  searchbar: {
+    backgroundColor: "#fff",
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 15,
+    flex: 1,
+    height: 44,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: Colors.light.accentLight,
+  },
+  searchbarFocused: {
+    backgroundColor: "#f0f5f0",
+    borderColor: Colors.light.accent,
+  },
+  searchInput: {
+    flex: 1,
+    fontFamily: Fonts.bold,
+    color: Colors.light.background,
+    fontSize: 16,
+  },
+  userButton: {
+    backgroundColor: "#fff",
+    borderRadius: 999,
+    width: 44,
+    height: 44,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: Colors.light.accentLight,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
+    elevation: 4,
   },
 });

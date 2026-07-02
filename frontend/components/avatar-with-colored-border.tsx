@@ -7,6 +7,7 @@ import { StyleSheet, Text, View } from "react-native";
 interface PinMarkerProps {
   color?: string;
   users_id: number;
+  size?: number;
 }
 
 
@@ -45,6 +46,7 @@ function getUserColor(userId: string | number): string {
 export default function AvatarBorder({
   color = Colors.light.accent,
   users_id,
+  size = 62,
 }: PinMarkerProps) {
     const [friend, setFriend] = useState<Friend | null>(null);
     const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
@@ -77,23 +79,35 @@ export default function AvatarBorder({
 
   //if (loading) return <LoadingPage />;
   
+  const innerSize = size - 12;
+  const innerStyle = {
+    width: innerSize,
+    height: innerSize,
+    borderRadius: innerSize / 2,
+    backgroundColor: "#fefbea",
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
+  };
+
   return (
     <View style={styles.wrapper}>
-      <View style={[styles.outer, { backgroundColor: user_color }]}>
+      <View style={[styles.outer, { backgroundColor: user_color, width: size, height: size, borderRadius: size / 2 }]}>
         {avatarUrl ? (
           <Image
             source={{ uri: avatarUrl }}
-            style={styles.avatar}
+            style={{ width: innerSize, height: innerSize, borderRadius: innerSize / 2 }}
+            contentFit="cover"
             transition={300}
           />
-          ) : !friend?.username ? (
-              <View style={styles.avatar} />
-            ) : friend?.username && (
-              <View style={styles.avatar}>
-                <Text style={styles.avatarInitial}>{friend.username?.[0]?.toUpperCase()}</Text>
-              </View>
-            )
-        }
+        ) : (
+          <View style={innerStyle}>
+            {friend?.username && (
+              <Text style={[styles.avatarInitial, { fontSize: size * 0.32 }]}>
+                {friend.username[0].toUpperCase()}
+              </Text>
+            )}
+          </View>
+        )}
       </View>
     </View>
   );

@@ -341,9 +341,12 @@ export default function Account() {
             marginTop: 45,
             marginHorizontal: 10,
             flexDirection: "row",
-            justifyContent: "flex-end",
+            justifyContent: "space-between",
           }}
         >
+          <Pressable style={styles.homeButton} onPress={() => router.push("/")}>
+            <Ionicons name="home" size={20} color="#d9d9d9" />
+          </Pressable>
           <Animated.View
             style={[
               styles.editAccountButton,
@@ -414,9 +417,12 @@ export default function Account() {
           marginTop: 45,
           marginHorizontal: 10,
           flexDirection: "row",
-          justifyContent: "flex-end",
+          justifyContent: "space-between",
         }}
       >
+        <Pressable style={styles.homeButton} onPress={() => router.push("/")}>
+          <Ionicons name="home" size={20} color="#d9d9d9" />
+        </Pressable>
         <Pressable
           style={styles.editAccountButton}
           onPress={() => {
@@ -682,6 +688,16 @@ export default function Account() {
         </View>
       </View>
       <View style={styles.container}>
+        <View style={styles.navRow}>
+          <Pressable style={styles.navButton} onPress={() => router.push("/lists")}>
+            <Ionicons name="list" size={22} color="#d9d9d9" />
+            <Text style={styles.navButtonText}>Lists</Text>
+          </Pressable>
+          <Pressable style={styles.navButton} onPress={() => router.push("/friends")}>
+            <Ionicons name="people" size={22} color="#d9d9d9" />
+            <Text style={styles.navButtonText}>Friends</Text>
+          </Pressable>
+        </View>
         <Pressable style={styles.button} onPress={signOut}>
           <Text style={styles.buttonText}>Sign Out</Text>
         </Pressable>
@@ -714,6 +730,20 @@ const styles = StyleSheet.create({
     color: "#333",
     textAlign: "center",
     fontFamily: Fonts.regular_i,
+  },
+  homeButton: {
+    backgroundColor: "#243e36",
+    borderRadius: 999,
+    width: 40,
+    height: 40,
+    alignItems: "center",
+    justifyContent: "center",
+    marginLeft: 8,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
+    elevation: 4,
   },
   editAccountButton: {
     backgroundColor: "#243e36",
@@ -857,6 +887,32 @@ const styles = StyleSheet.create({
   image: {
     width: "100%",
     height: "100%",
+  },
+  navRow: {
+    flexDirection: "row",
+    gap: 12,
+    marginTop: 8,
+    marginBottom: 4,
+  },
+  navButton: {
+    backgroundColor: "#243e36",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 999,
+    gap: 8,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
+    elevation: 4,
+  },
+  navButtonText: {
+    fontFamily: Fonts.bold,
+    color: "#d9d9d9",
+    fontSize: 16,
   },
   button: {
     flexDirection: "row",

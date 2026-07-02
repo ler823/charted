@@ -3,13 +3,13 @@ import { useAuth } from "@/context/AuthContext";
 import { useFilterContext } from "@/context/FilterContext";
 import { supabase } from "@/lib/supabase";
 import React, { useEffect, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import AvatarBorder from "./avatar-with-colored-border";
 
 type Friend = { id: number; username: string };
 
-const NAVBAR_HEIGHT = 50; // tablist padding(40) + iconWrapper padding(16) + icon(26)
+const NAVBAR_HEIGHT = 60; // bottom bar height (search row)
 
 export default function FriendsBar() {
   const { profile } = useAuth();
@@ -80,20 +80,20 @@ export default function FriendsBar() {
   };
 
   return (
-    <ScrollView
-      horizontal
-      showsHorizontalScrollIndicator={false}
-      style={[styles.container, { bottom: NAVBAR_HEIGHT + insets.bottom }]}
-      contentContainerStyle={styles.content}
-    >
+    <View style={[styles.container, { bottom: NAVBAR_HEIGHT + insets.bottom }]}>
+      <View style={styles.dragHandle} />
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.scroll}
+        contentContainerStyle={styles.content}
+      >
       <Pressable
         style={filterOptions.self ? styles.itemEnabled : styles.itemDisabled}
         onPress={toggleSelf}
       >
-        <AvatarBorder users_id={profile?.user_id ?? 0} />
-        <Text numberOfLines={1} style={styles.username}>
-          {profile?.username}
-        </Text>
+        <AvatarBorder users_id={profile?.user_id ?? 0} size={46} />
+        <Text numberOfLines={1} style={styles.username}>You</Text>
       </Pressable>
 
       {friends.map((friend) => {
@@ -104,14 +104,15 @@ export default function FriendsBar() {
             style={selected ? styles.itemEnabled : styles.itemDisabled}
             onPress={() => toggleFriend(friend.id)}
           >
-            <AvatarBorder users_id={friend.id} />
+            <AvatarBorder users_id={friend.id} size={46} />
             <Text numberOfLines={1} style={styles.username}>
               {friend.username}
             </Text>
           </Pressable>
         );
       })}
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 }
 
@@ -121,7 +122,19 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     backgroundColor: "rgba(255,255,255,0.95)",
-    paddingVertical: 8,
+    paddingBottom: 5,
+  },
+  dragHandle: {
+    width: 36,
+    height: 4,
+    borderRadius: 999,
+    backgroundColor: "#dee9e0",
+    marginTop: 6,
+    marginBottom: 6,
+    alignSelf: "center",
+  },
+  scroll: {
+    width: "100%",
   },
   content: {
     paddingHorizontal: 10,
