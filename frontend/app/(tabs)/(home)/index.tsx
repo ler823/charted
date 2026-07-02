@@ -4,13 +4,16 @@ import { supabase } from "@/lib/supabase";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
+  Animated,
   Keyboard,
+  PanResponder,
   Pressable,
   StyleSheet,
   Text,
   TextInput,
   TouchableWithoutFeedback,
   View,
+  useWindowDimensions,
 } from "react-native";
 import ClusteredMapView from "react-native-map-clustering";
 import { Marker } from "react-native-maps";
@@ -51,8 +54,10 @@ const VIEW_OPTIONS: ViewOption[] = [
   { mode: "grid", icon: "grid" },
 ];
 
-// Height of the bottom search bar row (excluding safe area inset)
-const BOTTOM_BAR_HEIGHT = 60;
+// Collapsed sheet height (drag handle + friends row + search row), excluding safe area
+const COLLAPSED_HEIGHT = 155;
+// Height of just the search row inside the sheet (for anchoring suggestions)
+const SEARCH_ROW_HEIGHT = 60;
 
 type PlacePrediction = {
   place_id: string;
@@ -80,6 +85,26 @@ export default function Home() {
   const { filterOptions } = useFilterContext();
   const { userCoords } = useLocation();
   const insets = useSafeAreaInsets();
+
+  // Bottom sheet
+  const { height: screenHeight } = useWindowDimensions();
+  const sheetAnim = useRef(new Animated.Value(0)).current;
+  const [sheetExpanded, setSheetExpanded] = useState(false);
+  const sheetPan = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (_, g) => Math.abs(g.dy) > 6,
+      onPanResponderRelease: (_, g) => {
+        if (g.dy < -30 || g.vy < -0.3) {
+          setSheetExpanded(true);
+          Animated.spring(sheetAnim, { toValue: 1, useNativeDriver: false, tension: 50, friction: 9 }).start();
+        } else if (g.dy > 30 || g.vy > 0.3) {
+          Animated.spring(sheetAnim, { toValue: 0, useNativeDriver: false, tension: 50, friction: 9 }).start(() =>
+            setSheetExpanded(false)
+          );
+        }
+      },
+    })
+  ).current;
 
   // Search state
   const [query, setQuery] = useState("");
@@ -414,8 +439,6 @@ export default function Home() {
         <PinOverlay selectedPin={selectedPin} setSelectedPin={setSelectedPin} />
       )}
 
-      {!isDroppingPin && <FriendsBar />}
-
       {isDroppingPin && (
         <DroppingPinOverlay coords={pinCoords} viewMode={viewMode} />
       )}
@@ -431,9 +454,9 @@ export default function Home() {
             </TouchableWithoutFeedback>
           )}
 
-          {/* Search suggestions — expand upward above the bottom bar */}
+          {/* Search suggestions — expand upward above the sheet */}
           {showSuggestions && (
-            <View style={[styles.suggestionsWrapper, { bottom: BOTTOM_BAR_HEIGHT + insets.bottom }]}>
+            <View style={[styles.suggestionsWrapper, { bottom: SEARCH_ROW_HEIGHT + insets.bottom }]}>
               <View style={styles.suggestionsPill}>
                 <Pressable
                   onPress={() => setSuggestionsType("pins")}
@@ -481,8 +504,8 @@ export default function Home() {
             </View>
           )}
 
-          {/* Action pill — above the friends bar */}
-          <View style={[styles.actionPill, { bottom: BOTTOM_BAR_HEIGHT + 98 + insets.bottom }]}>
+          {/* Action pill — above the collapsed sheet */}
+          <View style={[styles.actionPill, { bottom: COLLAPSED_HEIGHT + insets.bottom + 10 }]}>
             <Pressable
               style={styles.actionButton}
               onPress={() => {
@@ -502,30 +525,62 @@ export default function Home() {
             </Pressable>
           </View>
 
-          {/* Bottom bar — search + user icon */}
-          <View style={[styles.bottomBar, { paddingBottom: 8 + insets.bottom }]}>
-            <View style={[styles.searchbar, isFocused && styles.searchbarFocused]}>
-              <TextInput
-                style={styles.searchInput}
-                placeholder="Find a place"
-                placeholderTextColor={Colors.light.accent}
-                value={query}
-                onChangeText={(text) => { setQuery(text); setPinSearchQuery(text); }}
-                onFocus={() => setIsFocused(true)}
-                onBlur={() => setTimeout(() => setIsFocused(false), 150)}
-              />
-              {query.length > 0 ? (
-                <Pressable onPress={() => { setQuery(""); setPinSearchQuery(""); }} hitSlop={8}>
-                  <Ionicons name="close-circle" size={16} color={Colors.light.background} />
+          {/* Animated bottom sheet */}
+          <Animated.View
+            style={[
+              styles.sheet,
+              {
+                height: sheetAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [COLLAPSED_HEIGHT + insets.bottom, screenHeight * 0.5],
+                }),
+                paddingBottom: insets.bottom,
+              },
+            ]}
+          >
+            {/* Fixed top section — never stretches regardless of sheet height */}
+            <View style={styles.sheetTop}>
+              {/* Drag handle */}
+              <View style={styles.dragHandleRow} {...sheetPan.panHandlers}>
+                <View style={styles.dragHandle} />
+              </View>
+
+              {/* Friends bar */}
+              <FriendsBar />
+
+              {/* Search row */}
+              <View style={styles.searchRow}>
+                <View style={[styles.searchbar, isFocused && styles.searchbarFocused]}>
+                  <TextInput
+                    style={styles.searchInput}
+                    placeholder="Find a place"
+                    placeholderTextColor={Colors.light.accent}
+                    value={query}
+                    onChangeText={(text) => { setQuery(text); setPinSearchQuery(text); }}
+                    onFocus={() => setIsFocused(true)}
+                    onBlur={() => setTimeout(() => setIsFocused(false), 150)}
+                  />
+                  {query.length > 0 ? (
+                    <Pressable onPress={() => { setQuery(""); setPinSearchQuery(""); }} hitSlop={8}>
+                      <Ionicons name="close-circle" size={16} color={Colors.light.background} />
+                    </Pressable>
+                  ) : (
+                    <Ionicons name="search" size={16} color={Colors.light.background} />
+                  )}
+                </View>
+                <Pressable style={styles.userButton} onPress={() => router.push("/account")}>
+                  <Ionicons name="person" size={22} color={Colors.light.background} />
                 </Pressable>
-              ) : (
-                <Ionicons name="search" size={16} color={Colors.light.background} />
-              )}
+              </View>
             </View>
-            <Pressable style={styles.userButton} onPress={() => router.push("/account")}>
-              <Ionicons name="person" size={22} color={Colors.light.background} />
-            </Pressable>
-          </View>
+
+            {/* Expanded content fills remaining space below */}
+            {sheetExpanded && (
+              <View style={styles.expandedArea}>
+                <Text style={styles.expandedText}>More coming soon</Text>
+              </View>
+            )}
+          </Animated.View>
 
           <Filter
             isVisible={filterModalVisible}
@@ -646,20 +701,6 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.light.accentLight,
   },
 
-  // Bottom bar (search + user icon)
-  bottomBar: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 15,
-    paddingTop: 8,
-    gap: 8,
-    zIndex: 20,
-    backgroundColor: "rgba(255,255,255,0.95)",
-  },
   searchbar: {
     backgroundColor: "#fff",
     flexDirection: "row",
@@ -695,5 +736,54 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 2,
     elevation: 4,
+  },
+  sheet: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "#fff",
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 10,
+    zIndex: 30,
+  },
+  dragHandleRow: {
+    width: "100%",
+    alignItems: "center",
+    paddingTop: 10,
+    paddingBottom: 6,
+  },
+  dragHandle: {
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: Colors.light.accentLight,
+  },
+  sheetTop: {
+    flexShrink: 0,
+  },
+  expandedArea: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  expandedText: {
+    fontFamily: Fonts.regular,
+    color: Colors.light.accent,
+    fontSize: 14,
+  },
+  searchRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    paddingHorizontal: 12,
+    paddingTop: 8,
+    paddingBottom: 8,
+    height: 60,
   },
 });

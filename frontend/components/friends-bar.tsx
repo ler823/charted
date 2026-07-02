@@ -3,19 +3,15 @@ import { useAuth } from "@/context/AuthContext";
 import { useFilterContext } from "@/context/FilterContext";
 import { supabase } from "@/lib/supabase";
 import React, { useEffect, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Pressable, ScrollView, StyleSheet, Text } from "react-native";
 import AvatarBorder from "./avatar-with-colored-border";
 
 type Friend = { id: number; username: string };
-
-const NAVBAR_HEIGHT = 60; // bottom bar height (search row)
 
 export default function FriendsBar() {
   const { profile } = useAuth();
   const { filterOptions, updateFilterOptions } = useFilterContext();
   const [friends, setFriends] = useState<Friend[]>([]);
-  const insets = useSafeAreaInsets();
 
   useEffect(() => {
     if (!profile) return;
@@ -80,14 +76,12 @@ export default function FriendsBar() {
   };
 
   return (
-    <View style={[styles.container, { bottom: NAVBAR_HEIGHT + insets.bottom }]}>
-      <View style={styles.dragHandle} />
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={styles.scroll}
-        contentContainerStyle={styles.content}
-      >
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      style={styles.scroll}
+      contentContainerStyle={styles.content}
+    >
       <Pressable
         style={filterOptions.self ? styles.itemEnabled : styles.itemDisabled}
         onPress={toggleSelf}
@@ -111,28 +105,11 @@ export default function FriendsBar() {
           </Pressable>
         );
       })}
-      </ScrollView>
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    backgroundColor: "rgba(255,255,255,0.95)",
-    paddingBottom: 5,
-  },
-  dragHandle: {
-    width: 36,
-    height: 4,
-    borderRadius: 999,
-    backgroundColor: "#dee9e0",
-    marginTop: 6,
-    marginBottom: 6,
-    alignSelf: "center",
-  },
   scroll: {
     width: "100%",
   },
