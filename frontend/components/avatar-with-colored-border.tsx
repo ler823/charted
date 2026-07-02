@@ -53,6 +53,10 @@ export default function AvatarBorder({
     const [loading, setLoading] = useState(true);
     
     useEffect(() => {
+          if (!users_id) {
+            setLoading(false);
+            return;
+          }
           async function fetchUsers() {
             const { data, error } = await supabase
               .from("profiles")
@@ -71,7 +75,7 @@ export default function AvatarBorder({
             setLoading(false);
           }
           fetchUsers();
-        }, []);
+        }, [users_id]);
     
     const user_color = friend?.user_id
         ? getUserColor(String(friend.user_id))

@@ -577,7 +577,11 @@ export default function Home() {
             {/* Expanded content fills remaining space below */}
             {sheetExpanded && (
               <View style={styles.expandedArea}>
-                <Text style={styles.expandedText}>More coming soon</Text>
+                <PinListView
+                  pins={filteredPins ?? pins}
+                  emptyMessage={pinSearchQuery ? `No pins matched "${pinSearchQuery}"` : "No pins to display yet."}
+                  topSpacing={0}
+                />
               </View>
             )}
           </Animated.View>
@@ -769,13 +773,6 @@ const styles = StyleSheet.create({
   },
   expandedArea: {
     flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  expandedText: {
-    fontFamily: Fonts.regular,
-    color: Colors.light.accent,
-    fontSize: 14,
   },
   searchRow: {
     flexDirection: "row",

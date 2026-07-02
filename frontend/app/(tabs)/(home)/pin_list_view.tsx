@@ -8,14 +8,15 @@ import ListCard from "./list_card";
 type Props = {
   pins: Pin[];
   emptyMessage?: string;
+  topSpacing?: number;
 };
 
-export default function PinListView({ pins, emptyMessage = "No pins to display yet." }: Props) {
+export default function PinListView({ pins, emptyMessage = "No pins to display yet.", topSpacing = 165 }: Props) {
   const router = useRouter();
 
   return (
-    <View>
-      <View style={styles.spacer} />
+    <View style={styles.container}>
+      <View style={{ marginTop: topSpacing }} />
 
       <FlatList
         data={pins}
@@ -65,12 +66,12 @@ export default function PinListView({ pins, emptyMessage = "No pins to display y
 }
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
   cards: {
     width: "100%",
     alignItems: "center",
-  },
-  spacer: {
-    marginTop: 165,
   },
   listContent: {
     paddingBottom: 265,
