@@ -1,8 +1,8 @@
 import { Colors, Fonts } from "@/constants/theme";
-import { useAuth } from "@/context/AuthContext";
 import React, { useEffect, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import Svg, { Path } from "react-native-svg";
+import PinRing from "./pin-ring";
 
 interface PinMarkerProps {
   users_id: number[];
@@ -43,15 +43,13 @@ const COLORS = [
   "#b87ed4",
 ];
 
-function getUserColor(
-  userId: string | number,
-  authuser: number | undefined,
-): string {
-  const str = String(userId);
+const SIZE = 32;
+const SHINE_WIDTH = 2;
+const AVATAR_SIZE = 22;
+const AVATAR_OFFSET = (SIZE - AVATAR_SIZE) / 2;
 
-  if (str === String(authuser)) {
-    return Colors.light.accent;
-  }
+function getUserColor(userId: string | number): string {
+  const str = String(userId);
 
   let hash = 0;
   for (let i = 0; i < str.length; i++) {
@@ -84,15 +82,14 @@ function createSlicePath(
 }
 
 /**
- * Matched the pin that looks like the one on Figma design
- * Custom pin-marker with customizable style just like the Figma design
+ * Marker for a shared location pin: a small shiny-ringed circle
+ * split between the sharing users' colors, with a shared count badge.
  */
 export default function SharedPinMarkers({
   users_id,
   number_shared,
 }: PinMarkerProps) {
   const [friend, setFriend] = useState<number[]>([]);
-  const { profile } = useAuth();
 
   useEffect(() => {
     if (users_id?.length) {
@@ -100,72 +97,64 @@ export default function SharedPinMarkers({
     }
   }, [users_id]);
 
-  const userColors = friend.map((id) => getUserColor(id, profile?.user_id));
+  const userColors = friend.map((id) => getUserColor(id));
+
+  let content: React.ReactNode;
 
   if (users_id.length === 2) {
-    return (
-      <View style={styles.wrapper}>
-        <View style={styles.pinRow}>
-          <View
-            style={[
-              styles.leftHalf,
-              { backgroundColor: userColors[0] ?? Colors.light.accent },
-            ]}
-          />
-          <View
-            style={[
-              styles.rightHalf,
-              { backgroundColor: userColors[1] ?? Colors.light.accent },
-            ]}
-          />
-          <View style={styles.avatar}>
-            <Text style={styles.avatarInitial}>{number_shared}</Text>
-          </View>
+    content = (
+      <View style={styles.pinRow}>
+        <View
+          style={[
+            styles.leftHalf,
+            { backgroundColor: userColors[0] ?? Colors.light.accent },
+          ]}
+        />
+        <View
+          style={[
+            styles.rightHalf,
+            { backgroundColor: userColors[1] ?? Colors.light.accent },
+          ]}
+        />
+        <View style={styles.avatar}>
+          <Text style={styles.avatarInitial}>{number_shared}</Text>
         </View>
-        <View style={styles.stem} />
-        <View style={{ height: 62 }} />
       </View>
     );
   } else if (users_id.length === 3) {
-    const size = 42;
-    const r = size / 2;
+    const r = SIZE / 2;
     const cx = r;
     const cy = r;
 
-    return (
-      <View style={styles.wrapper}>
-        <View style={{ width: size, height: size }}>
-          <Svg
-            width={size}
-            height={size}
-            style={{ transform: [{ rotate: "-90deg" }] }}
-          >
-            <Path
-              d={createSlicePath(cx, cy, r, 0, 120)}
-              fill={userColors[0] ?? Colors.light.accent}
-            />
-            <Path
-              d={createSlicePath(cx, cy, r, 120, 240)}
-              fill={userColors[1] ?? Colors.light.accent}
-            />
-            <Path
-              d={createSlicePath(cx, cy, r, 240, 360)}
-              fill={userColors[2] ?? Colors.light.accent}
-            />
-          </Svg>
+    content = (
+      <View style={{ width: SIZE, height: SIZE }}>
+        <Svg
+          width={SIZE}
+          height={SIZE}
+          style={{ transform: [{ rotate: "-90deg" }] }}
+        >
+          <Path
+            d={createSlicePath(cx, cy, r, 0, 120)}
+            fill={userColors[0] ?? Colors.light.accent}
+          />
+          <Path
+            d={createSlicePath(cx, cy, r, 120, 240)}
+            fill={userColors[1] ?? Colors.light.accent}
+          />
+          <Path
+            d={createSlicePath(cx, cy, r, 240, 360)}
+            fill={userColors[2] ?? Colors.light.accent}
+          />
+        </Svg>
 
-          <View style={styles.avatar}>
-            <Text style={styles.avatarInitial}>{number_shared}</Text>
-          </View>
+        <View style={styles.avatar}>
+          <Text style={styles.avatarInitial}>{number_shared}</Text>
         </View>
-
-        <View style={styles.stem} />
-        <View style={{ height: 62 }} />
       </View>
     );
   } else {
-    return (
-      <View style={styles.wrapper}>
+    content = (
+      <View>
         <View style={styles.pinQuarterRow}>
           <View
             style={[
@@ -179,9 +168,6 @@ export default function SharedPinMarkers({
               { backgroundColor: userColors[1] ?? Colors.light.accent },
             ]}
           />
-          <View style={styles.quarterAvatar}>
-            <Text style={styles.avatarInitial}>{number_shared}</Text>
-          </View>
         </View>
         <View style={styles.pinQuarterRow}>
           <View
@@ -197,132 +183,97 @@ export default function SharedPinMarkers({
             ]}
           />
         </View>
-        <View style={styles.stem} />
-        <View style={{ height: 62 }} />
+        <View style={styles.quarterAvatar}>
+          <Text style={styles.avatarInitial}>{number_shared}</Text>
+        </View>
       </View>
     );
   }
+
+  return (
+    <View style={styles.wrapper}>
+      <PinRing size={SIZE} color="#ffffff" borderWidth={SHINE_WIDTH}>
+        <View style={styles.clip}>{content}</View>
+      </PinRing>
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({
   wrapper: {
     alignItems: "center",
-    justifyContent: "flex-end",
+    justifyContent: "center",
+  },
+  clip: {
+    width: SIZE,
+    height: SIZE,
+    borderRadius: SIZE / 2,
+    overflow: "hidden",
   },
   pinRow: {
     flexDirection: "row",
-    width: 42,
-    height: 42,
+    width: SIZE,
+    height: SIZE,
     position: "relative",
     alignItems: "center",
     justifyContent: "center",
   },
   pinQuarterRow: {
     flexDirection: "row",
-    width: 21,
-    height: 21,
-    position: "relative",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  outer: {
-    width: 42,
-    height: 42,
-    borderRadius: 22,
-    alignItems: "center",
-    justifyContent: "center",
+    width: SIZE,
+    height: SIZE / 2,
   },
   leftHalf: {
-    width: 21,
-    height: 42,
-    borderTopLeftRadius: 22,
-    borderBottomLeftRadius: 22,
-    alignItems: "center",
-    justifyContent: "center",
+    width: SIZE / 2,
+    height: SIZE,
   },
   rightHalf: {
-    width: 21,
-    height: 42,
-    borderTopRightRadius: 22,
-    borderBottomRightRadius: 22,
-    alignItems: "center",
-    justifyContent: "center",
+    width: SIZE / 2,
+    height: SIZE,
   },
   leftTop: {
-    width: 21,
-    height: 21,
-    borderTopLeftRadius: 22,
-    alignItems: "center",
-    justifyContent: "center",
+    width: SIZE / 2,
+    height: SIZE / 2,
   },
   rightTop: {
-    width: 21,
-    height: 21,
-    borderTopRightRadius: 22,
-    alignItems: "center",
-    justifyContent: "center",
+    width: SIZE / 2,
+    height: SIZE / 2,
   },
   leftBottom: {
-    width: 21,
-    height: 21,
-    borderBottomLeftRadius: 22,
-    alignItems: "center",
-    justifyContent: "center",
+    width: SIZE / 2,
+    height: SIZE / 2,
   },
   rightBottom: {
-    width: 21,
-    height: 21,
-    borderBottomRightRadius: 22,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  slice: {
-    position: "absolute",
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    overflow: "hidden",
-  },
-  half: {
-    position: "absolute",
-    width: 21,
-    height: 42,
-    right: 0,
+    width: SIZE / 2,
+    height: SIZE / 2,
   },
   avatar: {
-    width: 30,
-    height: 30,
-    borderRadius: 16,
+    width: AVATAR_SIZE,
+    height: AVATAR_SIZE,
+    borderRadius: AVATAR_SIZE / 2,
     backgroundColor: "#fefbea",
     alignItems: "center",
     justifyContent: "center",
     position: "absolute",
-    top: 6,
-    left: 6,
+    top: AVATAR_OFFSET,
+    left: AVATAR_OFFSET,
     zIndex: 22,
   },
   quarterAvatar: {
-    width: 30,
-    height: 30,
-    borderRadius: 16,
+    width: AVATAR_SIZE,
+    height: AVATAR_SIZE,
+    borderRadius: AVATAR_SIZE / 2,
     backgroundColor: "#fefbea",
     alignItems: "center",
     justifyContent: "center",
     position: "absolute",
-    top: 6,
+    top: AVATAR_OFFSET,
+    left: AVATAR_OFFSET,
     zIndex: 22,
   },
-  stem: {
-    width: 4,
-    height: 20,
-    backgroundColor: "#111",
-    borderBottomLeftRadius: 2,
-    borderBottomRightRadius: 2,
-  },
   avatarInitial: {
-    fontSize: 20,
+    fontSize: 13,
     fontFamily: Fonts.bold,
     color: "#000",
-    paddingBottom: 5,
   },
 });

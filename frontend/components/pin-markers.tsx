@@ -1,14 +1,15 @@
 import { Colors, Fonts } from "@/constants/theme";
-import { supabase } from "@/lib/supabase";
-import React, { useEffect, useState } from "react";
-import { StyleSheet, View, Text } from "react-native";
-import LoadingPage from "./loading-page";
 import { getPhotoUrl } from "@/lib/photo-utils";
+import { supabase } from "@/lib/supabase";
 import { Image } from "expo-image";
+import React, { useEffect, useState } from "react";
+import { StyleSheet, Text, View } from "react-native";
 import PinSkeleton from "./pin-marker-skeleton";
+import PinRing from "./pin-ring";
 interface PinMarkerProps {
   color?: string;
   users_id: number;
+  size?: number;
 }
 
 
@@ -40,18 +41,21 @@ function getUserColor(userId: string | number): string {
   return COLORS[Math.abs(hash) % COLORS.length];
 }
 
+const RING_WIDTH = 3;
+
 /**
- * Matched the pin that looks like the one on Figma design
- * Custom pin-marker with customizable style just like the Figma design
+ * Marker for a friend's pins: a small shiny-ringed circle with
+ * the friend's avatar (or initial) in the middle.
  */
 export default function PinMarkers({
   color = Colors.light.accent,
   users_id,
+  size = 32,
 }: PinMarkerProps) {
     const [friend, setFriend] = useState<Friend | null>(null);
     const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
-    
+
     useEffect(() => {
           if (!users_id) {
             setLoading(false);
@@ -76,71 +80,60 @@ export default function PinMarkers({
           }
           fetchUsers();
         }, [users_id]);
-    
+
     const user_color = friend?.user_id
         ? getUserColor(String(friend.user_id))
         : color;
 
-  if (loading) return <PinSkeleton />;
-  
+  if (loading) return <PinSkeleton size={size} />;
+
+  const innerSize = size - RING_WIDTH * 2;
+
   return (
     <View style={styles.wrapper}>
-      <View style={[styles.outer, { backgroundColor: user_color }]}>
+      <PinRing size={size} color={user_color} borderWidth={RING_WIDTH}>
         {avatarUrl ? (
           <Image
             source={{ uri: avatarUrl }}
-            style={styles.avatar}
+            style={{
+              width: innerSize,
+              height: innerSize,
+              borderRadius: innerSize / 2,
+            }}
+            contentFit="cover"
             transition={300}
           />
-          ) : !friend?.username ? (
-              <View style={styles.avatar} />
-            ) : friend?.username && (
-              <View style={styles.avatar}>
-                <Text style={styles.avatarInitial}>{friend.username?.[0]?.toUpperCase()}</Text>
-              </View>
-            )
-        }
-      </View>
-      <View style={styles.stem} />
-      <View style={{height: 62}}/>
+        ) : (
+          <View
+            style={[
+              styles.avatar,
+              { width: innerSize, height: innerSize, borderRadius: innerSize / 2 },
+            ]}
+          >
+            {friend?.username && (
+              <Text style={[styles.avatarInitial, { fontSize: innerSize * 0.5 }]}>
+                {friend.username[0].toUpperCase()}
+              </Text>
+            )}
+          </View>
+        )}
+      </PinRing>
     </View>
   );
 }
 
-/**
- * Not sure if the sizing is right.
- * NOTE: Pin looks bigger on actual Expo app
- */
 const styles = StyleSheet.create({
   wrapper: {
-    alignItems: "center",
-    justifyContent: "flex-end",
-  },
-  outer: {
-    width: 42,
-    height: 42,
-    borderRadius: 22,
     alignItems: "center",
     justifyContent: "center",
   },
   avatar: {
-    width: 30,
-    height: 30,
-    borderRadius: 16,
     backgroundColor: "#fefbea",
     alignItems: "center",
     justifyContent: "center",
   },
-  stem: {
-    width: 4,
-    height: 20,
-    backgroundColor: "#111",
-    borderBottomLeftRadius: 2,
-    borderBottomRightRadius: 2,
+  avatarInitial: {
+    fontFamily: Fonts.bold,
+    color: "#000",
   },
-    avatarInitial: {
-      fontSize: 20,
-      fontFamily: Fonts.bold,
-      color: "#000",
-    },
 });

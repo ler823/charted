@@ -146,6 +146,7 @@ export default function FriendMap() {
                 }}
                 tracksViewChanges={false}
                 onPress={() => setSelectedPin(pin)}
+                anchor={{ x: 0.5, y: 0.5 }}
                 >
                 <PinMarkers users_id={Number(friendmap)}/>
                 </Marker>

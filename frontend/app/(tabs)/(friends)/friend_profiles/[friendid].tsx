@@ -564,6 +564,7 @@ export default function FriendProfilePage() {
                       longitude: pin.longitude,
                     }}
                     tracksViewChanges={false}
+                    anchor={{ x: 0.5, y: 0.5 }}
                   >
                     <PinMarkers users_id={Number(friendid)} />
                   </Marker>

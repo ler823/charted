@@ -404,6 +404,7 @@ export default function Home() {
                 coordinate={{ latitude: pin.latitude, longitude: pin.longitude }}
                 onPress={() => setSelectedPin(pin)}
                 tracksViewChanges={false}
+                anchor={{ x: 0.5, y: 0.5 }}
               >
                 {pin.isShared ? (
                   <SharedPinMarkers users_id={pin.userIds!} number_shared={pin.pinCount!} />

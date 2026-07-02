@@ -1,65 +1,102 @@
 import { Colors } from "@/constants/theme";
-import React from "react";
+import { useAuth } from "@/context/AuthContext";
+import { getPhotoUrl } from "@/lib/photo-utils";
+import { Image } from "expo-image";
+import React, { useEffect, useState } from "react";
 import { StyleSheet, View } from "react-native";
+import PinRing from "./pin-ring";
+
 interface PinMarkerProps {
   color?: string;
+  size?: number;
+}
+
+const RING_WIDTH = 3;
+
+const COLORS = [
+  "#d47eaa",
+  "#8c4067",
+  "#d54c4c",
+  "#ec9055",
+  "#b19e24",
+  "#3c6844",
+  "#7ed4d1",
+  "#2c716f",
+  "#b87ed4",
+];
+
+// Matches the hash used by AvatarBorder/PinMarkers so a user's
+// ring color is consistent between the map and the friends bar.
+function getUserColor(userId: string | number): string {
+  const str = String(userId);
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = str.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return COLORS[Math.abs(hash) % COLORS.length];
 }
 
 /**
- * Matched the pin that looks like the one on Figma design
- * Custom pin-marker with customizable style just like the Figma design
+ * Marker for the current user's own pins: a small shiny-ringed
+ * circle with the user's avatar in the middle.
  */
-export default function PinMarker({
-  color = Colors.light.accent,
-}: PinMarkerProps) {
+export default function PinMarker({ color, size = 32 }: PinMarkerProps) {
+  const { profile } = useAuth();
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!profile?.avatar_key) {
+      setAvatarUrl(null);
+      return;
+    }
+    let cancelled = false;
+    async function fetchAvatar() {
+      const urls = await getPhotoUrl([profile!.avatar_key!]);
+      if (!cancelled) setAvatarUrl(urls[0].url);
+    }
+    fetchAvatar();
+    return () => {
+      cancelled = true;
+    };
+  }, [profile?.avatar_key]);
+
+  const innerSize = size - RING_WIDTH * 2;
+  const ringColor =
+    color ?? (profile?.user_id ? getUserColor(profile.user_id) : Colors.light.accent);
+
   return (
     <View style={styles.wrapper}>
-      <View style={[styles.outer, { backgroundColor: color }]}>
-        <View style={styles.middle}>
-          <View style={styles.inner} />
-        </View>
-      </View>
-      <View style={styles.stem} />
-      <View style={{height: 62}}/>
+      <PinRing size={size} color={ringColor} borderWidth={RING_WIDTH}>
+        {avatarUrl ? (
+          <Image
+            source={{ uri: avatarUrl }}
+            style={{
+              width: innerSize,
+              height: innerSize,
+              borderRadius: innerSize / 2,
+            }}
+            contentFit="cover"
+            transition={300}
+          />
+        ) : (
+          <View
+            style={[
+              styles.placeholder,
+              { width: innerSize, height: innerSize, borderRadius: innerSize / 2 },
+            ]}
+          />
+        )}
+      </PinRing>
     </View>
   );
 }
 
-/**
- * Not sure if the sizing is right.
- * NOTE: Pin looks bigger on actual Expo app
- */
 const styles = StyleSheet.create({
   wrapper: {
     alignItems: "center",
-    justifyContent: "flex-end",
-  },
-  outer: {
-    width: 42,
-    height: 42,
-    borderRadius: 22,
-    alignItems: "center",
     justifyContent: "center",
   },
-  middle: {
-    width: 30,
-    height: 30,
-    borderRadius: 16,
+  placeholder: {
     backgroundColor: "#DEE9E0",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  inner: {
-    width: 12,
-    height: 12,
-    borderRadius: 8,
-    backgroundColor: "#243E36",
-  },
-  stem: {
-    width: 4,
-    height: 20,
-    backgroundColor: "#111",
-    borderBottomLeftRadius: 2,
-    borderBottomRightRadius: 2,
   },
 });
