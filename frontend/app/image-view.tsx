@@ -5,7 +5,7 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 
 
 export default function ImageViewer() {
-  const { uri } = useLocalSearchParams();
+  const { uri } = useLocalSearchParams<{ uri: string }>();
   return (
     <>
       <View style={styles.topBar}>

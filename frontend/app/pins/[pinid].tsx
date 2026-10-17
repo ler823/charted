@@ -18,9 +18,10 @@ import {
 //import { AutoSkeletonView } from "react-native-auto-skeleton";
 import { useAuth } from "@/context/AuthContext";
 import { getPhotoUrl } from "@/lib/photo-utils";
+import { OpeningHours } from "@/types/types";
 
 type Friend = {
-  user_id: number;
+  user_id: number | null;
   username: string;
   location: string | null;
   avatarUrl?: string | null;
@@ -69,7 +70,7 @@ type Pin = {
   }[]
   | null;
   private: boolean | null;
-  hours: Object[] | null;
+  hours: OpeningHours[] | null;
 };
 
 type Cluster = {
@@ -110,7 +111,7 @@ export default function PinPage() {
     ).start();
   }, [pulseAnim]);
 
-  const formatDay = (dayNumber: number) => {
+  const formatDay = (dayNumber?: number) => {
     let day;
     switch (dayNumber) {
       case 0:
@@ -138,7 +139,8 @@ export default function PinPage() {
     return day;
   }
 
-  const formatTime = (timeNumber: number) => {
+  const formatTime = (timeNumber?: string | number) => {
+    if (timeNumber == null) return "";
     let timeString = timeNumber.toString();
     let hour = Number(timeString.slice(0, 2));
     let minute = Number(timeString.slice(2, 4));
@@ -435,10 +437,6 @@ export default function PinPage() {
       );
 
       setNotes(enriched);
-      if (error) {
-        Alert.alert(error.message);
-        return;
-      }
     }
     fetchUserNotes();
   }, [cluster, pin?.user_id]);

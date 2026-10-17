@@ -2,9 +2,8 @@ import { Stars } from "@/components/light-stars";
 import { Colors, Fonts } from "@/constants/theme";
 import { getPhotoUrl } from "@/lib/photo-utils";
 import { Ionicons } from "@expo/vector-icons";
-import { useFocusEffect } from "@react-navigation/native";
 import { Image } from "expo-image";
-import { router } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Animated,
@@ -17,22 +16,11 @@ import {
 
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/lib/supabase";
+import { Tables } from "@/types/database.types";
 
-type FavPin = {
-  user_id: number;
-  pin_id: number;
-  user_rating: number;
-  name: string;
-  last_visited: string | null;
-};
+type FavPin = Tables<"pins_with_last_visit">;
 
-type VisPin = {
-  user_id: number;
-  pin_id: number;
-  visit_count: number;
-  name: string;
-  last_visited: string | null;
-};
+type VisPin = Tables<"pins_with_visit_count">;
 
 export default function Account() {
   const { profile, loading: authLoading, signOut } = useAuth();
@@ -185,7 +173,7 @@ export default function Account() {
       const { data } = await supabase
         .from("pins")
         .select("pin_photos(photos(key), cover)")
-        .eq("pin_id", String(favorite?.pin_id))
+        .eq("pin_id", favorite!.pin_id!)
         .single();
 
       if (!data?.pin_photos?.length) return;
@@ -209,7 +197,7 @@ export default function Account() {
       const { data } = await supabase
         .from("pins")
         .select("pin_photos(photos(key), cover)")
-        .eq("pin_id", String(visited?.pin_id))
+        .eq("pin_id", visited!.pin_id!)
         .single();
 
       if (!data?.pin_photos?.length) return;
@@ -230,7 +218,7 @@ export default function Account() {
       const { data } = await supabase
         .from("pins")
         .select("pin_photos(photos(key), cover)")
-        .eq("pin_id", String(pinId))
+        .eq("pin_id", pinId)
         .single();
       if (!data?.pin_photos?.length) return null;
       const coverEntry = (data.pin_photos as any[]).find((p) => p.cover);

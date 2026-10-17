@@ -18,7 +18,20 @@ export type Pin = {
   listIds?: number[];
   tagIds?: number[];
 
-  hours: any[];
+  hours?: OpeningHours[] | null;
+};
+
+// One day's opening period from Google Places; times are "HHMM" strings.
+export type OpeningHours = {
+  day?: number;
+  open?: string;
+  close?: string;
+};
+
+// Raw `opening_hours.periods` entry from the Google Places Details API.
+export type GooglePeriod = {
+  open?: { day: number; time: string };
+  close?: { day: number; time: string };
 };
 
 export type ViewOption = {

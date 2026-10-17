@@ -24,7 +24,8 @@ type PhotoItem = {
 };
 
 export default function EditList() {
-  const { listIdToView } = useLocalSearchParams();
+  const { listIdToView } = useLocalSearchParams<{ listIdToView: string }>();
+  const listId = Number(listIdToView);
   const [pins, setPins] = useState<Pin[]>([]);
   const [dbPins, setDbPins] = useState<Pin[]>([]);
   const [dbListName, setDbListName] = useState("");
@@ -75,10 +76,10 @@ export default function EditList() {
           key
         )`)
       .eq("list_id", listId)
-    setListName(data?.[0].name);
-    setDbListName(data?.[0].name);
-    setDbPrivacy(data?.[0].privacy);
-    setPrivacy(data?.[0].privacy);
+    setListName(data?.[0]?.name ?? "");
+    setDbListName(data?.[0]?.name ?? "");
+    setDbPrivacy(data?.[0]?.privacy ?? null);
+    setPrivacy(data?.[0]?.privacy ?? 1);
     const key = data?.[0].photos?.key ?? ""
     setCoverPhotoKey(key)
     if (key != "") {
@@ -101,7 +102,14 @@ export default function EditList() {
             )
           `)
       .eq("list_id", Number(listId))
-    const pinsInList: Pin[] = data?.map(pin => ({ id: pin.pins.pin_id, name: pin.pins.name, address: pin.pins.address, latitude: pin.pins.locations.latitude, longitude: pin.pins.locations.longitude, user_id: pin.pins.user_id}))
+    const pinsInList: Pin[] = (data ?? []).map(({ pins: pin }) => ({
+      id: String(pin.pin_id),
+      name: pin.name ?? "",
+      address: pin.address ?? "",
+      latitude: pin.locations?.latitude ?? 0,
+      longitude: pin.locations?.longitude ?? 0,
+      user_id: String(pin.user_id),
+    }))
     setPins(pinsInList)
     setDbPins(pinsInList)
   }
@@ -218,7 +226,7 @@ export default function EditList() {
       .update({
         "cover_photo": data?.photo_id
       })
-      .eq("list_id", listIdToView);
+      .eq("list_id", listId);
 
     if (listPhotoError) {
       Alert.alert("Error", listPhotoError.message);
@@ -286,7 +294,7 @@ export default function EditList() {
     const dbPinIds = dbPins.map((item) => Number(item.id))
     const pinIdsToRemove = pinsToRemove;
     const pinsToAddToDb = pins.filter((item) => !dbPinIds.includes(Number(item.id)) && !pinIdsToRemove.includes(Number(item.id)))
-    const pinListAssociationToAdd = pinsToAddToDb.map((item) => ({ pin_id: Number(item.id), list_id: listIdToView }))
+    const pinListAssociationToAdd = pinsToAddToDb.map((item) => ({ pin_id: Number(item.id), list_id: listId }))
     const pinsToDeleteFromDb = pinIdsToRemove.filter((item) => dbPinIds.includes(Number(item)));
     if (pinsToAddToDb.length > 0) {
       const { error: addPinListError } = await supabase
@@ -301,7 +309,7 @@ export default function EditList() {
         .from("pin_lists")
         .delete()
         .in("pin_id", pinsToDeleteFromDb)
-        .eq("list_id", listIdToView)
+        .eq("list_id", listId)
       if (deletePinListError) {
         Alert.alert("Error", deletePinListError.message)
       }
@@ -310,7 +318,7 @@ export default function EditList() {
       const { error: updateListNameError } = await supabase
         .from("lists")
         .update({ "name": listName })
-        .eq("list_id", listIdToView);
+        .eq("list_id", listId);
       if (updateListNameError) {
         Alert.alert("Error", updateListNameError.message)
       }
@@ -319,7 +327,7 @@ export default function EditList() {
       const { error: updatePrivacyError } = await supabase
         .from("lists")
         .update({ "privacy": privacy })
-        .eq("list_id", listIdToView);
+        .eq("list_id", listId);
       if (updatePrivacyError) {
         Alert.alert("Error", updatePrivacyError.message);
       }
@@ -340,7 +348,7 @@ export default function EditList() {
               const { error } = await supabase
               .from("lists")
               .delete()
-              .eq("list_id", listIdToView);
+              .eq("list_id", listId);
               if (error) {
                 console.log(error.message);
               }

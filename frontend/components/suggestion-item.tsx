@@ -17,7 +17,7 @@ export default function SuggestionItem({ item }: { item: Pin }) {
       const { data } = await supabase
         .from("pins")
         .select("pin_photos(photos(key), cover)")
-        .eq("pin_id", pinId)
+        .eq("pin_id", pinId!)
         .single();
 
       if (!data?.pin_photos?.length) return;

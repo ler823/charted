@@ -43,7 +43,7 @@ export async function syncPinLists(
   const { data: currentLists, error: currentListsError } = await supabase
     .from("pin_lists")
     .select("list_id")
-    .eq("pin_id", pinId);
+    .eq("pin_id", Number(pinId));
 
   if (currentListsError) return currentListsError.message;
 
@@ -55,7 +55,7 @@ export async function syncPinLists(
   if (toAdd.length > 0) {
     const { error } = await supabase
       .from("pin_lists")
-      .insert(toAdd.map((list_id) => ({ pin_id: pinId, list_id })));
+      .insert(toAdd.map((list_id) => ({ pin_id: Number(pinId), list_id })));
     if (error) return error.message;
   }
 
@@ -63,7 +63,7 @@ export async function syncPinLists(
     const { error } = await supabase
       .from("pin_lists")
       .delete()
-      .eq("pin_id", pinId)
+      .eq("pin_id", Number(pinId))
       .in("list_id", toDelete);
     if (error) return error.message;
   }

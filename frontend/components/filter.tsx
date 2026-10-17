@@ -78,7 +78,8 @@ export default function Filter({ isVisible, onClose, exportFilter }: Props) {
     setFriends(preSelectedFriends)
   }
 
-  const getUserLists = async (userId: number) => {
+  const getUserLists = async (userId: number | null | undefined) => {
+    if (userId == null) return [];
     const { data, error } = await supabase
       .from("lists")
       .select("name, list_id")
@@ -87,13 +88,14 @@ export default function Filter({ isVisible, onClose, exportFilter }: Props) {
       console.error("[getUserLists]", error);
       return [];
     }
-    const listsFromDb = data.map((list) => ({ id: list.list_id, name: list.name, enabled: false }));
+    const listsFromDb = data.map((list) => ({ id: list.list_id, name: list.name ?? "", enabled: false }));
     const selectedLists = filterOptions.lists ?? [];
     const preSelectedLists = listsFromDb.map((list) => ({ ...list, enabled: selectedLists.includes(list.id) }))
     return preSelectedLists
   }
 
-  const getUserTags = async (userId: number) => {
+  const getUserTags = async (userId: number | null | undefined) => {
+    if (userId == null) return [];
     const { data, error } = await supabase
       .from("tags")
       .select("name, tag_id")
@@ -102,7 +104,7 @@ export default function Filter({ isVisible, onClose, exportFilter }: Props) {
       console.error("[getUserTags]", error);
       return [];
     }
-    const tagsFromDb = data.map((tag) => ({ id: tag.tag_id, name: tag.name, enabled: false }));
+    const tagsFromDb = data.map((tag) => ({ id: tag.tag_id, name: tag.name ?? "", enabled: false }));
     const selectedTags = filterOptions.tags ?? [];
     const preSelectedTags = tagsFromDb.map((tag) => ({ ...tag, enabled: selectedTags.includes(tag.id) }))
     return preSelectedTags

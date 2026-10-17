@@ -63,25 +63,12 @@ export default function FriendMap() {
             return;
           }
   
-        const typedData = data as unknown as {
-          pin_id: number;
-          name: string;
-          address: string;
-          location_id: number;
-          user_id: number;
-          private: boolean;
-          locations?: {
-            id: number;
-            latitude: number;
-            longitude: number;
-          } | null;
-        }[];
-
         setPins(
-          typedData.map((row) => ({
+          data.map((row) => ({
             id: String(row.pin_id),
-            name: row.name,
-            address: row.address,
+            user_id: String(row.user_id),
+            name: row.name ?? "",
+            address: row.address ?? "",
             latitude: row.locations?.latitude ?? 0,
             longitude: row.locations?.longitude ?? 0,
           })),

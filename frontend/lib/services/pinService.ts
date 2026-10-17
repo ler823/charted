@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase";
+import { OpeningHours } from "@/types/types";
 
 export async function checkDuplicateAddress(
   userId: number,
@@ -14,7 +15,7 @@ export async function checkDuplicateAddress(
     .eq("address", address);
 
   if (excludePinId) {
-    query = query.neq("pin_id", excludePinId);
+    query = query.neq("pin_id", Number(excludePinId));
   }
 
   const { data, error } = await query.limit(1);
@@ -71,12 +72,12 @@ export async function updatePin(
       user_note: params.notes,
       private: params.isPrivate,
     })
-    .eq("pin_id", pinId);
+    .eq("pin_id", Number(pinId));
   return error?.message ?? null;
 }
 
 export async function deletePin(pinId: string): Promise<string | null> {
-  const { error } = await supabase.rpc("delete_pin", { p_pin_id: pinId });
+  const { error } = await supabase.rpc("delete_pin", { p_pin_id: Number(pinId) });
   return error?.message ?? null;
 }
 
@@ -88,8 +89,8 @@ export type PinInfo = {
   rating: number;
   notes: string;
   isPrivate: boolean;
-  placeId: number;
-  hours: any;
+  placeId: string;
+  hours: OpeningHours[] | null;
   selectedTags: string[];
   selectedLists: string[];
   visits: string[];
@@ -103,7 +104,7 @@ export async function getPinInfo(
   const { data: pinData, error: pinDataError } = await supabase
     .from("pins")
     .select("name, user_rating, user_note, address, location_id, private, place_id, hours")
-    .eq("pin_id", pinId);
+    .eq("pin_id", Number(pinId));
 
   if (pinDataError) return { data: null, error: pinDataError.message };
   if (!pinData?.length) return { data: null, error: "Pin not found" };
@@ -114,12 +115,14 @@ export async function getPinInfo(
     .eq("id", pinData[0].location_id);
 
   if (locDataError) return { data: null, error: locDataError.message };
-  if (!locData?.length) return { data: null, error: "Location not found" };
+  const { latitude, longitude } = locData?.[0] ?? {};
+  if (latitude == null || longitude == null)
+    return { data: null, error: "Location not found" };
 
   const { data: tagData, error: tagDataError } = await supabase
     .from("pin_tags")
     .select("tags (name)")
-    .eq("pin_id", pinId);
+    .eq("pin_id", Number(pinId));
 
   if (tagDataError) return { data: null, error: tagDataError.message };
 
@@ -130,7 +133,7 @@ export async function getPinInfo(
   const { data: listData, error: listDataError } = await supabase
     .from("pin_lists")
     .select("lists (name)")
-    .eq("pin_id", pinId);
+    .eq("pin_id", Number(pinId));
 
   if (listDataError) return { data: null, error: listDataError.message };
 
@@ -161,15 +164,15 @@ export async function getPinInfo(
 
   return {
     data: {
-      name: pinData[0].name,
-      address: pinData[0].address,
-      latitude: locData[0].latitude,
-      longitude: locData[0].longitude,
-      rating: pinData[0].user_rating,
-      notes: pinData[0].user_note,
-      isPrivate: pinData[0].private,
-      placeId: pinData[0].place_id,
-      hours: pinData[0].hours,
+      name: pinData[0].name ?? "",
+      address: pinData[0].address ?? "",
+      latitude,
+      longitude,
+      rating: pinData[0].user_rating ?? 0,
+      notes: pinData[0].user_note ?? "",
+      isPrivate: pinData[0].private ?? false,
+      placeId: pinData[0].place_id ?? "",
+      hours: pinData[0].hours as OpeningHours[] | null,
       selectedTags,
       selectedLists,
       visits,

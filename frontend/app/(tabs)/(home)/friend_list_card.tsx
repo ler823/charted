@@ -23,7 +23,7 @@ export default function FriendListCard({ userId, name, loc, editList }: Props) {
       const { data } = await supabase
         .from("users")
         .select("profiles(avatar_key)")
-        .eq("user_id", userId)
+        .eq("user_id", Number(userId))
         .single();
 
       const key = data?.profiles[0].avatar_key;

@@ -53,7 +53,7 @@ import {
   syncPinTags,
 } from "@/lib/services/tagService";
 import { saveNewVisits } from "@/lib/services/visitService";
-import { ListType, PhotoItem } from "@/types/types";
+import { GooglePeriod, ListType, OpeningHours, PhotoItem } from "@/types/types";
 
 export default function MakePin() {
   const router = useRouter();
@@ -127,8 +127,8 @@ export default function MakePin() {
   const originalPrivacy = useRef(false);
   const insertedPinId = useRef(0);
   const { userCoords } = useLocation();
-  const [hours, setHours] = useState();
-  const [placeId, setPlaceId] = useState();
+  const [hours, setHours] = useState<OpeningHours[] | null>();
+  const [placeId, setPlaceId] = useState<string>();
   const pulseAnim = useRef(new Animated.Value(1)).current;
   
     useEffect(() => {
@@ -362,7 +362,7 @@ export default function MakePin() {
     }
 
     const { error: pinPhotoError } = await supabase.from("pin_photos").insert({
-      pin_id: insertedPinId.current === 0 ? pinId : insertedPinId.current,
+      pin_id: insertedPinId.current === 0 ? Number(pinId) : insertedPinId.current,
       photo_id: data!.photo_id,
       cover: cover,
     });
@@ -509,7 +509,7 @@ export default function MakePin() {
         "place_id": placeId,
         "hours": hours ?? null,
       })
-      .eq("pin_id", pinId!);
+      .eq("pin_id", Number(pinId));
     if (pinInfoError) {
       Alert.alert("Error", pinInfoError.message);
       return;
@@ -604,7 +604,7 @@ export default function MakePin() {
     const detailsRes = await fetch(detailsUrl);
     const detailsJson = await detailsRes.json();
     const hoursUnformatted = detailsJson.result.opening_hours?.periods;
-    const hoursFormatted = (hoursUnformatted ?? []).map((hours) => ({day: hours.close?.day, open: hours.open?.time, close: hours.close?.time})).sort((a, b) => {if ((a?.day ?? 0) < (b?.day ?? 0)) {return -1} else if ((a?.day ?? 0) > (b?.day ?? 0)) {return 1} else {return 0}})
+    const hoursFormatted: OpeningHours[] = (hoursUnformatted ?? []).map((hours: GooglePeriod) => ({day: hours.close?.day, open: hours.open?.time, close: hours.close?.time})).sort((a: OpeningHours, b: OpeningHours) => {if ((a?.day ?? 0) < (b?.day ?? 0)) {return -1} else if ((a?.day ?? 0) > (b?.day ?? 0)) {return 1} else {return 0}})
     setHours(hoursFormatted);
     setPlaceId(placeId);
     const formatted =
@@ -733,8 +733,8 @@ export default function MakePin() {
                       onPress={(data, details = null) => {
                         handleNameChange(data.structured_formatting.main_text);
                         handleAddressChange(details?.formatted_address ?? "");
-                        const hoursUnformatted = details?.["opening_hours"].periods;
-                        const hoursFormatted = (hoursUnformatted ?? []).map((hours) => ({day: hours.close.day, open: hours.open.time, close: hours.close.time}))
+                        const hoursUnformatted: GooglePeriod[] | undefined = (details as any)?.opening_hours?.periods;
+                        const hoursFormatted = (hoursUnformatted ?? []).map((hours) => ({day: hours.close?.day, open: hours.open?.time, close: hours.close?.time}))
                         setHours(hoursFormatted)
                         setPlaceId(data["place_id"])
                         const photoRef = (details as any)?.photos?.[0]?.photo_reference;
@@ -1418,7 +1418,7 @@ const styles = StyleSheet.create({
     gap: 10
   },
   savingOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: "rgba(0,0,0,0.45)",
     justifyContent: "center",
     alignItems: "center",

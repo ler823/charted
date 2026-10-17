@@ -67,9 +67,9 @@ export default function AddPinToList({ isVisible, onClose, onSave, listId, pinsI
 
   const addButtonBehavior = async () => {
     onSave();
-    const pinIdsToAdd = Object.entries(checkedItems).filter(([_, selected]) => selected).map(([item, _]) => Number(item))
+    const pinIdsToAdd = Object.entries(checkedItems).filter(([_, selected]) => selected).map(([item, _]) => item)
 
-    const pinsToAdd = (pins ?? []).filter((item) => pinIdsToAdd.includes(item.pinId)).map((item) => ({id: item.pinId, name: item.name, address: item.address, latitude: item.latitude, longitude: item.longitude, user_id: item.user_id}))
+    const pinsToAdd = (pins ?? []).filter((item) => pinIdsToAdd.includes(item.pinId)).map((item) => ({id: item.pinId, name: item.name, address: item.address, latitude: item.latitude, longitude: item.longitude, user_id: String(item.user_id)}))
     setPinsToAdd(pinsToAdd)
     // const pinListAssociation = pinsToAdd.map((item) => ({pin_id: item, list_id: listId}))
     // const { error } = await supabase
@@ -108,7 +108,7 @@ export default function AddPinToList({ isVisible, onClose, onSave, listId, pinsI
     if (error) {
       Alert.alert("Error", error.message);
     }
-    let pinsToAdd = data?.map((item) => ({pinId: item.pin_id, name: item.name, address: item.name, photoKey: item.pin_photos?.[0]?.photos?.key ?? null, latitude: item.locations.latitude, longitude: item.locations.longitude, user_id: item.user_id}))
+    let pinsToAdd = data?.map((item) => ({pinId: String(item.pin_id), name: item.name ?? "", address: item.address ?? "", photoKey: item.pin_photos?.[0]?.photos?.key ?? null, latitude: item.locations?.latitude ?? 0, longitude: item.locations?.longitude ?? 0, user_id: item.user_id}))
     let pinIdsInList = pinsInList.map((item) => item.id)
     pinsToAdd = pinsToAdd?.filter((item) => !pinIdsInList.includes(item.pinId))
     setPins(pinsToAdd)

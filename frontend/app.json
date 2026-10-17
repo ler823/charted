@@ -7,17 +7,10 @@
     "icon": "./assets/images/icon.png",
     "scheme": "charted",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
     "ios": {
       "supportsTablet": true
     },
     "android": {
-      "splash": {
-        "image": "./assets/images/charted-logo.png",
-        "resizeMode": "contain",
-        "backgroundColor": "#fff"
-      },
-      "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false
     },
     "web": {
@@ -33,16 +26,20 @@
         {
           "locationWhenInUsePermission": "Allow Charted to use your location to find nearby places."
         }
+      ],
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/images/charted-logo.png",
+          "resizeMode": "contain",
+          "backgroundColor": "#fff",
+          "imageWidth": 200
+        }
       ]
     ],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    },
-    "splash": {
-      "image": "./assets/images/charted-logo.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#fff"
     },
     "extra": {
       "apiUrl": "https://1vyn8sez3k.execute-api.us-east-2.amazonaws.com/Prod",

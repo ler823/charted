@@ -2,7 +2,6 @@ import FriendListCard from "@/app/(tabs)/(home)/friend_list_card";
 import { Colors, Fonts } from "@/constants/theme";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/lib/supabase";
-import { Pin } from "@/types/types";
 import Checkbox from "expo-checkbox";
 import React, { PropsWithChildren, useEffect, useState } from 'react';
 import { Alert, FlatList, Keyboard, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
@@ -13,38 +12,26 @@ type Props = PropsWithChildren<{
   onClose: () => void;
   onSave: () => void;
   listId: string;
-  pinsInList: Pin[];
-  setPinsToAdd: (value: Pin[]) => void;
-}>;
-
-type PinWithPhoto = PropsWithChildren<{
-  pinId: string
-  name: string,
-  address: string,
-  photoKey: string | null
-  latitude: number,
-  longitude: number
 }>;
 
 type UserData = {
   userId: number,
   name: string,
-  location: string,
+  location: string | null,
   photoKey: string,
 }
 
-export default function EditListFriends({ isVisible, onClose, onSave, listId, pinsInList, setPinsToAdd }: Props) {
+export default function EditListFriends({ isVisible, onClose, onSave, listId }: Props) {
   const [checkedItems, setCheckedItems] = useState<Record<string, boolean>>({});
-  const [pins, setPins] = useState<PinWithPhoto[]>();
   const [friends, setFriends] = useState<UserData[]>();
   const [dbSharedUsers, setDbSharedUsers] = useState<number[]>();
   const { profile } = useAuth();
 
   const addButtonBehavior = async () => {
     onSave();
+    if (profile?.user_id == null) return;
     const userIdsToAdd = Object.entries(checkedItems).filter(([_, selected]) => selected).map(([item, _]) => Number(item))
-    const userId = 4
-    const userListAssociationToAdd = userIdsToAdd.map((item) => ({ list_id: listId, creator_id: userId, viewer_id: item }))
+    const userListAssociationToAdd = userIdsToAdd.map((item) => ({ list_id: Number(listId), creator_id: profile.user_id!, viewer_id: item }))
     const userIdsToDelete = Object.entries(checkedItems).filter(([userId, selected]) => !selected && dbSharedUsers?.includes(Number(userId))).map(([item, _]) => Number(item))
 
     const { error: addError } = await supabase
@@ -57,7 +44,7 @@ export default function EditListFriends({ isVisible, onClose, onSave, listId, pi
       .from("list_members")
       .delete()
       .in("viewer_id", userIdsToDelete)
-      .eq("list_id", listId)
+      .eq("list_id", Number(listId))
     if (deleteError) {
       Alert.alert("Error", deleteError.message)
     }
@@ -84,8 +71,8 @@ export default function EditListFriends({ isVisible, onClose, onSave, listId, pi
       .select(`
         viewer_id
         `)
-      .eq("list_id", listId)
-    const sharedUsers = sharedListData?.map((item) => item.viewer_id) ?? [];
+      .eq("list_id", Number(listId))
+    const sharedUsers = sharedListData?.map((item) => item.viewer_id).filter((id) => id != null) ?? [];
     setDbSharedUsers(sharedUsers);
 
     setCheckedItems(prev => {
@@ -110,7 +97,7 @@ export default function EditListFriends({ isVisible, onClose, onSave, listId, pi
     if (friendDataError) {
       Alert.alert("Error", friendDataError.message)
     }
-    setFriends(friendData?.map((item) => ({ userId: item.user_id, name: item.username, location: item.location, photoKey: item.profiles?.avatar_key ?? "" })))
+    setFriends(friendData?.map((item) => ({ userId: item.user_id, name: item.username, location: item.location, photoKey: item.profiles[0]?.avatar_key ?? "" })))
 
   }
 
@@ -149,7 +136,7 @@ export default function EditListFriends({ isVisible, onClose, onSave, listId, pi
                       <Pressable
                         style={styles.cards}
                       >
-                        <FriendListCard name={item.name} userId={item.userId.toString()} loc={item.location} editList={true} />
+                        <FriendListCard name={item.name} userId={item.userId.toString()} loc={item.location ?? undefined} editList={true} />
                       </Pressable>
                     </View>
                   )}

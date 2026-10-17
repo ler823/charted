@@ -40,7 +40,7 @@ export async function syncPinTags(
   const { data: currentTags, error: currentTagsError } = await supabase
     .from("pin_tags")
     .select("tag_id")
-    .eq("pin_id", pinId);
+    .eq("pin_id", Number(pinId));
 
   if (currentTagsError) return currentTagsError.message;
 
@@ -52,7 +52,7 @@ export async function syncPinTags(
   if (toAdd.length > 0) {
     const { error } = await supabase
       .from("pin_tags")
-      .insert(toAdd.map((tag_id) => ({ pin_id: pinId, tag_id })));
+      .insert(toAdd.map((tag_id) => ({ pin_id: Number(pinId), tag_id })));
     if (error) return error.message;
   }
 
@@ -60,7 +60,7 @@ export async function syncPinTags(
     const { error } = await supabase
       .from("pin_tags")
       .delete()
-      .eq("pin_id", pinId)
+      .eq("pin_id", Number(pinId))
       .in("tag_id", toDelete);
     if (error) return error.message;
   }

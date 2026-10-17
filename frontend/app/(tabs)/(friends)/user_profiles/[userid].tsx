@@ -44,7 +44,7 @@ export default function UserProfilePage() {
       .eq("id", userid)
       .single();
 
-    if (!p) { setLoading(false); return; }
+    if (!p || p.user_id == null) { setLoading(false); return; }
 
     // Get bio from users table, users are associated via profiles
     const { data: u } = await supabase
@@ -122,6 +122,7 @@ export default function UserProfilePage() {
         {
           text: "Unblock",
           onPress: async () => {
+            if (!relationshipId) return;
             const { error } = await supabase
               .from("user_relationships1")
               .delete()

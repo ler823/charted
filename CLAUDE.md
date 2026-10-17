@@ -14,6 +14,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 cd frontend
 npm install
 npx expo start -c --tunnel   # development (tunnel mode for device testing)
+npm run gen:types            # regenerate types/database.types.ts from Supabase (run after every migration; needs `npx supabase login`)
 ```
 
 ### Backend
@@ -63,14 +64,13 @@ Backend deployment requires AWS credentials and SAM CLI + Docker installed local
 
 **State management**:
 
-- Zustand (`store/pinsStore.ts`) for the global pins list (not in use yet)
 - Context API: `context/PinDropContext.tsx` for the pin-creation flow (not in use yet), `context/AuthContext.tsx` for session/user
 
 **Data layer**:
 
 - `lib/supabase.ts` — Supabase client (auth + DB)
 - `lib/photoOperations.ts` — photo upload/download/delete via AWS pre-signed URLs
-- `lib/pinRefresh.ts` — helper to re-fetch pins and update the Zustand store
+- `lib/pin_refresh_data.ts` — helper to re-fetch pin data
 
 **Key UI patterns**:
 

@@ -1,7 +1,6 @@
 import { ActivityIndicator, Keyboard, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from "react-native";
 import { getPhotoUrl, pickImageAsync, processImage, uploadImageToS3 } from "@/lib/photo-utils";
 import { useEffect, useState, useCallback } from "react";
-import { useFocusEffect } from "@react-navigation/native";
 import { Alert } from "react-native";
 import { Image } from "expo-image";
 import { Colors, Fonts } from "@/constants/theme";
@@ -12,7 +11,7 @@ import LoadingPage from "@/components/loading-page";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
-import { router } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import { LocationErrorSubscriber } from "expo-location/build/LocationSubscribers";
 import { isSearchBarAvailableForCurrentPlatform } from "react-native-screens";
 
@@ -155,6 +154,8 @@ export default function EditAccount() {
           return;
         }
 
+        if (profile?.user_id == null) return;
+
         const usernameError = validateUsername(value);
         if (usernameError) {
           setErrors((e) => ({ ...e, username: usernameError }));
@@ -166,7 +167,7 @@ export default function EditAccount() {
           .from("profiles")
           .select("username")
           .eq("username", value)
-          .neq("user_id", profile?.user_id)
+          .neq("user_id", profile.user_id)
           .maybeSingle();
         setCheckingUsername(false);
         if (data) {
@@ -399,16 +400,16 @@ const styles = StyleSheet.create({
     marginTop: 119,
   },
   avatarImage: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
   },
   avatarFallback: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: "#d8d8d8",
     alignItems: "center",
     justifyContent: "center",
   },
   avatarCover: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: "rgba(255, 255, 255, 0.3)",
     alignItems: "center",
     justifyContent: "center",

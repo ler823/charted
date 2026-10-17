@@ -14,7 +14,7 @@ type Props = {
 };
 
 type FriendAvatar = {
-  user_id: number;
+  user_id: number | null;
   username: string;
   avatarUrl?: string | null;
 };
@@ -73,7 +73,7 @@ export default function ListItemsCard({ listId, name, user = null, userIds }: Pr
       const { data } = await supabase
         .from("lists")
         .select("photos(key)")
-        .eq("list_id", listId)
+        .eq("list_id", Number(listId))
         .single();
 
       const key = data?.photos?.key;

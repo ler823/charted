@@ -11,7 +11,7 @@ import { Dispatch, SetStateAction, useEffect, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
 type FriendAvatar = {
-  user_id: number;
+  user_id: number | null;
   username: string;
   avatarUrl?: string | null;
 };
@@ -32,13 +32,14 @@ export default function PinOverlay({
 
   useEffect(() => {
     setCoverPhoto(null);
-    if (!selectedPin?.pinIds?.[0]) return;
+    const pinId = selectedPin?.pinIds?.[0];
+    if (!pinId) return;
 
     async function fetchCoverPhoto() {
       const { data } = await supabase
         .from("pins")
         .select("pin_photos(photos(key), cover)")
-        .eq("pin_id", selectedPin?.pinIds?.[0])
+        .eq("pin_id", pinId!)
         .single();
 
       if (!data?.pin_photos?.length) return;

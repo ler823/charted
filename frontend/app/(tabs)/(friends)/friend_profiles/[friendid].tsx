@@ -6,6 +6,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
 import { getPhotoUrl } from "@/lib/photo-utils";
 import { supabase } from "@/lib/supabase";
+import { Tables } from "@/types/database.types";
 import { Pin } from "@/types/types";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
@@ -38,40 +39,13 @@ type Friend = {
   bio: string | null;
 };
 
-type PinRow = {
-  pin_id: number;
-  name: string;
-  address: string;
-  location_id: number;
-  user_id: number;
-  locations?:
-    | {
-        id: number;
-        latitude: number;
-        longitude: number;
-      }[]
-    | null;
-};
+type FavPin = Tables<"pins_with_last_visit">;
 
-type FavPin = {
-  user_id: number;
-  pin_id: number;
-  user_rating: number;
-  name: string;
-  last_visited: string | null;
-};
-
-type VisPin = {
-  user_id: number;
-  pin_id: number;
-  visit_count: number;
-  name: string;
-  last_visited: string | null;
-};
+type VisPin = Tables<"pins_with_visit_count">;
 
 type RecentVisit = {
-  pin_id: number;
-  name: string;
+  pin_id: number | null;
+  name: string | null;
   last_visited: string | null;
 };
 
@@ -81,7 +55,7 @@ type RecentFriend = {
 
 type RecentPin = {
   pin_id: number;
-  name: string;
+  name: string | null;
   created_at: string | null;
 };
 
@@ -133,18 +107,14 @@ export default function FriendProfilePage() {
           return;
         }
 
-        const typedData = data as PinRow[];
-
         setPins(
-          typedData.map((row) => {
-            const loc = Array.isArray(row.locations)
-              ? row.locations[0]
-              : row.locations;
+          data.map((row) => {
+            const loc = row.locations;
 
             return {
               id: String(row.pin_id),
-              name: row.name,
-              address: row.address,
+              name: row.name ?? "",
+              address: row.address ?? "",
               latitude: loc?.latitude ?? 0,
               longitude: loc?.longitude ?? 0,
               user_id: String(row.user_id),
@@ -281,7 +251,7 @@ export default function FriendProfilePage() {
               .eq("id", otherProfileId)
               .maybeSingle();
 
-            if (profileData) {
+            if (profileData?.user_id != null) {
               const { data: userData } = await supabase
                 .from("users")
                 .select("discoverable")
@@ -334,7 +304,7 @@ export default function FriendProfilePage() {
       const { data } = await supabase
         .from("pins")
         .select("pin_photos(photos(key), cover)")
-        .eq("pin_id", String(favorite?.pin_id))
+        .eq("pin_id", favorite!.pin_id!)
         .single();
 
       if (!data?.pin_photos?.length) return;
@@ -358,7 +328,7 @@ export default function FriendProfilePage() {
       const { data } = await supabase
         .from("pins")
         .select("pin_photos(photos(key), cover)")
-        .eq("pin_id", String(visited?.pin_id))
+        .eq("pin_id", visited!.pin_id!)
         .single();
 
       if (!data?.pin_photos?.length) return;
@@ -433,6 +403,7 @@ export default function FriendProfilePage() {
           text: "Block",
           style: "destructive",
           onPress: async () => {
+            if (!friendProfileId) return;
             await deleteFriendship();
 
             const { error } = await supabase

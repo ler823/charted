@@ -14,7 +14,7 @@ interface PinMarkerProps {
 
 
 type Friend = {
-  user_id: number;
+  user_id: number | null;
   username: string;
   avatar_key: string | null;
 };

@@ -14,7 +14,7 @@ type Props = {
 };
 
 type FriendAvatar = {
-  user_id: number;
+  user_id: number | null;
   username: string;
   avatarUrl?: string | null;
 };
@@ -75,7 +75,7 @@ function GridCard({ item, isSingle }: { item: Pin, isSingle: Boolean }) {
       const { data } = await supabase
         .from("pins")
         .select("pin_photos(photos(key), cover)")
-        .eq("pin_id", String(item.pinIds?.[0]))
+        .eq("pin_id", item.pinIds![0])
         .single();
 
       if (!data?.pin_photos?.length) return;

@@ -36,7 +36,8 @@ function SkeletonCard({ opacity }: { opacity: Animated.Value; }) {
 }
 
 export default function ListPinListView() {
-  const { listIdToView, isShared, canLeave } = useLocalSearchParams();
+  const { listIdToView, isShared, canLeave } = useLocalSearchParams<{ listIdToView: string; isShared?: string; canLeave?: string }>();
+  const listId = Number(listIdToView);
   const [pins, setPins] = useState<PinWithDate[]>([]);
   const [listName, setListName] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
@@ -86,14 +87,15 @@ export default function ListPinListView() {
       .from("lists")
       .select(`
         name,
+        user_id,
         users!lists_user_id_fkey (
           username
         )
         `)
       .eq("list_id", listId)
-    setListName(data?.[0].name);
-    if (data?.[0].user_id != profile!.user_id) {
-      setSharedUsername(data?.[0].users.username);
+    setListName(data?.[0]?.name ?? "");
+    if (data?.[0] && data[0].user_id != profile!.user_id) {
+      setSharedUsername(data[0].users?.username ?? null);
     }
   }
   const getListPins = async (listId: any) => {
@@ -113,7 +115,15 @@ export default function ListPinListView() {
             )
           `)
       .eq("list_id", Number(listId))
-    const pinsInList: PinWithDate[] = data?.map(pin => ({ id: pin.pins.pin_id, name: pin.pins.name, address: pin.pins.address, latitude: pin.pins.locations.latitude, longitude: pin.pins.locations.longitude, date: pin.created_at, user_id: pin.pins.user_id }))
+    const pinsInList: PinWithDate[] = (data ?? []).map(({ pins: pin, created_at }) => ({
+      id: String(pin.pin_id),
+      name: pin.name ?? "",
+      address: pin.address ?? "",
+      latitude: pin.locations?.latitude ?? 0,
+      longitude: pin.locations?.longitude ?? 0,
+      date: created_at ?? "",
+      user_id: pin.user_id,
+    }))
     handleSort(pinsInList)
   }
 
@@ -130,8 +140,8 @@ export default function ListPinListView() {
             const { error } = await supabase
               .from("list_members")
               .delete()
-              .eq("list_id", listIdToView)
-              .eq("viewer_id", profile?.user_id)
+              .eq("list_id", listId)
+              .eq("viewer_id", profile!.user_id!)
             if (error) {
               console.log(error.message);
             }
@@ -168,12 +178,11 @@ export default function ListPinListView() {
       const { data } = await supabase
         .from("lists")
         .select("photos(key)")
-        .eq("list_id", listIdToView)
+        .eq("list_id", listId)
         .single();
 
-      if (data?.photos === null) return;
-      const coverEntry = data.photos.key;
-      if (coverEntry === undefined) return;
+      const coverEntry = data?.photos?.key;
+      if (!coverEntry) return;
       const urls = await getPhotoUrl([coverEntry]);
       if (urls?.[0]?.url) setCoverPhoto(urls[0].url);
     }

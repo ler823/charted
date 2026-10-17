@@ -22,13 +22,14 @@ export default function PinOverlayFriend({
 
   useEffect(() => {
     setCoverPhoto(null);
-    if (!selectedPin?.id) return;
+    const pinId = Number(selectedPin?.id);
+    if (!pinId) return;
 
     async function fetchCoverPhoto() {
       const { data } = await supabase
         .from("pins")
         .select("pin_photos(photos(key), cover)")
-        .eq("pin_id", selectedPin?.id)
+        .eq("pin_id", pinId)
         .single();
 
       if (!data?.pin_photos?.length) return;

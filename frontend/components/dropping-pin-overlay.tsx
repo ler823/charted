@@ -53,7 +53,7 @@ export default function DroppingPinOverlay({ coords, viewMode}: Props) {
 
 const styles = StyleSheet.create({
   droppingPinOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
