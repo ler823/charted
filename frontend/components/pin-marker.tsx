@@ -9,6 +9,8 @@ import PinRing from "./pin-ring";
 interface PinMarkerProps {
   color?: string;
   size?: number;
+  // Called once the marker has finished rendering its avatar (or has none)
+  onReady?: () => void;
 }
 
 const RING_WIDTH = 3;
@@ -40,19 +42,23 @@ function getUserColor(userId: string | number): string {
  * Marker for the current user's own pins: a small shiny-ringed
  * circle with the user's avatar in the middle.
  */
-export default function PinMarker({ color, size = 32 }: PinMarkerProps) {
+export default function PinMarker({ color, size = 32, onReady }: PinMarkerProps) {
   const { profile } = useAuth();
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
   useEffect(() => {
     if (!profile?.avatar_key) {
       setAvatarUrl(null);
+      onReady?.();
       return;
     }
     let cancelled = false;
     async function fetchAvatar() {
       const urls = await getPhotoUrl([profile!.avatar_key!]);
-      if (!cancelled) setAvatarUrl(urls[0].url);
+      if (cancelled) return;
+      const url = urls[0]?.url ?? null;
+      setAvatarUrl(url);
+      if (!url) onReady?.();
     }
     fetchAvatar();
     return () => {
@@ -76,7 +82,8 @@ export default function PinMarker({ color, size = 32 }: PinMarkerProps) {
               borderRadius: innerSize / 2,
             }}
             contentFit="cover"
-            transition={300}
+            onLoad={onReady}
+            onError={onReady}
           />
         ) : (
           <View

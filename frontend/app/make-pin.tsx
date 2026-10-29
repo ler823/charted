@@ -33,7 +33,12 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
 import { useLocation } from "@/hooks/use-location";
-import { getPhotoUrl, pickImageAsync, processImage } from "@/lib/photo-utils";
+import {
+  PHOTO_API_URL,
+  getPhotoUrl,
+  pickImageAsync,
+  processImage,
+} from "@/lib/photo-utils";
 import {
   addList as addListService,
   getUserLists,
@@ -300,7 +305,7 @@ export default function MakePin() {
     }
 
     const res = await fetch(
-      "https://4nm4iifq65.execute-api.us-east-2.amazonaws.com/deletephotourl",
+      `${PHOTO_API_URL}/deletephotourl`,
       {
         method: "POST",
         headers: {
@@ -327,7 +332,7 @@ export default function MakePin() {
     const imageFile = await fetch(photoUrl);
     const imageFileBlob = await imageFile.blob();
     const res = await fetch(
-      "https://4nm4iifq65.execute-api.us-east-2.amazonaws.com/uploadphotourl",
+      `${PHOTO_API_URL}/uploadphotourl`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },

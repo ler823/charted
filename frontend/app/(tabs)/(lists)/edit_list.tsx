@@ -3,7 +3,7 @@ import CoverPhotoModal from "@/components/cover-photo-modal";
 import EditListFriends from "@/components/edit-list-friends";
 import LoadingPage from "@/components/loading-page";
 import { Colors, Fonts } from "@/constants/theme";
-import { getPhotoUrl } from "@/lib/photo-utils";
+import { PHOTO_API_URL, getPhotoUrl } from "@/lib/photo-utils";
 import { setPinChanged } from "@/lib/pin_refresh_data";
 import { supabase } from "@/lib/supabase";
 import { Pin } from "@/types/types";
@@ -187,7 +187,7 @@ export default function EditList() {
     const imageFile = await fetch(photoUrl);
     const imageFileBlob = await imageFile.blob();
     const res = await fetch(
-      "https://4nm4iifq65.execute-api.us-east-2.amazonaws.com/uploadphotourl",
+      `${PHOTO_API_URL}/uploadphotourl`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -247,7 +247,7 @@ export default function EditList() {
     }
 
     const res = await fetch(
-      "https://4nm4iifq65.execute-api.us-east-2.amazonaws.com/deletephotourl",
+      `${PHOTO_API_URL}/deletephotourl`,
       {
         method: "POST",
         headers: {

@@ -69,7 +69,7 @@ export default function AvatarBorder({
             }
             if (data?.avatar_key) {
               const urls = await getPhotoUrl([data.avatar_key]);
-              setAvatarUrl(urls[0].url);
+              setAvatarUrl(urls[0]?.url ?? null);
             }
             setFriend(data);
             setLoading(false);

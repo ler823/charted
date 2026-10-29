@@ -1,22 +1,31 @@
 import * as ImageManipulator from "expo-image-manipulator";
 import * as ImagePicker from "expo-image-picker";
 
+// Base URL of the photo API (API Gateway from backend/charted-backend)
+export const PHOTO_API_URL = process.env.EXPO_PUBLIC_PHOTO_API_URL!;
+
 export async function getPhotoUrl(keys: string[]) {
-  let success = false;
-  while (!success) {
-    const res = await fetch(
-      "https://4nm4iifq65.execute-api.us-east-2.amazonaws.com/downloadphotourl",
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ keys }),
-      },
-    );
-    const { urls } = await res.json();
-    if (urls !== undefined) {
-      return urls;
+  // Retry a few times, but don't spin forever if the endpoint is down
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const res = await fetch(
+        `${PHOTO_API_URL}/downloadphotourl`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ keys }),
+        },
+      );
+      const { urls } = await res.json();
+      if (urls !== undefined) {
+        return urls;
+      }
+      console.error(`getPhotoUrl failed (HTTP ${res.status})`);
+    } catch (e) {
+      console.error("getPhotoUrl failed:", e);
     }
   }
+  return [];
 }
 
 export async function processImage(uri: string) {
@@ -45,7 +54,7 @@ export async function uploadImageToS3(
   const imageFileBlob = await imageFile.blob();
 
   const res = await fetch(
-    "https://4nm4iifq65.execute-api.us-east-2.amazonaws.com/uploadphotourl",
+    `${PHOTO_API_URL}/uploadphotourl`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -66,7 +75,7 @@ export async function uploadImageToS3(
 
 export async function deleteImageFromS3(key: string) {
   const res = await fetch(
-    "https://4nm4iifq65.execute-api.us-east-2.amazonaws.com/deletephotourl",
+    `${PHOTO_API_URL}/deletephotourl`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },

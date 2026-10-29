@@ -48,6 +48,7 @@ python -m pytest tests/integration/   # requires deployed stack + AWS_SAM_STACK_
 EXPO_PUBLIC_SUPABASE_URL=...
 EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY=...
 EXPO_PUBLIC_GOOGLE_PLACES_KEY=...
+EXPO_PUBLIC_PHOTO_API_URL=...   # API Gateway base URL from `sam deploy` output, no trailing slash
 ```
 
 **Backend** — create `backend/charted-backend/env.json` with Supabase credentials for local Lambda invocation.
@@ -69,7 +70,7 @@ Backend deployment requires AWS credentials and SAM CLI + Docker installed local
 **Data layer**:
 
 - `lib/supabase.ts` — Supabase client (auth + DB)
-- `lib/photoOperations.ts` — photo upload/download/delete via AWS pre-signed URLs
+- `lib/photo-utils.ts` — photo upload/download/delete via AWS pre-signed URLs
 - `lib/pin_refresh_data.ts` — helper to re-fetch pin data
 
 **Key UI patterns**:
@@ -88,7 +89,7 @@ Three independent Python Lambda functions behind API Gateway HTTP API:
 
 Infrastructure defined in `template.yaml` (SAM/CloudFormation). Deployed to AWS region `us-east-2`.
 
-Live API base URLs are hardcoded in `frontend/lib/photoOperations.ts` and a config endpoint is hardcoded in `frontend/app/(tabs)/index.tsx`.
+The frontend reads the API base URL from `EXPO_PUBLIC_PHOTO_API_URL` (exported as `PHOTO_API_URL` from `frontend/lib/photo-utils.ts`).
 
 ### Database
 

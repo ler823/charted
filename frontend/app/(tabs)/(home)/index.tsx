@@ -67,6 +67,48 @@ type PlacePrediction = {
   };
 };
 
+/**
+ * Map marker that keeps tracking view changes until its avatar has
+ * rendered, then stops so the map doesn't re-snapshot every frame.
+ * (`coordinate` is a direct prop so react-native-map-clustering sees it.)
+ */
+function PinMapMarker({
+  pin,
+  coordinate,
+  isOwn,
+  onPress,
+}: {
+  pin: Pin;
+  coordinate: Coords;
+  isOwn: boolean;
+  onPress: () => void;
+}) {
+  // Shared markers have no images, so there's nothing to wait for
+  const [tracking, setTracking] = useState(!pin.isShared);
+
+  // Give the final frame a moment to paint before freezing the snapshot
+  const handleReady = useCallback(() => {
+    setTimeout(() => setTracking(false), 100);
+  }, []);
+
+  return (
+    <Marker
+      coordinate={coordinate}
+      onPress={onPress}
+      tracksViewChanges={tracking}
+      anchor={{ x: 0.5, y: 0.5 }}
+    >
+      {pin.isShared ? (
+        <SharedPinMarkers users_id={pin.userIds!} number_shared={pin.pinCount!} />
+      ) : isOwn ? (
+        <PinMarker onReady={handleReady} />
+      ) : (
+        <PinMarkers users_id={Number(pin.user_id)} onReady={handleReady} />
+      )}
+    </Marker>
+  );
+}
+
 export default function Home() {
   const { viewMode: incomingViewMode } = useLocalSearchParams<{
     viewMode?: ViewMode;
@@ -399,21 +441,13 @@ export default function Home() {
           {(filteredPins ?? [])
             .filter((pin) => pin.latitude !== 0 && pin.longitude !== 0)
             .map((pin) => (
-              <Marker
+              <PinMapMarker
                 key={pin.id}
+                pin={pin}
                 coordinate={{ latitude: pin.latitude, longitude: pin.longitude }}
+                isOwn={Number(pin.user_id) === profile?.user_id}
                 onPress={() => setSelectedPin(pin)}
-                tracksViewChanges={false}
-                anchor={{ x: 0.5, y: 0.5 }}
-              >
-                {pin.isShared ? (
-                  <SharedPinMarkers users_id={pin.userIds!} number_shared={pin.pinCount!} />
-                ) : Number(pin.user_id) === profile?.user_id ? (
-                  <PinMarker />
-                ) : (
-                  <PinMarkers users_id={Number(pin.user_id)} />
-                )}
-              </Marker>
+              />
             ))}
         </ClusteredMapView>
       )}

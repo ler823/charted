@@ -1,22 +1,26 @@
 # Charted
 
 ## About the Project
+
 Charted is a curated social map platform that allows users to pin, share, and explore meaningful locations recommended only by themselves and their friends. Unlike influencer-driven maps or generic review platforms, this app prioritizes authentic, small-scale discoveries: from local hidden gems to personal hangouts within a closed, trusted network. Charted creates a private, trusted ecosystem of location sharing, free from algorithms and external influence. With this, we stress the authenticity of users to grow a community and be unique.
 
 ## Features
+
 - Location Pinning
-- 
+-
 
 ## Frameworks & Tools
+
 - **Frontend**
   - React Native
   - Expo Go
-  - 
+  -
 - **Backend**
   - Supabase: Database and Authentication
   - AWS - Photo Cloud Storage
 
 ## Running
+
 1. Install dependencies
 
    ```bash
@@ -36,6 +40,7 @@ Charted is a curated social map platform that allows users to pin, share, and ex
    ```
 
 4. Alternatively, run
+
    ```
    make frontend
    ```
@@ -57,6 +62,7 @@ In the output, you'll find options to open the app in a
   instead of npx expo start
 
 ## Supabase Connection for Contributors
+
 - A .env file must be added to the frontend folder for Supabase
 - Refer to (https://supabase.com/docs/guides/getting-started/quickstarts/expo-react-native) for connection details
 

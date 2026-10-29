@@ -10,6 +10,8 @@ interface PinMarkerProps {
   color?: string;
   users_id: number;
   size?: number;
+  // Called once the marker has finished rendering its avatar (or has none)
+  onReady?: () => void;
 }
 
 
@@ -51,6 +53,7 @@ export default function PinMarkers({
   color = Colors.light.accent,
   users_id,
   size = 32,
+  onReady,
 }: PinMarkerProps) {
     const [friend, setFriend] = useState<Friend | null>(null);
     const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
@@ -59,6 +62,7 @@ export default function PinMarkers({
     useEffect(() => {
           if (!users_id) {
             setLoading(false);
+            onReady?.();
             return;
           }
           async function fetchUsers() {
@@ -69,14 +73,19 @@ export default function PinMarkers({
               .single();
             if (error) {
               console.error("Failed to fetch user profile:", error.message);
+              setLoading(false);
+              onReady?.();
               return;
             }
+            let url: string | null = null;
             if (data?.avatar_key) {
               const urls = await getPhotoUrl([data.avatar_key]);
-              setAvatarUrl(urls[0].url);
+              url = urls[0]?.url ?? null;
+              setAvatarUrl(url);
             }
             setFriend(data);
             setLoading(false);
+            if (!url) onReady?.();
           }
           fetchUsers();
         }, [users_id]);
@@ -101,7 +110,8 @@ export default function PinMarkers({
               borderRadius: innerSize / 2,
             }}
             contentFit="cover"
-            transition={300}
+            onLoad={onReady}
+            onError={onReady}
           />
         ) : (
           <View
