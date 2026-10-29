@@ -12,7 +12,6 @@ import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
 import { router, useFocusEffect } from "expo-router";
-import { LocationErrorSubscriber } from "expo-location/build/LocationSubscribers";
 import { isSearchBarAvailableForCurrentPlatform } from "react-native-screens";
 
 const validateUsername = (username: string) => {

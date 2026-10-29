@@ -609,7 +609,7 @@ export default function PinPage() {
           ) : null}
           {notes?.length! > 0 && (
             <FlatList
-              data={notes}
+              data={notes ?? undefined}
               keyExtractor={(item, index) => `${item.user_id}-${index}`}
               scrollEnabled={false}
               contentContainerStyle={{ gap: 10 }}
@@ -736,7 +736,7 @@ export default function PinPage() {
             )}
             <FlatList
               horizontal
-              data={photoList}
+              data={photoList ?? undefined}
               keyExtractor={(photo) => photo}
               renderItem={({ item }) => (
                 <Pressable

@@ -763,7 +763,7 @@ export default function MakePin() {
                         onChangeText: handleNameChange,
                         maxLength: NAME_MAX + 1,
                         onFocus: (event: NativeSyntheticEvent<TargetedEvent>) =>
-                          scrollRef.current?.scrollToFocusedInput(event.target),
+                          event.target && scrollRef.current?.scrollToFocusedInput(event.target),
                         style: [
                           styles.input,
                           nameError ? styles.inputError : null,
@@ -800,7 +800,7 @@ export default function MakePin() {
                         onChangeText: handleAddressChange,
                         maxLength: ADDRESS_MAX + 1,
                         onFocus: (event: NativeSyntheticEvent<TargetedEvent>) =>
-                          scrollRef.current?.scrollToFocusedInput(event.target),
+                          event.target && scrollRef.current?.scrollToFocusedInput(event.target),
                         style: [
                           styles.input,
                           addressError || duplicateAddressError
@@ -861,7 +861,7 @@ export default function MakePin() {
                   scrollEnabled={false}
                   textAlignVertical="top"
                   onFocus={(event) => {
-                    scrollRef.current?.scrollToFocusedInput(event.target);
+                    event.target && scrollRef.current?.scrollToFocusedInput(event.target);
                   }}
                   onContentSizeChange={(event) => {
                     setNotesHeight(event.nativeEvent.contentSize.height);
