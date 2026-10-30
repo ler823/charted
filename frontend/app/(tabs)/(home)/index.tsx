@@ -54,10 +54,20 @@ const VIEW_OPTIONS: ViewOption[] = [
   { mode: "grid", icon: "grid" },
 ];
 
-// Collapsed sheet height (drag handle + friends row + search row), excluding safe area
-const COLLAPSED_HEIGHT = 155;
-// Height of just the search row inside the sheet (for anchoring suggestions)
-const SEARCH_ROW_HEIGHT = 60;
+// Bottom sheet detents
+const SHEET_MIN = 0;
+const SHEET_FRIENDS = 1;
+const SHEET_EXPANDED = 2;
+
+// Sheet section heights, excluding safe area
+const DRAG_HANDLE_HEIGHT = 20;
+const SEARCH_ROW_MIN = 56; // search bar 40 tall
+const SEARCH_ROW_MAX = 64; // search bar 48 tall
+const FRIENDS_ROW_HEIGHT = 84;
+const MIN_HEIGHT = DRAG_HANDLE_HEIGHT + SEARCH_ROW_MIN;
+const FRIENDS_HEIGHT = DRAG_HANDLE_HEIGHT + SEARCH_ROW_MAX + FRIENDS_ROW_HEIGHT;
+
+const AnimatedTextInput = Animated.createAnimatedComponent(TextInput);
 
 type PlacePrediction = {
   place_id: string;
@@ -130,23 +140,43 @@ export default function Home() {
 
   // Bottom sheet
   const { height: screenHeight } = useWindowDimensions();
-  const sheetAnim = useRef(new Animated.Value(0)).current;
+  // Detents: 0 = search only, 1 = search + friends, 2 = expanded pin list
+  const sheetAnim = useRef(new Animated.Value(SHEET_FRIENDS)).current;
+  const sheetDetent = useRef(SHEET_FRIENDS);
   const [sheetExpanded, setSheetExpanded] = useState(false);
   const sheetPan = useRef(
     PanResponder.create({
-      onMoveShouldSetPanResponder: (_, g) => Math.abs(g.dy) > 6,
+      // Only claim vertical drags so the friends row can still scroll sideways
+      onMoveShouldSetPanResponder: (_, g) => Math.abs(g.dy) > 6 && Math.abs(g.dy) > Math.abs(g.dx),
       onPanResponderRelease: (_, g) => {
-        if (g.dy < -30 || g.vy < -0.3) {
-          setSheetExpanded(true);
-          Animated.spring(sheetAnim, { toValue: 1, useNativeDriver: false, tension: 50, friction: 9 }).start();
-        } else if (g.dy > 30 || g.vy > 0.3) {
-          Animated.spring(sheetAnim, { toValue: 0, useNativeDriver: false, tension: 50, friction: 9 }).start(() =>
-            setSheetExpanded(false)
-          );
-        }
+        const current = sheetDetent.current;
+        let next = current;
+        if (g.dy < -30 || g.vy < -0.3) next = Math.min(current + 1, SHEET_EXPANDED);
+        else if (g.dy > 30 || g.vy > 0.3) next = Math.max(current - 1, SHEET_MIN);
+        if (next === current) return;
+
+        sheetDetent.current = next;
+        if (next === SHEET_EXPANDED) setSheetExpanded(true);
+        Animated.spring(sheetAnim, { toValue: next, useNativeDriver: false, tension: 50, friction: 9 }).start(() => {
+          if (next !== SHEET_EXPANDED) setSheetExpanded(false);
+        });
       },
     })
   ).current;
+
+  // Top edge of the sheet, capped at the friends detent (used to anchor
+  // the action pill and search suggestions)
+  const sheetTopHeight = sheetAnim.interpolate({
+    inputRange: [SHEET_MIN, SHEET_FRIENDS],
+    outputRange: [MIN_HEIGHT + insets.bottom, FRIENDS_HEIGHT + insets.bottom],
+    extrapolate: "clamp",
+  });
+  // 0 → 1 progress toward the friends detent, for search bar sizing
+  const friendsProgress = sheetAnim.interpolate({
+    inputRange: [SHEET_MIN, SHEET_FRIENDS],
+    outputRange: [0, 1],
+    extrapolate: "clamp",
+  });
 
   // Search state
   const [query, setQuery] = useState("");
@@ -155,6 +185,27 @@ export default function Home() {
   const [placeSuggestions, setPlaceSuggestions] = useState<PlacePrediction[]>([]);
   const [placesLoading, setPlacesLoading] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Lift the sheet above the keyboard. "Will" events only fire on iOS;
+  // Android already resizes the window when the keyboard opens.
+  const keyboardOffset = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    const show = Keyboard.addListener("keyboardWillShow", (e) => {
+      Animated.timing(keyboardOffset, {
+        toValue: Math.max(0, e.endCoordinates.height - insets.bottom),
+        duration: e.duration,
+        useNativeDriver: false,
+      }).start();
+    });
+    const hide = Keyboard.addListener("keyboardWillHide", (e) => {
+      Animated.timing(keyboardOffset, {
+        toValue: 0,
+        duration: e.duration,
+        useNativeDriver: false,
+      }).start();
+    });
+    return () => { show.remove(); hide.remove(); };
+  }, [insets.bottom]);
 
   // Filter state
   const [filterModalVisible, setFilterModalVisible] = useState(false);
@@ -491,7 +542,12 @@ export default function Home() {
 
           {/* Search suggestions — expand upward above the sheet */}
           {showSuggestions && (
-            <View style={[styles.suggestionsWrapper, { bottom: SEARCH_ROW_HEIGHT + insets.bottom }]}>
+            <Animated.View
+              style={[
+                styles.suggestionsWrapper,
+                { bottom: Animated.add(keyboardOffset, sheetTopHeight) },
+              ]}
+            >
               <View style={styles.suggestionsPill}>
                 <Pressable
                   onPress={() => setSuggestionsType("pins")}
@@ -536,11 +592,16 @@ export default function Home() {
                   </View>
                 )}
               </View>
-            </View>
+            </Animated.View>
           )}
 
           {/* Action pill — above the collapsed sheet */}
-          <View style={[styles.actionPill, { bottom: COLLAPSED_HEIGHT + insets.bottom + 10 }]}>
+          <Animated.View
+            style={[
+              styles.actionPill,
+              { bottom: Animated.add(Animated.add(keyboardOffset, sheetTopHeight), 10) },
+            ]}
+          >
             <Pressable
               style={styles.actionButton}
               onPress={() => {
@@ -558,7 +619,7 @@ export default function Home() {
             <Pressable style={styles.actionButton} onPress={handleCurrentLocation}>
               <Ionicons name="locate" size={22} color={Colors.light.background} />
             </Pressable>
-          </View>
+          </Animated.View>
 
           {/* Animated bottom sheet */}
           <Animated.View
@@ -566,28 +627,44 @@ export default function Home() {
               styles.sheet,
               {
                 height: sheetAnim.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [COLLAPSED_HEIGHT + insets.bottom, screenHeight * 0.5],
+                  inputRange: [SHEET_MIN, SHEET_FRIENDS, SHEET_EXPANDED],
+                  outputRange: [
+                    MIN_HEIGHT + insets.bottom,
+                    FRIENDS_HEIGHT + insets.bottom,
+                    Math.max(screenHeight * 0.5, FRIENDS_HEIGHT + insets.bottom),
+                  ],
                 }),
+                bottom: keyboardOffset,
                 paddingBottom: insets.bottom,
               },
             ]}
           >
             {/* Fixed top section — never stretches regardless of sheet height */}
-            <View style={styles.sheetTop}>
+            <View style={styles.sheetTop} {...sheetPan.panHandlers}>
               {/* Drag handle */}
-              <View style={styles.dragHandleRow} {...sheetPan.panHandlers}>
+              <View style={styles.dragHandleRow}>
                 <View style={styles.dragHandle} />
               </View>
 
-              {/* Friends bar */}
-              <FriendsBar />
-
-              {/* Search row */}
-              <View style={styles.searchRow}>
-                <View style={[styles.searchbar, isFocused && styles.searchbarFocused]}>
-                  <TextInput
-                    style={styles.searchInput}
+              {/* Search row — grows slightly when the friends row is shown */}
+              <Animated.View
+                style={[
+                  styles.searchRow,
+                  { height: friendsProgress.interpolate({ inputRange: [0, 1], outputRange: [SEARCH_ROW_MIN, SEARCH_ROW_MAX] }) },
+                ]}
+              >
+                <Animated.View
+                  style={[
+                    styles.searchbar,
+                    isFocused && styles.searchbarFocused,
+                    { height: friendsProgress.interpolate({ inputRange: [0, 1], outputRange: [40, 48] }) },
+                  ]}
+                >
+                  <AnimatedTextInput
+                    style={[
+                      styles.searchInput,
+                      { fontSize: friendsProgress.interpolate({ inputRange: [0, 1], outputRange: [15, 17] }) },
+                    ]}
                     placeholder="Find a place"
                     placeholderTextColor={Colors.light.accent}
                     value={query}
@@ -602,11 +679,29 @@ export default function Home() {
                   ) : (
                     <Ionicons name="search" size={16} color={Colors.light.background} />
                   )}
-                </View>
-                <Pressable style={styles.userButton} onPress={() => router.push("/account")}>
-                  <Ionicons name="person" size={22} color={Colors.light.background} />
-                </Pressable>
-              </View>
+                </Animated.View>
+                <Animated.View
+                  style={{
+                    width: friendsProgress.interpolate({ inputRange: [0, 1], outputRange: [40, 48] }),
+                    height: friendsProgress.interpolate({ inputRange: [0, 1], outputRange: [40, 48] }),
+                  }}
+                >
+                  <Pressable style={styles.userButton} onPress={() => router.push("/account")}>
+                    <Ionicons name="person" size={22} color={Colors.light.background} />
+                  </Pressable>
+                </Animated.View>
+              </Animated.View>
+
+              {/* Friends bar — swipe down to tuck it away, up to bring it back */}
+              <Animated.View
+                style={{
+                  height: friendsProgress.interpolate({ inputRange: [0, 1], outputRange: [0, FRIENDS_ROW_HEIGHT] }),
+                  opacity: friendsProgress.interpolate({ inputRange: [0.4, 1], outputRange: [0, 1], extrapolate: "clamp" }),
+                  overflow: "hidden",
+                }}
+              >
+                <FriendsBar />
+              </Animated.View>
             </View>
 
             {/* Expanded content fills remaining space below */}
@@ -764,8 +859,8 @@ const styles = StyleSheet.create({
   userButton: {
     backgroundColor: "#fff",
     borderRadius: 999,
-    width: 44,
-    height: 44,
+    width: "100%",
+    height: "100%",
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,

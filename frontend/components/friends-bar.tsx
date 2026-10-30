@@ -86,7 +86,7 @@ export default function FriendsBar() {
         style={filterOptions.self ? styles.itemEnabled : styles.itemDisabled}
         onPress={toggleSelf}
       >
-        <AvatarBorder users_id={profile?.user_id ?? 0} size={46} />
+        <AvatarBorder users_id={profile?.user_id ?? 0} size={54} />
         <Text numberOfLines={1} style={styles.username}>You</Text>
       </Pressable>
 
@@ -98,7 +98,7 @@ export default function FriendsBar() {
             style={selected ? styles.itemEnabled : styles.itemDisabled}
             onPress={() => toggleFriend(friend.id)}
           >
-            <AvatarBorder users_id={friend.id} size={46} />
+            <AvatarBorder users_id={friend.id} size={54} />
             <Text numberOfLines={1} style={styles.username}>
               {friend.username}
             </Text>
@@ -130,8 +130,8 @@ const styles = StyleSheet.create({
   username: {
     textAlign: "center",
     fontFamily: Fonts.regular,
-    fontSize: 12,
+    fontSize: 13,
     marginTop: 4,
-    maxWidth: 64,
+    maxWidth: 72,
   },
 });
