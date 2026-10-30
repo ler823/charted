@@ -1,5 +1,6 @@
 import FriendsBar from "@/components/friends-bar";
 import PinMarker from "@/components/pin-marker";
+import { PlacePrediction, autocompletePlaces, getPlaceDetails } from "@/lib/places";
 import { supabase } from "@/lib/supabase";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import React, { useCallback, useEffect, useRef, useState } from "react";
@@ -68,14 +69,6 @@ const MIN_HEIGHT = DRAG_HANDLE_HEIGHT + SEARCH_ROW_MIN;
 const FRIENDS_HEIGHT = DRAG_HANDLE_HEIGHT + SEARCH_ROW_MAX + FRIENDS_ROW_HEIGHT;
 
 const AnimatedTextInput = Animated.createAnimatedComponent(TextInput);
-
-type PlacePrediction = {
-  place_id: string;
-  structured_formatting: {
-    main_text: string;
-    secondary_text?: string;
-  };
-};
 
 /**
  * Map marker that keeps tracking view changes until its avatar has
@@ -399,16 +392,9 @@ export default function Home() {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(async () => {
       setPlacesLoading(true);
-      try {
-        const url = `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(query)}&language=en&key=${process.env.EXPO_PUBLIC_GOOGLE_PLACES_KEY}`;
-        const res = await fetch(url);
-        const json = await res.json();
-        setPlaceSuggestions(json.predictions?.slice(0, 5) ?? []);
-      } catch {
-        setPlaceSuggestions([]);
-      } finally {
-        setPlacesLoading(false);
-      }
+      const predictions = await autocompletePlaces(query);
+      setPlaceSuggestions(predictions.slice(0, 5));
+      setPlacesLoading(false);
     }, 300);
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
   }, [query, suggestionsType]);
@@ -416,19 +402,13 @@ export default function Home() {
   async function handlePlaceSelect(placeId: string) {
     Keyboard.dismiss();
     setIsFocused(false);
-    try {
-      const url = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&fields=geometry&key=${process.env.EXPO_PUBLIC_GOOGLE_PLACES_KEY}`;
-      const res = await fetch(url);
-      const json = await res.json();
-      const loc = json.result?.geometry?.location;
-      if (loc) {
-        mapRef.current?.animateToRegion(
-          { latitude: loc.lat, longitude: loc.lng, latitudeDelta: 0.01, longitudeDelta: 0.01 },
-          400,
-        );
-      }
-    } catch {
-      // silently fail — map stays where it is
+    // On failure the map just stays where it is (error is logged by getPlaceDetails)
+    const loc = (await getPlaceDetails(placeId, ["location"]))?.location;
+    if (loc) {
+      mapRef.current?.animateToRegion(
+        { latitude: loc.latitude, longitude: loc.longitude, latitudeDelta: 0.01, longitudeDelta: 0.01 },
+        400,
+      );
     }
   }
 

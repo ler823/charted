@@ -58,7 +58,14 @@ import {
   syncPinTags,
 } from "@/lib/services/tagService";
 import { saveNewVisits } from "@/lib/services/visitService";
-import { GooglePeriod, ListType, OpeningHours, PhotoItem } from "@/types/types";
+import {
+  PLACES_API_URL,
+  PlaceDetails,
+  buildPlacePhotoUrl,
+  formatOpeningHours,
+  searchNearbyPlaces,
+} from "@/lib/places";
+import { ListType, OpeningHours, PhotoItem } from "@/types/types";
 
 export default function MakePin() {
   const router = useRouter();
@@ -582,38 +589,31 @@ export default function MakePin() {
     }
   };
 
-  const buildPlacePhotoUrl = (photoReference: string) =>
-    `https://maps.googleapis.com/maps/api/place/photo?maxwidth=800&photo_reference=${photoReference}&key=${process.env.EXPO_PUBLIC_GOOGLE_PLACES_KEY}`;
-
   const fetchNearestPlace = async () => {
     if (!lat || !lng) return;
 
-    const url = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${lat},${lng}&rankby=distance&type=establishment&key=${process.env.EXPO_PUBLIC_GOOGLE_PLACES_KEY}`;
-
-    const res = await fetch(url);
-    const json = await res.json();
-
-    const nearest = json.results?.[0];
+    const [nearest] = await searchNearbyPlaces(Number(lat), Number(lng), [
+      "id",
+      "displayName",
+      "formattedAddress",
+      "shortFormattedAddress",
+      "regularOpeningHours",
+      "photos",
+    ]);
     if (!nearest) return;
 
-    setName(nearest.name ?? "");
+    setName(nearest.displayName?.text ?? "");
 
-    const photoRef = nearest.photos?.[0]?.photo_reference;
-    if (photoRef) {
-      setCoverPhotoUrl(buildPlacePhotoUrl(photoRef));
+    const photoName = nearest.photos?.[0]?.name;
+    if (photoName) {
+      setCoverPhotoUrl(buildPlacePhotoUrl(photoName));
       setCoverPhotoChanged(true);
     }
 
-    const placeId = nearest.place_id;
-    const detailsUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&fields=formatted_address,opening_hours&key=${process.env.EXPO_PUBLIC_GOOGLE_PLACES_KEY}`;
-    const detailsRes = await fetch(detailsUrl);
-    const detailsJson = await detailsRes.json();
-    const hoursUnformatted = detailsJson.result.opening_hours?.periods;
-    const hoursFormatted: OpeningHours[] = (hoursUnformatted ?? []).map((hours: GooglePeriod) => ({day: hours.close?.day, open: hours.open?.time, close: hours.close?.time})).sort((a: OpeningHours, b: OpeningHours) => {if ((a?.day ?? 0) < (b?.day ?? 0)) {return -1} else if ((a?.day ?? 0) > (b?.day ?? 0)) {return 1} else {return 0}})
-    setHours(hoursFormatted);
-    setPlaceId(placeId);
+    setHours(formatOpeningHours(nearest.regularOpeningHours?.periods));
+    setPlaceId(nearest.id);
     const formatted =
-      detailsJson.result?.formatted_address ?? nearest.vicinity ?? "";
+      nearest.formattedAddress ?? nearest.shortFormattedAddress ?? "";
     const withoutCountry = formatted
       .replace(/, USA$/, "")
       .replace(/, United States$/, "");
@@ -735,27 +735,28 @@ export default function MakePin() {
                       placeholder="Name"
                       fetchDetails={true}
                       disableScroll={true}
+                      isNewPlacesAPI={true}
+                      requestUrl={{ useOnPlatform: "all", url: PLACES_API_URL }}
+                      fields="id,formattedAddress,regularOpeningHours,photos"
                       onPress={(data, details = null) => {
+                        const place = details as PlaceDetails | null;
                         handleNameChange(data.structured_formatting.main_text);
-                        handleAddressChange(details?.formatted_address ?? "");
-                        const hoursUnformatted: GooglePeriod[] | undefined = (details as any)?.opening_hours?.periods;
-                        const hoursFormatted = (hoursUnformatted ?? []).map((hours) => ({day: hours.close?.day, open: hours.open?.time, close: hours.close?.time}))
-                        setHours(hoursFormatted)
+                        handleAddressChange(place?.formattedAddress ?? "");
+                        setHours(formatOpeningHours(place?.regularOpeningHours?.periods));
                         setPlaceId(data["place_id"])
-                        const photoRef = (details as any)?.photos?.[0]?.photo_reference;
-                        if (photoRef) {
-                          setCoverPhotoUrl(buildPlacePhotoUrl(photoRef));
+                        const photoName = place?.photos?.[0]?.name;
+                        if (photoName) {
+                          setCoverPhotoUrl(buildPlacePhotoUrl(photoName));
                           setCoverPhotoChanged(true);
                         }
                       }}
                       query={{
                         key: process.env.EXPO_PUBLIC_GOOGLE_PLACES_KEY,
                         language: "en",
-                        types: "establishment",
-                        location: userCoords
-                          ? `${userCoords.latitude},${userCoords.longitude}`
+                        includedPrimaryTypes: ["establishment"],
+                        locationBias: userCoords
+                          ? { circle: { center: userCoords, radius: 500 } }
                           : undefined,
-                        radius: 500,
                       }}
                       textInputProps={{
                         placeholderTextColor: "#aaaaaa",
@@ -777,9 +778,11 @@ export default function MakePin() {
 
                     <GooglePlacesAutocomplete
                       placeholder="Address"
-                      fetchDetails={true}
+                      fetchDetails={false}
                       disableScroll={true}
-                      onPress={(data, details = null) => {
+                      isNewPlacesAPI={true}
+                      requestUrl={{ useOnPlatform: "all", url: PLACES_API_URL }}
+                      onPress={(data) => {
                         const address = data.description;
                         handleAddressChange(address);
                         setHours(undefined);
@@ -787,11 +790,10 @@ export default function MakePin() {
                       query={{
                         key: process.env.EXPO_PUBLIC_GOOGLE_PLACES_KEY,
                         language: "en",
-                        types: "address",
-                        location: userCoords
-                          ? `${userCoords.latitude},${userCoords.longitude}`
+                        includedPrimaryTypes: ["street_address", "premise", "subpremise"],
+                        locationBias: userCoords
+                          ? { circle: { center: userCoords, radius: 500 } }
                           : undefined,
-                        radius: 500,
                       }}
                       listViewDisplayed={false}
                       textInputProps={{
