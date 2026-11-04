@@ -9,6 +9,7 @@ import {
   Keyboard,
   PanResponder,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -26,6 +27,7 @@ import Filter from "@/components/filter";
 import Header from "@/components/header";
 import PinMarkers from "@/components/pin-markers";
 import SharedPinMarkers from "@/components/pin-markers-shared";
+import PinDetail from "@/components/pin-detail";
 import PinOverlay from "@/components/pin-overlay";
 import PlaceSuggestionItem from "@/components/place-suggestion-item";
 import SuggestionItem from "@/components/suggestion-item";
@@ -38,6 +40,7 @@ import { Coords, Pin, ViewMode, ViewOption } from "@/types/types";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { addRecentPin, getRecentPinIds } from "@/lib/recent-pins";
 import { setPinChanged } from "../../../lib/pin_refresh_data";
 
 const CSULB = {
@@ -67,6 +70,19 @@ const SEARCH_ROW_MAX = 64; // search bar 48 tall
 const FRIENDS_ROW_HEIGHT = 84;
 const MIN_HEIGHT = DRAG_HANDLE_HEIGHT + SEARCH_ROW_MIN;
 const FRIENDS_HEIGHT = DRAG_HANDLE_HEIGHT + SEARCH_ROW_MAX + FRIENDS_ROW_HEIGHT;
+const SEARCH_SHEET_TOP_GAP = 12; // gap above the sheet in search mode
+const SAVED_PINS_LIMIT = 20;
+const PIN_SHEET_MEDIUM = 0.5; // pin detail sheet height, as a fraction of the screen
+
+// Place picked from search, shown in the sheet and highlighted on the map
+type SelectedPlace = {
+  id: string;
+  name: string;
+  type?: string;
+  address?: string;
+  latitude: number;
+  longitude: number;
+};
 
 const AnimatedTextInput = Animated.createAnimatedComponent(TextInput);
 
@@ -142,6 +158,17 @@ export default function Home() {
       // Only claim vertical drags so the friends row can still scroll sideways
       onMoveShouldSetPanResponder: (_, g) => Math.abs(g.dy) > 6 && Math.abs(g.dy) > Math.abs(g.dx),
       onPanResponderRelease: (_, g) => {
+        if (sheetPinRef.current) {
+          if (g.dy < -30 || g.vy < -0.3) snapPinDetentRef.current(true);
+          else if (g.dy > 30 || g.vy > 0.3) snapPinDetentRef.current(false);
+          return;
+        }
+        // The place card stays at the medium detent until closed
+        if (selectedPlaceRef.current) return;
+        if (searchActiveRef.current) {
+          if (g.dy > 30 || g.vy > 0.3) closeSearchRef.current();
+          return;
+        }
         const current = sheetDetent.current;
         let next = current;
         if (g.dy < -30 || g.vy < -0.3) next = Math.min(current + 1, SHEET_EXPANDED);
@@ -171,6 +198,21 @@ export default function Home() {
     extrapolate: "clamp",
   });
 
+  // Pin detail in the sheet: opens at medium height, drag up for full height
+  const [sheetPin, setSheetPin] = useState<Pin | null>(null);
+  const sheetPinRef = useRef<Pin | null>(null);
+  const [pinSheetFull, setPinSheetFull] = useState(false);
+  const pinOpenAnim = useRef(new Animated.Value(0)).current;
+  const pinDetentAnim = useRef(new Animated.Value(0)).current;
+
+  const snapPinDetent = (full: boolean) => {
+    setPinSheetFull(full);
+    Animated.spring(pinDetentAnim, { toValue: full ? 1 : 0, useNativeDriver: false, tension: 50, friction: 9 }).start();
+  };
+  // The pan responder is created once, so it calls through a ref
+  const snapPinDetentRef = useRef(snapPinDetent);
+  useEffect(() => { snapPinDetentRef.current = snapPinDetent; });
+
   // Search state
   const [query, setQuery] = useState("");
   const [isFocused, setIsFocused] = useState(false);
@@ -178,6 +220,36 @@ export default function Home() {
   const [placeSuggestions, setPlaceSuggestions] = useState<PlacePrediction[]>([]);
   const [placesLoading, setPlacesLoading] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [recentPinIds, setRecentPinIds] = useState<string[]>(getRecentPinIds);
+  const [selectedPlace, setSelectedPlace] = useState<SelectedPlace | null>(null);
+  const selectedPlaceRef = useRef<SelectedPlace | null>(null);
+  useEffect(() => { selectedPlaceRef.current = selectedPlace; }, [selectedPlace]);
+
+  // Search mode: sheet grows to almost full screen (like Apple Maps).
+  // Stays open when the keyboard is dismissed; closes via Cancel, swipe
+  // down, tapping the map, or picking a result.
+  const [searchActive, setSearchActive] = useState(false);
+  const searchActiveRef = useRef(false);
+  const searchAnim = useRef(new Animated.Value(0)).current;
+
+  const openSearch = () => {
+    if (searchActiveRef.current) return;
+    searchActiveRef.current = true;
+    setSearchActive(true);
+    Animated.spring(searchAnim, { toValue: 1, useNativeDriver: false, tension: 50, friction: 9 }).start();
+  };
+
+  const closeSearch = () => {
+    Keyboard.dismiss();
+    setQuery("");
+    setPinSearchQuery("");
+    searchActiveRef.current = false;
+    setSearchActive(false);
+    Animated.spring(searchAnim, { toValue: 0, useNativeDriver: false, tension: 50, friction: 9 }).start();
+  };
+  // The pan responder is created once, so it calls through a ref
+  const closeSearchRef = useRef(closeSearch);
+  useEffect(() => { closeSearchRef.current = closeSearch; });
 
   // Lift the sheet above the keyboard. "Will" events only fire on iOS;
   // Android already resizes the window when the keyboard opens.
@@ -203,8 +275,38 @@ export default function Home() {
   // Filter state
   const [filterModalVisible, setFilterModalVisible] = useState(false);
 
-  const isMapView = viewMode === "map";
-  const showSuggestions = isMapView && isFocused && query.trim().length > 0;
+  const hasQuery = query.trim().length > 0;
+
+  // Blend between the detent height and the search-mode height (top of the
+  // sheet pinned just below the status bar, bottom riding on the keyboard)
+  const detentHeight = sheetAnim.interpolate({
+    inputRange: [SHEET_MIN, SHEET_FRIENDS, SHEET_EXPANDED],
+    outputRange: [
+      MIN_HEIGHT + insets.bottom,
+      FRIENDS_HEIGHT + insets.bottom,
+      Math.max(screenHeight * 0.5, FRIENDS_HEIGHT + insets.bottom),
+    ],
+  });
+  const searchHeight = Animated.subtract(
+    screenHeight - insets.top - SEARCH_SHEET_TOP_GAP,
+    keyboardOffset,
+  );
+  const pinHeight = pinDetentAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [
+      Math.max(screenHeight * PIN_SHEET_MEDIUM, FRIENDS_HEIGHT + insets.bottom),
+      screenHeight - insets.top - SEARCH_SHEET_TOP_GAP,
+    ],
+  });
+  // Pin mode and search mode never overlap, so each blends from the detent height
+  const baseHeight = Animated.add(
+    detentHeight,
+    Animated.multiply(pinOpenAnim, Animated.subtract(pinHeight, detentHeight)),
+  );
+  const sheetHeight = Animated.add(
+    baseHeight,
+    Animated.multiply(searchAnim, Animated.subtract(searchHeight, baseHeight)),
+  );
 
   const haversineDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
     const R = 3956.0;
@@ -365,6 +467,7 @@ export default function Home() {
               pinCount: validPins.length,
               pinIds,
               userIds,
+              displayPinId: displayPin?.pin_id,
               listIds: list_ids,
               tagIds: tag_ids,
               hours: displayPin?.hours,
@@ -400,17 +503,52 @@ export default function Home() {
   }, [query, suggestionsType]);
 
   async function handlePlaceSelect(placeId: string) {
-    Keyboard.dismiss();
-    setIsFocused(false);
+    closeSearch();
     // On failure the map just stays where it is (error is logged by getPlaceDetails)
-    const loc = (await getPlaceDetails(placeId, ["location"]))?.location;
-    if (loc) {
-      mapRef.current?.animateToRegion(
-        { latitude: loc.latitude, longitude: loc.longitude, latitudeDelta: 0.01, longitudeDelta: 0.01 },
-        400,
-      );
-    }
+    const place = await getPlaceDetails(placeId, [
+      "id",
+      "displayName",
+      "primaryTypeDisplayName",
+      "shortFormattedAddress",
+      "location",
+    ]);
+    const loc = place?.location;
+    if (!place || !loc) return;
+
+    if (sheetPinRef.current) closePinDetail();
+    setSelectedPlace({
+      id: place.id,
+      name: place.displayName?.text ?? "Unnamed place",
+      type: place.primaryTypeDisplayName?.text,
+      address: place.shortFormattedAddress,
+      latitude: loc.latitude,
+      longitude: loc.longitude,
+    });
+    // Show the place card at the medium detent
+    sheetDetent.current = SHEET_FRIENDS;
+    setSheetExpanded(false);
+    Animated.spring(sheetAnim, { toValue: SHEET_FRIENDS, useNativeDriver: false, tension: 50, friction: 9 }).start();
+    mapRef.current?.animateToRegion(
+      { latitude: loc.latitude, longitude: loc.longitude, latitudeDelta: 0.01, longitudeDelta: 0.01 },
+      400,
+    );
   }
+
+  const closePlace = () => setSelectedPlace(null);
+
+  const handlePinPlace = () => {
+    if (!selectedPlace) return;
+    router.push({
+      pathname: "/make-pin",
+      params: {
+        lat: selectedPlace.latitude,
+        lng: selectedPlace.longitude,
+        placeId: selectedPlace.id,
+        viewMode,
+      },
+    });
+    setSelectedPlace(null);
+  };
 
   const matchingPins = query.trim().length > 0
     ? pins
@@ -426,6 +564,46 @@ export default function Home() {
     : [];
 
   const pinSuggestions = matchingPins.slice(0, 5);
+
+  // Shown before typing: recently opened pins, else the user's own pins
+  const pinsById = new Map(pins.map((p) => [p.id, p]));
+  const recentPins = recentPinIds
+    .map((id) => pinsById.get(id))
+    .filter((p): p is Pin => !!p);
+  const savedPins = pins
+    .filter((p) => !!profile && (p.userIds ?? [Number(p.user_id)]).includes(profile.user_id))
+    .slice(0, SAVED_PINS_LIMIT);
+  const showRecents = recentPins.length > 0;
+
+  const openPinDetail = (pin: Pin) => {
+    if (searchActiveRef.current) closeSearch();
+    setSelectedPlace(null);
+    setRecentPinIds(addRecentPin(pin.id));
+    sheetPinRef.current = pin;
+    setSheetPin(pin);
+    snapPinDetent(false);
+    Animated.spring(pinOpenAnim, { toValue: 1, useNativeDriver: false, tension: 50, friction: 9 }).start();
+    // Center the pin in the map area left visible above the medium sheet
+    const latitudeDelta = 0.01;
+    mapRef.current?.animateToRegion(
+      {
+        latitude: pin.latitude - latitudeDelta * PIN_SHEET_MEDIUM * 0.5,
+        longitude: pin.longitude,
+        latitudeDelta,
+        longitudeDelta: 0.01,
+      },
+      400,
+    );
+  };
+
+  const closePinDetail = () => {
+    sheetPinRef.current = null;
+    Animated.spring(pinOpenAnim, { toValue: 0, useNativeDriver: false, tension: 50, friction: 9 }).start(() => {
+      // A different pin may have been opened while this was animating closed
+      if (!sheetPinRef.current) setSheetPin(null);
+    });
+    snapPinDetent(false);
+  };
 
   const handleCurrentLocation = () => {
     if (!userCoords) return;
@@ -480,6 +658,16 @@ export default function Home() {
                 onPress={() => setSelectedPin(pin)}
               />
             ))}
+          {selectedPlace && (
+            <Marker
+              key={`place-${selectedPlace.id}`}
+              coordinate={{ latitude: selectedPlace.latitude, longitude: selectedPlace.longitude }}
+              pinColor={Colors.light.error}
+              // Read by react-native-map-clustering (keeps it out of clusters); not in Marker's types
+              {...({ cluster: false } as object)}
+              zIndex={999}
+            />
+          )}
         </ClusteredMapView>
       )}
 
@@ -511,71 +699,15 @@ export default function Home() {
 
       {!isDroppingPin && (
         <>
-          {/* Backdrop to dismiss search */}
-          {isFocused && (
-            <TouchableWithoutFeedback
-              onPress={() => { Keyboard.dismiss(); setIsFocused(false); }}
-            >
+          {/* Tapping the sliver of map above the search sheet closes it */}
+          {searchActive && (
+            <TouchableWithoutFeedback onPress={closeSearch}>
               <View style={styles.backdrop} />
             </TouchableWithoutFeedback>
           )}
 
-          {/* Search suggestions — expand upward above the sheet */}
-          {showSuggestions && (
-            <Animated.View
-              style={[
-                styles.suggestionsWrapper,
-                { bottom: Animated.add(keyboardOffset, sheetTopHeight) },
-              ]}
-            >
-              <View style={styles.suggestionsPill}>
-                <Pressable
-                  onPress={() => setSuggestionsType("pins")}
-                  style={[styles.suggestionsPillOption, suggestionsType === "pins" && styles.suggestionsPillOptionActive]}
-                >
-                  <Text style={[styles.suggestionsPillText, suggestionsType === "pins" && styles.suggestionsPillTextActive]}>
-                    Pins
-                  </Text>
-                </Pressable>
-                <Pressable
-                  onPress={() => setSuggestionsType("places")}
-                  style={[styles.suggestionsPillOption, suggestionsType === "places" && styles.suggestionsPillOptionActive]}
-                >
-                  <Text style={[styles.suggestionsPillText, suggestionsType === "places" && styles.suggestionsPillTextActive]}>
-                    Places
-                  </Text>
-                </Pressable>
-              </View>
-              <View style={styles.suggestions}>
-                {suggestionsType === "pins" ? (
-                  pinSuggestions.length > 0 ? (
-                    pinSuggestions.map((item) => <SuggestionItem key={item.id} item={item} />)
-                  ) : (
-                    <View style={styles.noResults}>
-                      <Ionicons name="search-outline" size={16} color={Colors.light.accent} />
-                      <Text style={styles.noResultsText}>No pins found</Text>
-                    </View>
-                  )
-                ) : placesLoading ? (
-                  <View style={styles.noResults}>
-                    <Ionicons name="search-outline" size={16} color={Colors.light.accent} />
-                    <Text style={styles.noResultsText}>Searching...</Text>
-                  </View>
-                ) : placeSuggestions.length > 0 ? (
-                  placeSuggestions.map((item) => (
-                    <PlaceSuggestionItem key={item.place_id} item={item} onPress={handlePlaceSelect} />
-                  ))
-                ) : (
-                  <View style={styles.noResults}>
-                    <Ionicons name="search-outline" size={16} color={Colors.light.accent} />
-                    <Text style={styles.noResultsText}>No places found</Text>
-                  </View>
-                )}
-              </View>
-            </Animated.View>
-          )}
-
           {/* Action pill — above the collapsed sheet */}
+          {!searchActive && !sheetPin && (
           <Animated.View
             style={[
               styles.actionPill,
@@ -600,25 +732,39 @@ export default function Home() {
               <Ionicons name="locate" size={22} color={Colors.light.background} />
             </Pressable>
           </Animated.View>
+          )}
 
           {/* Animated bottom sheet */}
           <Animated.View
             style={[
               styles.sheet,
               {
-                height: sheetAnim.interpolate({
-                  inputRange: [SHEET_MIN, SHEET_FRIENDS, SHEET_EXPANDED],
-                  outputRange: [
-                    MIN_HEIGHT + insets.bottom,
-                    FRIENDS_HEIGHT + insets.bottom,
-                    Math.max(screenHeight * 0.5, FRIENDS_HEIGHT + insets.bottom),
-                  ],
-                }),
+                height: sheetHeight,
                 bottom: keyboardOffset,
                 paddingBottom: insets.bottom,
               },
             ]}
           >
+            {sheetPin ? (
+              // Dragging anywhere on the pin snaps the sheet; at full height the
+              // content scrolls instead, and the handle (or pulling down) collapses it
+              <View style={styles.expandedArea} {...sheetPan.panHandlers}>
+                <View style={styles.dragHandleRow}>
+                  <View style={styles.dragHandle} />
+                </View>
+                <View style={styles.pinSheetContent}>
+                  <PinDetail
+                    key={sheetPin.id}
+                    pinid={sheetPin.displayPinId ?? sheetPin.pinIds![0]}
+                    viewMode={viewMode}
+                    onClose={closePinDetail}
+                    scrollEnabled={pinSheetFull}
+                    onPullDown={() => snapPinDetent(false)}
+                  />
+                </View>
+              </View>
+            ) : (
+            <>
             {/* Fixed top section — never stretches regardless of sheet height */}
             <View style={styles.sheetTop} {...sheetPan.panHandlers}>
               {/* Drag handle */}
@@ -626,6 +772,27 @@ export default function Home() {
                 <View style={styles.dragHandle} />
               </View>
 
+              {selectedPlace ? (
+                <View style={styles.placeCard}>
+                  <View style={styles.placeHeader}>
+                    <View style={styles.placeText}>
+                      <Text style={styles.placeName} numberOfLines={1}>{selectedPlace.name}</Text>
+                      <Text style={styles.placeType} numberOfLines={1}>{selectedPlace.type ?? "Place"}</Text>
+                      {selectedPlace.address ? (
+                        <Text style={styles.placeAddress} numberOfLines={1}>{selectedPlace.address}</Text>
+                      ) : null}
+                    </View>
+                    <Pressable style={styles.placeClose} onPress={closePlace} hitSlop={8}>
+                      <Ionicons name="close" size={18} color={Colors.light.background} />
+                    </Pressable>
+                  </View>
+                  <Pressable style={styles.pinPlaceButton} onPress={handlePinPlace}>
+                    <MaterialCommunityIcons name="map-marker-plus" size={20} color="#fefbea" />
+                    <Text style={styles.pinPlaceText}>Pin this place</Text>
+                  </Pressable>
+                </View>
+              ) : (
+              <>
               {/* Search row — grows slightly when the friends row is shown */}
               <Animated.View
                 style={[
@@ -649,8 +816,9 @@ export default function Home() {
                     placeholderTextColor={Colors.light.accent}
                     value={query}
                     onChangeText={(text) => { setQuery(text); setPinSearchQuery(text); }}
-                    onFocus={() => setIsFocused(true)}
-                    onBlur={() => setTimeout(() => setIsFocused(false), 150)}
+                    onFocus={() => { setIsFocused(true); openSearch(); }}
+                    onBlur={() => setIsFocused(false)}
+                    returnKeyType="search"
                   />
                   {query.length > 0 ? (
                     <Pressable onPress={() => { setQuery(""); setPinSearchQuery(""); }} hitSlop={8}>
@@ -660,19 +828,27 @@ export default function Home() {
                     <Ionicons name="search" size={16} color={Colors.light.background} />
                   )}
                 </Animated.View>
-                <Animated.View
-                  style={{
-                    width: friendsProgress.interpolate({ inputRange: [0, 1], outputRange: [40, 48] }),
-                    height: friendsProgress.interpolate({ inputRange: [0, 1], outputRange: [40, 48] }),
-                  }}
-                >
-                  <Pressable style={styles.userButton} onPress={() => router.push("/account")}>
-                    <Ionicons name="person" size={22} color={Colors.light.background} />
+                {searchActive ? (
+                  <Pressable onPress={closeSearch} hitSlop={8}>
+                    <Text style={styles.cancelText}>Cancel</Text>
                   </Pressable>
-                </Animated.View>
+                ) : (
+                  <Animated.View
+                    style={{
+                      width: friendsProgress.interpolate({ inputRange: [0, 1], outputRange: [40, 48] }),
+                      height: friendsProgress.interpolate({ inputRange: [0, 1], outputRange: [40, 48] }),
+                    }}
+                  >
+                    <Pressable style={styles.userButton} onPress={() => router.push("/account")}>
+                      <Ionicons name="person" size={22} color={Colors.light.background} />
+                    </Pressable>
+                  </Animated.View>
+                )}
               </Animated.View>
 
-              {/* Friends bar — swipe down to tuck it away, up to bring it back */}
+              {/* Friends bar — swipe down to tuck it away, up to bring it back.
+                  Hidden while searching. */}
+              {!searchActive && (
               <Animated.View
                 style={{
                   height: friendsProgress.interpolate({ inputRange: [0, 1], outputRange: [0, FRIENDS_ROW_HEIGHT] }),
@@ -682,17 +858,97 @@ export default function Home() {
               >
                 <FriendsBar />
               </Animated.View>
+              )}
+              </>
+              )}
             </View>
 
-            {/* Expanded content fills remaining space below */}
-            {sheetExpanded && (
+            {/* Search mode: recents/saved pins, or suggestions once typing */}
+            {searchActive ? (
+              <ScrollView
+                style={styles.expandedArea}
+                contentContainerStyle={styles.searchContent}
+                keyboardShouldPersistTaps="handled"
+                keyboardDismissMode="on-drag"
+              >
+                {!hasQuery ? (
+                  <>
+                    <Text style={styles.sectionHeading}>{showRecents ? "Recents" : "Saved Pins"}</Text>
+                    <View style={styles.suggestions}>
+                      {(showRecents ? recentPins : savedPins).length > 0 ? (
+                        (showRecents ? recentPins : savedPins).map((item) => (
+                          <SuggestionItem key={item.id} item={item} onPress={openPinDetail} />
+                        ))
+                      ) : (
+                        <View style={styles.noResults}>
+                          <Ionicons name="location-outline" size={16} color={Colors.light.accent} />
+                          <Text style={styles.noResultsText}>No saved pins yet</Text>
+                        </View>
+                      )}
+                    </View>
+                  </>
+                ) : (
+                  <>
+                    <View style={styles.suggestionsPill}>
+                      <Pressable
+                        onPress={() => setSuggestionsType("pins")}
+                        style={[styles.suggestionsPillOption, suggestionsType === "pins" && styles.suggestionsPillOptionActive]}
+                      >
+                        <Text style={[styles.suggestionsPillText, suggestionsType === "pins" && styles.suggestionsPillTextActive]}>
+                          Pins
+                        </Text>
+                      </Pressable>
+                      <Pressable
+                        onPress={() => setSuggestionsType("places")}
+                        style={[styles.suggestionsPillOption, suggestionsType === "places" && styles.suggestionsPillOptionActive]}
+                      >
+                        <Text style={[styles.suggestionsPillText, suggestionsType === "places" && styles.suggestionsPillTextActive]}>
+                          Places
+                        </Text>
+                      </Pressable>
+                    </View>
+                    <View style={styles.suggestions}>
+                      {suggestionsType === "pins" ? (
+                        pinSuggestions.length > 0 ? (
+                          pinSuggestions.map((item) => (
+                            <SuggestionItem key={item.id} item={item} onPress={openPinDetail} />
+                          ))
+                        ) : (
+                          <View style={styles.noResults}>
+                            <Ionicons name="search-outline" size={16} color={Colors.light.accent} />
+                            <Text style={styles.noResultsText}>No pins found</Text>
+                          </View>
+                        )
+                      ) : placesLoading ? (
+                        <View style={styles.noResults}>
+                          <Ionicons name="search-outline" size={16} color={Colors.light.accent} />
+                          <Text style={styles.noResultsText}>Searching...</Text>
+                        </View>
+                      ) : placeSuggestions.length > 0 ? (
+                        placeSuggestions.map((item) => (
+                          <PlaceSuggestionItem key={item.place_id} item={item} onPress={handlePlaceSelect} />
+                        ))
+                      ) : (
+                        <View style={styles.noResults}>
+                          <Ionicons name="search-outline" size={16} color={Colors.light.accent} />
+                          <Text style={styles.noResultsText}>No places found</Text>
+                        </View>
+                      )}
+                    </View>
+                  </>
+                )}
+              </ScrollView>
+            ) : sheetExpanded && !selectedPlace && (
               <View style={styles.expandedArea}>
                 <PinListView
                   pins={filteredPins ?? pins}
                   emptyMessage={pinSearchQuery ? `No pins matched "${pinSearchQuery}"` : "No pins to display yet."}
                   topSpacing={0}
+                  onPinPress={openPinDetail}
                 />
               </View>
+            )}
+            </>
             )}
           </Animated.View>
 
@@ -728,12 +984,25 @@ const styles = StyleSheet.create({
     zIndex: 19,
   },
 
-  // Suggestions (expand upward)
-  suggestionsWrapper: {
-    position: "absolute",
-    left: 15,
-    right: 15,
-    zIndex: 25,
+  // Search mode content
+  searchContent: {
+    paddingHorizontal: 12,
+    paddingTop: 4,
+    paddingBottom: 16,
+  },
+  sectionHeading: {
+    fontFamily: Fonts.bold,
+    fontSize: 20,
+    color: Colors.light.background,
+    marginTop: 6,
+    marginBottom: 10,
+    marginLeft: 4,
+  },
+  cancelText: {
+    fontFamily: Fonts.bold,
+    fontSize: 16,
+    color: Colors.light.background,
+    paddingHorizontal: 4,
   },
   suggestionsPill: {
     flexDirection: "row",
@@ -785,6 +1054,68 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.bold,
     color: Colors.light.accent,
     fontSize: 14,
+  },
+
+  // Pin detail sheet; clips the cover photo to the sheet's rounded corners
+  pinSheetContent: {
+    flex: 1,
+    overflow: "hidden",
+  },
+
+  // Selected place card (fills the medium detent below the drag handle)
+  placeCard: {
+    height: SEARCH_ROW_MAX + FRIENDS_ROW_HEIGHT,
+    paddingHorizontal: 16,
+    paddingTop: 4,
+    paddingBottom: 12,
+    justifyContent: "space-between",
+  },
+  placeHeader: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 12,
+  },
+  placeText: {
+    flex: 1,
+  },
+  placeName: {
+    fontFamily: Fonts.bold,
+    fontSize: 20,
+    color: Colors.light.background,
+  },
+  placeType: {
+    fontFamily: Fonts.bold,
+    fontSize: 14,
+    color: Colors.light.accent,
+    marginTop: 2,
+  },
+  placeAddress: {
+    fontFamily: Fonts.regular,
+    fontSize: 12,
+    color: Colors.light.accent,
+    marginTop: 1,
+  },
+  placeClose: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: "#f0f5f0",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  pinPlaceButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    height: 44,
+    borderRadius: 999,
+    backgroundColor: "#243e36",
+  },
+  pinPlaceText: {
+    fontFamily: Fonts.bold,
+    fontSize: 15,
+    color: "#fefbea",
   },
 
   // Action pill (vertical, bottom right)

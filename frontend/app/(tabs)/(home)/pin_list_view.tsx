@@ -9,9 +9,11 @@ type Props = {
   pins: Pin[];
   emptyMessage?: string;
   topSpacing?: number;
+  // When set, tapping a pin calls this instead of navigating to its page
+  onPinPress?: (pin: Pin) => void;
 };
 
-export default function PinListView({ pins, emptyMessage = "No pins to display yet.", topSpacing = 165 }: Props) {
+export default function PinListView({ pins, emptyMessage = "No pins to display yet.", topSpacing = 165, onPinPress }: Props) {
   const router = useRouter();
 
   return (
@@ -27,7 +29,9 @@ export default function PinListView({ pins, emptyMessage = "No pins to display y
           if (!pinId) return null;
 
           const handlePress = () => {
-            if (item.isShared) {
+            if (onPinPress) {
+              onPinPress(item);
+            } else if (item.isShared) {
               router.push({
                 pathname: "/select-pins/[selectid]",
                 params: {

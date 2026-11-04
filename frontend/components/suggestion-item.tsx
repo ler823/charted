@@ -7,7 +7,13 @@ import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 
-export default function SuggestionItem({ item }: { item: Pin }) {
+export default function SuggestionItem({
+  item,
+  onPress,
+}: {
+  item: Pin;
+  onPress?: (item: Pin) => void;
+}) {
   const [coverPhoto, setCoverPhoto] = useState<string | null>(null);
   const pinId = item.pinIds?.[0];
 
@@ -35,12 +41,17 @@ export default function SuggestionItem({ item }: { item: Pin }) {
   return (
     <Pressable
       style={styles.suggestionItem}
-      onPress={() =>
+      onPress={() => {
+        // A custom handler replaces the default navigation to the pin page
+        if (onPress) {
+          onPress(item);
+          return;
+        }
         router.push({
           pathname: "/pins/[pinid]",
           params: { pinid: String(item.pinIds?.[0]) },
-        })
-      }
+        });
+      }}
     >
       {coverPhoto ? (
         <Image source={{ uri: coverPhoto }} style={styles.suggestionPhoto} />

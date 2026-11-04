@@ -5,7 +5,7 @@ import { useFocusEffect, useRouter, Stack } from "expo-router";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Animated, FlatList, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { Colors, Fonts } from "../../../constants/theme";
-import { getPhotoUrl } from "@/lib/photo-utils";
+import { getPhotoUrlMap } from "@/lib/photo-utils";
 import { Image } from "expo-image";
 import Sort from "@/components/sort-lists";
 
@@ -98,13 +98,13 @@ export default function Friends() {
       .select("id, user_id, username, avatar_key")
       .in("id", friendUuids);
 
+    const avatarMap = await getPhotoUrlMap(
+      (profileData ?? []).map((p: any) => p.avatar_key),
+    );
+
     const enriched = await Promise.all(
       (profileData ?? []).map(async (p: any) => {
-        let avatarUrl = null;
-        if (p.avatar_key) {
-          const urls = await getPhotoUrl([p.avatar_key]);
-          avatarUrl = urls?.[0]?.url ?? null;
-        }
+        const avatarUrl = (p.avatar_key && avatarMap[p.avatar_key]) || null;
         const { data: userData } = await supabase
           .from("users")
           .select("location")

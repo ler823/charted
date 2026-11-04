@@ -1,6 +1,6 @@
 import { Fonts } from "@/constants/theme";
 import { useAuth } from "@/context/AuthContext";
-import { getPhotoUrl } from "@/lib/photo-utils";
+import { getPhotoUrlMap } from "@/lib/photo-utils";
 import { supabase } from "@/lib/supabase";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
@@ -88,21 +88,14 @@ export default function AddFriends() {
 
     const filtered = (data ?? []).filter((p: any) => !excludedUuids.has(p.id));
 
-    const enriched = await Promise.all(
-      filtered.map(async (p: any) => {
-        let avatarUrl = null;
-        if (p.avatar_key) {
-          const urls = await getPhotoUrl([p.avatar_key]);
-          avatarUrl = urls?.[0]?.url ?? null;
-        }
-        return {
-          profileId: p.id,
-          user_id: p.user_id,
-          username: p.username,
-          avatarUrl,
-        };
-      }),
-    );
+    const avatarMap = await getPhotoUrlMap(filtered.map((p: any) => p.avatar_key));
+
+    const enriched = filtered.map((p: any) => ({
+      profileId: p.id,
+      user_id: p.user_id,
+      username: p.username,
+      avatarUrl: (p.avatar_key && avatarMap[p.avatar_key]) || null,
+    }));
 
     setResults(enriched);
     setLoading(false);

@@ -63,6 +63,7 @@ import {
   PlaceDetails,
   buildPlacePhotoUrl,
   formatOpeningHours,
+  getPlaceDetails,
   searchNearbyPlaces,
 } from "@/lib/places";
 import { ListType, OpeningHours, PhotoItem } from "@/types/types";
@@ -75,11 +76,13 @@ export default function MakePin() {
     pinId,
     lat: latParam,
     lng: lngParam,
+    placeId: placeIdParam,
     viewMode,
   } = useLocalSearchParams<{
     pinId?: string;
     lat?: string;
     lng?: string;
+    placeId?: string;
     viewMode: string;
   }>();
   const [lat, setLat] = useState(
@@ -589,18 +592,29 @@ export default function MakePin() {
     }
   };
 
+  const PREFILL_FIELDS = [
+    "id",
+    "displayName",
+    "formattedAddress",
+    "shortFormattedAddress",
+    "regularOpeningHours",
+    "photos",
+  ];
+
   const fetchNearestPlace = async () => {
     if (!lat || !lng) return;
+    const [nearest] = await searchNearbyPlaces(Number(lat), Number(lng), PREFILL_FIELDS);
+    if (nearest) prefillFromPlace(nearest);
+  };
 
-    const [nearest] = await searchNearbyPlaces(Number(lat), Number(lng), [
-      "id",
-      "displayName",
-      "formattedAddress",
-      "shortFormattedAddress",
-      "regularOpeningHours",
-      "photos",
-    ]);
-    if (!nearest) return;
+  // Used when pinning a place picked from search, so we prefill that exact place
+  const fetchPlaceById = async (id: string) => {
+    const place = await getPlaceDetails(id, PREFILL_FIELDS);
+    if (place) prefillFromPlace(place);
+    else fetchNearestPlace();
+  };
+
+  const prefillFromPlace = (nearest: PlaceDetails) => {
 
     setName(nearest.displayName?.text ?? "");
 
@@ -624,6 +638,8 @@ export default function MakePin() {
     const loadData = async () => {
       if (isEdit) {
         await loadPinInfo();
+      } else if (placeIdParam) {
+        fetchPlaceById(placeIdParam);
       } else {
         fetchNearestPlace();
       }

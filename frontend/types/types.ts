@@ -14,6 +14,8 @@ export type Pin = {
   pinCount?: number;
   pinIds?: number[];
   userIds?: number[];
+  // Pin shown for a cluster: the current user's own pin if they have one
+  displayPinId?: number;
 
   listIds?: number[];
   tagIds?: number[];

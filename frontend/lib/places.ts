@@ -23,6 +23,7 @@ export type PlaceDetails = {
   displayName?: { text: string };
   formattedAddress?: string;
   shortFormattedAddress?: string;
+  primaryTypeDisplayName?: { text: string };
   location?: { latitude: number; longitude: number };
   regularOpeningHours?: { periods?: NewPeriod[] };
   photos?: { name: string }[];

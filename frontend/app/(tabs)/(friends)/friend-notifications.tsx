@@ -1,6 +1,6 @@
 import { Colors, Fonts } from "@/constants/theme";
 import { useAuth } from "@/context/AuthContext";
-import { getPhotoUrl } from "@/lib/photo-utils";
+import { getPhotoUrlMap } from "@/lib/photo-utils";
 import { sendPushNotification } from "@/lib/push-notifications";
 import { supabase } from "@/lib/supabase";
 import { Ionicons } from "@expo/vector-icons";
@@ -84,16 +84,15 @@ export default function FriendNotifications() {
         .select("id, username, avatar_key")
         .in("id", allUuids);
 
-      await Promise.all(
-        (profileData ?? []).map(async (p: any) => {
-          let avatarUrl = null;
-          if (p.avatar_key) {
-            const urls = await getPhotoUrl([p.avatar_key]);
-            avatarUrl = urls?.[0]?.url ?? null;
-          }
-          profileMap[p.id] = { username: p.username, avatarUrl };
-        })
+      const avatarMap = await getPhotoUrlMap(
+        (profileData ?? []).map((p: any) => p.avatar_key),
       );
+      for (const p of profileData ?? []) {
+        profileMap[p.id] = {
+          username: p.username,
+          avatarUrl: (p.avatar_key && avatarMap[p.avatar_key]) || null,
+        };
+      }
     }
 
     setReceived(
