@@ -8,3 +8,5 @@ expo-env.d.ts
 # environment variables
 .env
 .env.local
+# Supabase CLI local state
+supabase/.temp/
