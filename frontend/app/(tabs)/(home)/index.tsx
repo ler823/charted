@@ -19,7 +19,6 @@ import {
 } from "react-native";
 import ClusteredMapView from "react-native-map-clustering";
 import { Marker } from "react-native-maps";
-import PinListView from "./pin_list_view";
 
 import PinGridView from "@/app/(tabs)/(home)/pin_grid_view";
 import DroppingPinOverlay from "@/components/dropping-pin-overlay";
@@ -29,6 +28,7 @@ import PinMarkers from "@/components/pin-markers";
 import SharedPinMarkers from "@/components/pin-markers-shared";
 import PinDetail from "@/components/pin-detail";
 import PinOverlay from "@/components/pin-overlay";
+import PinSheetList from "@/components/pin-sheet-list";
 import PlaceSuggestionItem from "@/components/place-suggestion-item";
 import SuggestionItem from "@/components/suggestion-item";
 import { Colors, Fonts } from "@/constants/theme";
@@ -420,6 +420,9 @@ export default function Home() {
               address,
               location_id,
               hours,
+              category,
+              place_id,
+              user_note,
               pin_lists (list_id),
               pin_tags (tag_id)
             `)
@@ -471,6 +474,11 @@ export default function Home() {
               listIds: list_ids,
               tagIds: tag_ids,
               hours: displayPin?.hours,
+              category: validPins.find((p: any) => p.category)?.category ?? null,
+              placeId: displayPin?.place_id ?? validPins.find((p: any) => p.place_id)?.place_id ?? null,
+              notes: validPins
+                .filter((p: any) => p.user_note?.trim())
+                .map((p: any) => ({ userId: p.user_id, note: p.user_note.trim() })),
             };
           })
           .filter(Boolean) as Pin[];
@@ -596,6 +604,15 @@ export default function Home() {
     );
   };
 
+  // Full-screen list view: open the pin's page (or the picker for shared places)
+  const openPinPage = (pin: Pin) => {
+    if (pin.isShared) {
+      router.push({ pathname: "/select-pins/[selectid]", params: { selectid: JSON.stringify(pin.pinIds) } });
+    } else if (pin.pinIds?.[0]) {
+      router.push({ pathname: "/pins/[pinid]", params: { pinid: String(pin.pinIds[0]) } });
+    }
+  };
+
   const closePinDetail = () => {
     sheetPinRef.current = null;
     Animated.spring(pinOpenAnim, { toValue: 0, useNativeDriver: false, tension: 50, friction: 9 }).start(() => {
@@ -673,9 +690,12 @@ export default function Home() {
 
       {viewMode === "list" && (
         <View style={styles.cardsContainer}>
-          <PinListView
+          <PinSheetList
             pins={filteredPins ?? pins}
+            userCoords={userCoords}
             emptyMessage={pinSearchQuery ? `No pins matched "${pinSearchQuery}"` : "No pins to display yet."}
+            topSpacing={165}
+            onPinPress={openPinPage}
           />
         </View>
       )}
@@ -940,10 +960,10 @@ export default function Home() {
               </ScrollView>
             ) : sheetExpanded && !selectedPlace && (
               <View style={styles.expandedArea}>
-                <PinListView
+                <PinSheetList
                   pins={filteredPins ?? pins}
+                  userCoords={userCoords}
                   emptyMessage={pinSearchQuery ? `No pins matched "${pinSearchQuery}"` : "No pins to display yet."}
-                  topSpacing={0}
                   onPinPress={openPinDetail}
                 />
               </View>

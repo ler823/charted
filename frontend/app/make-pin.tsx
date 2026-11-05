@@ -144,6 +144,7 @@ export default function MakePin() {
   const { userCoords } = useLocation();
   const [hours, setHours] = useState<OpeningHours[] | null>();
   const [placeId, setPlaceId] = useState<string>();
+  const [category, setCategory] = useState<string | null>();
   const pulseAnim = useRef(new Animated.Value(1)).current;
   
     useEffect(() => {
@@ -239,6 +240,7 @@ export default function MakePin() {
       .update({
         "place_id": placeId,
         "hours": hours,
+        "category": category ?? null,
       })
       .eq("pin_id", newPinId!);
     if (pinInfoError) {
@@ -487,6 +489,7 @@ export default function MakePin() {
     originalPrivacy.current = data.isPrivate;
     setPlaceId(data.placeId);
     setHours(data.hours);
+    setCategory(data.category);
     setLat(data.latitude.toString());
     setLng(data.longitude.toString());
     setSelectedTags(data.selectedTags);
@@ -523,6 +526,7 @@ export default function MakePin() {
       .update({
         "place_id": placeId,
         "hours": hours ?? null,
+        "category": category ?? null,
       })
       .eq("pin_id", Number(pinId));
     if (pinInfoError) {
@@ -598,6 +602,7 @@ export default function MakePin() {
     "formattedAddress",
     "shortFormattedAddress",
     "regularOpeningHours",
+    "primaryTypeDisplayName",
     "photos",
   ];
 
@@ -625,6 +630,7 @@ export default function MakePin() {
     }
 
     setHours(formatOpeningHours(nearest.regularOpeningHours?.periods));
+    setCategory(nearest.primaryTypeDisplayName?.text ?? null);
     setPlaceId(nearest.id);
     const formatted =
       nearest.formattedAddress ?? nearest.shortFormattedAddress ?? "";
@@ -753,12 +759,13 @@ export default function MakePin() {
                       disableScroll={true}
                       isNewPlacesAPI={true}
                       requestUrl={{ useOnPlatform: "all", url: PLACES_API_URL }}
-                      fields="id,formattedAddress,regularOpeningHours,photos"
+                      fields="id,formattedAddress,regularOpeningHours,primaryTypeDisplayName,photos"
                       onPress={(data, details = null) => {
                         const place = details as PlaceDetails | null;
                         handleNameChange(data.structured_formatting.main_text);
                         handleAddressChange(place?.formattedAddress ?? "");
                         setHours(formatOpeningHours(place?.regularOpeningHours?.periods));
+                        setCategory(place?.primaryTypeDisplayName?.text ?? null);
                         setPlaceId(data["place_id"])
                         const photoName = place?.photos?.[0]?.name;
                         if (photoName) {

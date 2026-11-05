@@ -21,6 +21,17 @@ export type Pin = {
   tagIds?: number[];
 
   hours?: OpeningHours[] | null;
+
+  // Google place category, e.g. "Coffee Shop"
+  category?: string | null;
+  placeId?: string | null;
+  // Non-empty notes from each pin at this place, with who wrote them
+  notes?: PinNote[];
+};
+
+export type PinNote = {
+  userId: number;
+  note: string;
 };
 
 // One day's opening period from Google Places; times are "HHMM" strings.

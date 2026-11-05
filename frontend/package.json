@@ -9,7 +9,7 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "lint": "expo lint",
-    "gen:types": "npx supabase gen types typescript --project-id vtxaeqqmibyxjtodmutf --schema public > types/database.types.tmp && mv types/database.types.tmp types/database.types.ts || (rm -f types/database.types.tmp; exit 1)"
+    "gen:types": "npx supabase gen types typescript --remote=vtxaeqqmibyxjtodmutf --schema public > types/database.types.tmp && mv types/database.types.tmp types/database.types.ts || (rm -f types/database.types.tmp; exit 1)"
   },
   "dependencies": {
     "@expo-google-fonts/raleway": "^0.4.2",

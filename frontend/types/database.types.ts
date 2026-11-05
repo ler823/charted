@@ -372,6 +372,7 @@ export type Database = {
       pins: {
         Row: {
           address: string | null
+          category: string | null
           created_at: string | null
           hours: Json[] | null
           location_id: number
@@ -385,6 +386,7 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          category?: string | null
           created_at?: string | null
           hours?: Json[] | null
           location_id: number
@@ -398,6 +400,7 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          category?: string | null
           created_at?: string | null
           hours?: Json[] | null
           location_id?: number
