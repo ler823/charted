@@ -4,12 +4,12 @@ import { DroppingPinProvider } from "@/context/DroppingPinContext";
 import { FilterProvider } from "@/context/FilterContext";
 import { ToastProvider } from "@/context/ToastContext";
 import {
-  Raleway_200ExtraLight,
-  Raleway_400Regular,
-  Raleway_400Regular_Italic,
-  Raleway_700Bold,
-  Raleway_700Bold_Italic,
-} from "@expo-google-fonts/raleway";
+  Inter_200ExtraLight,
+  Inter_400Regular,
+  Inter_400Regular_Italic,
+  Inter_700Bold,
+  Inter_700Bold_Italic,
+} from "@expo-google-fonts/inter";
 import { useFonts } from "expo-font";
 import * as Location from "expo-location";
 import { Stack, router, usePathname } from "expo-router";
@@ -24,11 +24,11 @@ function AppNavigator() {
   const pathname = usePathname();
 
   const [fontsLoaded] = useFonts({
-    Raleway_200ExtraLight,
-    Raleway_400Regular,
-    Raleway_700Bold,
-    Raleway_400Regular_Italic,
-    Raleway_700Bold_Italic,
+    Inter_200ExtraLight,
+    Inter_400Regular,
+    Inter_700Bold,
+    Inter_400Regular_Italic,
+    Inter_700Bold_Italic,
   });
 
   useEffect(() => {

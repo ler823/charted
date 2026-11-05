@@ -283,7 +283,7 @@ export default function ListPinListView() {
               onPress={() => {
                 router.push({
                   pathname: "/pins/[pinid]",
-                  params: { pinid: Number(item.id), viewMode: "" }
+                  params: { pinid: Number(item.id) }
                 }
                 )
               }}

@@ -11,10 +11,9 @@ type Props = {
     latitude: number;
     longitude: number;
   } | null,
-  viewMode: string;
 };
 
-export default function DroppingPinOverlay({ coords, viewMode}: Props) {
+export default function DroppingPinOverlay({ coords }: Props) {
   const { isDroppingPin, setIsDroppingPin } = useDroppingPin();
   const router = useRouter();
 
@@ -25,7 +24,7 @@ export default function DroppingPinOverlay({ coords, viewMode}: Props) {
     setTimeout(() => {
       router.push({
         pathname: "/make-pin",
-        params: { lat: coords?.latitude, lng: coords?.longitude, viewMode: viewMode },
+        params: { lat: coords?.latitude, lng: coords?.longitude },
       });
 
     }, 0)

@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 
-export type ViewMode = "map" | "list" | "grid";
+export type ViewMode = "map" | "list";
 
 export type Pin = {
   id: string;

@@ -62,11 +62,7 @@ export default function FriendHeader({
                 style={[
                   styles.pillOption,
                   viewMode === mode &&
-                    (mode === "map"
-                      ? styles.pillOptionActiveMap
-                      : viewMode === "list"
-                        ? styles.pillOptionActiveList
-                        : styles.pillOptionActiveGrid),
+                    (mode === "map" ? styles.pillOptionActiveMap : styles.pillOptionActiveList),
                 ]}
               >
                 <Ionicons
@@ -183,10 +179,6 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: 0,
   },
   pillOptionActiveList: {
-    backgroundColor: Colors.light.accent,
-    borderRadius: 0,
-  },
-  pillOptionActiveGrid: {
     backgroundColor: Colors.light.accent,
     borderTopLeftRadius: 0,
     borderBottomLeftRadius: 0,

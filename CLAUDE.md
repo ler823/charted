@@ -76,7 +76,7 @@ Backend deployment requires AWS credentials and SAM CLI + Docker installed local
 **Key UI patterns**:
 
 - `components/` holds modals and overlay sheets (pin detail, pin creation, friend requests, etc.)
-- Custom fonts: Raleway family, loaded in `_layout.tsx`
+- Custom fonts: Inter family, loaded in `_layout.tsx`
 - Theme colors in `constants/Colors.ts`; dark/light mode via `hooks/useColorScheme`
 
 ### Backend (`backend/charted-backend/`)

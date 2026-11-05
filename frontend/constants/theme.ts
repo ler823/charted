@@ -23,9 +23,9 @@ export const Colors = {
 };
 
 export const Fonts = {
-  extralight: "Raleway_200ExtraLight",
-  regular: "Raleway_400Regular",
-  bold: "Raleway_700Bold",
-  regular_i: "Raleway_400Regular_Italic",
-  bold_i: "Raleway_700Bold_Italic",
+  extralight: "Inter_200ExtraLight",
+  regular: "Inter_400Regular",
+  bold: "Inter_700Bold",
+  regular_i: "Inter_400Regular_Italic",
+  bold_i: "Inter_700Bold_Italic",
 };

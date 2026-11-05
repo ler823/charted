@@ -77,13 +77,11 @@ export default function MakePin() {
     lat: latParam,
     lng: lngParam,
     placeId: placeIdParam,
-    viewMode,
   } = useLocalSearchParams<{
     pinId?: string;
     lat?: string;
     lng?: string;
     placeId?: string;
-    viewMode: string;
   }>();
   const [lat, setLat] = useState(
     (Math.round(parseFloat(latParam!) * 1e5) / 1e5).toString() || "",
@@ -568,10 +566,7 @@ export default function MakePin() {
             const error = await deletePinService(pinId!);
             if (error) console.error("[deletePin]", error);
             showToast("Pin deleted");
-            router.replace({
-              pathname: "/(tabs)/(home)",
-              params: { viewMode },
-            });
+            router.replace("/(tabs)/(home)");
           },
         },
       ],

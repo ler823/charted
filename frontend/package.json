@@ -12,7 +12,7 @@
     "gen:types": "npx supabase gen types typescript --remote=vtxaeqqmibyxjtodmutf --schema public > types/database.types.tmp && mv types/database.types.tmp types/database.types.ts || (rm -f types/database.types.tmp; exit 1)"
   },
   "dependencies": {
-    "@expo-google-fonts/raleway": "^0.4.2",
+    "@expo-google-fonts/inter": "^0.4.2",
     "@expo/ngrok": "^4.1.3",
     "@expo/vector-icons": "^15.0.3",
     "@react-native-community/slider": "5.2.1",

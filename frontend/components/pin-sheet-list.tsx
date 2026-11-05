@@ -25,6 +25,8 @@ type Props = {
 
 const MAX_AVATARS = 3;
 const MAX_QUOTES = 3;
+// Longer notes are cut at a word boundary so cards don't get too tall
+const MAX_QUOTE_CHARS = 140;
 
 const AVATAR_COLORS = ["#d47eaa", "#8c4067", "#d54c4c", "#ec9055", "#b19e24", "#3c6844", "#7ed4d1", "#2c716f", "#b87ed4"];
 
@@ -196,7 +198,7 @@ function PinSheetCard({
     <Pressable style={({ pressed }) => [styles.card, pressed && styles.cardPressed]} onPress={onPress}>
       <View style={styles.cardBody}>
         <View style={styles.titleRow}>
-          <Text style={styles.title} numberOfLines={1}>
+          <Text style={styles.title} numberOfLines={2}>
             {pin.name || "Unnamed Pin"}
           </Text>
           <View style={styles.avatarStack}>
@@ -207,16 +209,14 @@ function PinSheetCard({
           {extraUsers > 0 && <Text style={styles.extraText}>+{extraUsers}</Text>}
         </View>
 
-        {!!detailLine && <Text style={styles.meta} numberOfLines={1}>{detailLine}</Text>}
-        {!!hoursLine && <Text style={styles.meta} numberOfLines={1}>{hoursLine}</Text>}
+        {!!detailLine && <Text style={styles.meta}>{detailLine}</Text>}
+        {!!hoursLine && <Text style={styles.meta}>{hoursLine}</Text>}
 
         {quotes.length > 0 && (
           <View style={styles.quotes}>
             {quotes.map((q, i) => (
               <View key={`${q.userId}-${i}`} style={styles.quoteRow}>
-                <Text style={styles.quoteText} numberOfLines={1}>
-                  “{q.note}”
-                </Text>
+                <Text style={styles.quoteText}>“{shortenQuote(q.note)}”</Text>
                 <Avatar profile={profiles[q.userId]} userId={q.userId} />
               </View>
             ))}
@@ -244,6 +244,15 @@ function Avatar({ profile, userId, style }: { profile?: Profile; userId: number;
       )}
     </View>
   );
+}
+
+// Cut long notes ourselves (instead of numberOfLines) so the closing quote mark stays
+function shortenQuote(note: string) {
+  const oneLine = note.replace(/\s+/g, " ");
+  if (oneLine.length <= MAX_QUOTE_CHARS) return oneLine;
+  const cut = oneLine.slice(0, MAX_QUOTE_CHARS);
+  const lastSpace = cut.lastIndexOf(" ");
+  return `${(lastSpace > MAX_QUOTE_CHARS * 0.6 ? cut.slice(0, lastSpace) : cut).trimEnd()}…`;
 }
 
 function coverPinId(pin: Pin): number | undefined {
@@ -367,7 +376,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   quoteText: {
-    fontFamily: Fonts.regular_i,
+    fontFamily: Fonts.regular,
     fontSize: 13,
     color: Colors.light.text,
     flexShrink: 1,

@@ -20,10 +20,8 @@ import {
 import ClusteredMapView from "react-native-map-clustering";
 import { Marker } from "react-native-maps";
 
-import PinGridView from "@/app/(tabs)/(home)/pin_grid_view";
 import DroppingPinOverlay from "@/components/dropping-pin-overlay";
 import Filter from "@/components/filter";
-import Header from "@/components/header";
 import PinMarkers from "@/components/pin-markers";
 import SharedPinMarkers from "@/components/pin-markers-shared";
 import PinDetail from "@/components/pin-detail";
@@ -36,9 +34,9 @@ import { useAuth } from "@/context/AuthContext";
 import { useDroppingPin } from "@/context/DroppingPinContext";
 import { useFilterContext } from "@/context/FilterContext";
 import { useLocation } from "@/hooks/use-location";
-import { Coords, Pin, ViewMode, ViewOption } from "@/types/types";
+import { Coords, Pin } from "@/types/types";
 import { Ionicons } from "@expo/vector-icons";
-import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { addRecentPin, getRecentPinIds } from "@/lib/recent-pins";
 import { setPinChanged } from "../../../lib/pin_refresh_data";
@@ -51,12 +49,6 @@ const CSULB = {
 };
 
 const INITIAL_REGION = CSULB;
-
-const VIEW_OPTIONS: ViewOption[] = [
-  { mode: "map", icon: "map" },
-  { mode: "list", icon: "list" },
-  { mode: "grid", icon: "grid" },
-];
 
 // Bottom sheet detents
 const SHEET_MIN = 0;
@@ -129,12 +121,8 @@ function PinMapMarker({
 }
 
 export default function Home() {
-  const { viewMode: incomingViewMode } = useLocalSearchParams<{
-    viewMode?: ViewMode;
-  }>();
   const { isDroppingPin, setIsDroppingPin } = useDroppingPin();
   const { profile } = useAuth();
-  const [viewMode, setViewMode] = useState<ViewMode>(incomingViewMode ?? "map");
   const [selectedPin, setSelectedPin] = useState<Pin | null>(null);
   const [pins, setPins] = useState<Pin[]>([]);
   const [filteredPins, setFilteredPins] = useState<Pin[] | null>(null);
@@ -552,7 +540,6 @@ export default function Home() {
         lat: selectedPlace.latitude,
         lng: selectedPlace.longitude,
         placeId: selectedPlace.id,
-        viewMode,
       },
     });
     setSelectedPlace(null);
@@ -604,15 +591,6 @@ export default function Home() {
     );
   };
 
-  // Full-screen list view: open the pin's page (or the picker for shared places)
-  const openPinPage = (pin: Pin) => {
-    if (pin.isShared) {
-      router.push({ pathname: "/select-pins/[selectid]", params: { selectid: JSON.stringify(pin.pinIds) } });
-    } else if (pin.pinIds?.[0]) {
-      router.push({ pathname: "/pins/[pinid]", params: { pinid: String(pin.pinIds[0]) } });
-    }
-  };
-
   const closePinDetail = () => {
     sheetPinRef.current = null;
     Animated.spring(pinOpenAnim, { toValue: 0, useNativeDriver: false, tension: 50, friction: 9 }).start(() => {
@@ -632,12 +610,7 @@ export default function Home() {
 
   return (
     <View style={styles.container}>
-      {!isDroppingPin && (
-        <Header viewMode={viewMode} setViewMode={setViewMode} viewOptions={VIEW_OPTIONS} />
-      )}
-
-      {viewMode === "map" && (
-        <ClusteredMapView
+      <ClusteredMapView
           initialRegion={INITIAL_REGION}
           style={styles.map}
           ref={mapRef}
@@ -686,35 +659,13 @@ export default function Home() {
             />
           )}
         </ClusteredMapView>
-      )}
-
-      {viewMode === "list" && (
-        <View style={styles.cardsContainer}>
-          <PinSheetList
-            pins={filteredPins ?? pins}
-            userCoords={userCoords}
-            emptyMessage={pinSearchQuery ? `No pins matched "${pinSearchQuery}"` : "No pins to display yet."}
-            topSpacing={165}
-            onPinPress={openPinPage}
-          />
-        </View>
-      )}
-
-      {viewMode === "grid" && (
-        <View>
-          <PinGridView
-            pins={filteredPins ?? pins}
-            emptyMessage={pinSearchQuery ? `No pins matched "${pinSearchQuery}"` : "No pins to display yet."}
-          />
-        </View>
-      )}
 
       {selectedPin && (
         <PinOverlay selectedPin={selectedPin} setSelectedPin={setSelectedPin} />
       )}
 
       {isDroppingPin && (
-        <DroppingPinOverlay coords={pinCoords} viewMode={viewMode} />
+        <DroppingPinOverlay coords={pinCoords} />
       )}
 
       {!isDroppingPin && (
@@ -776,7 +727,6 @@ export default function Home() {
                   <PinDetail
                     key={sheetPin.id}
                     pinid={sheetPin.displayPinId ?? sheetPin.pinIds![0]}
-                    viewMode={viewMode}
                     onClose={closePinDetail}
                     scrollEnabled={pinSheetFull}
                     onPullDown={() => snapPinDetent(false)}
@@ -986,9 +936,6 @@ export default function Home() {
 const styles = StyleSheet.create({
   container: {
     flexDirection: "row",
-    flex: 1,
-  },
-  cardsContainer: {
     flex: 1,
   },
   map: {

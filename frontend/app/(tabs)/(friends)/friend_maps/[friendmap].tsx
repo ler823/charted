@@ -7,7 +7,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import ClusteredMapView from "react-native-map-clustering";
 import { Marker } from "react-native-maps";
-import PinGridView from "../../(home)/pin_grid_view";
 import PinListView from "../../(home)/pin_list_view";
 import PinMarkers from "@/components/pin-markers";
 import PinOverlayFriend from "@/components/pin-overlay-friends";
@@ -30,7 +29,6 @@ const CSULB = {
 const VIEW_OPTIONS: ViewOption[] = [
   { mode: "map", icon: "map" },
   { mode: "list", icon: "list" },
-  { mode: "grid", icon: "grid" },
 ];
 
 export default function FriendMap() {
@@ -144,11 +142,6 @@ export default function FriendMap() {
     {viewMode === "list" && (
         <View style={{flex: 1, marginTop: 55}}>
             <PinListView pins={validPins}/>
-        </View>
-    )}
-    {viewMode === "grid" && (
-        <View style={{marginTop: 55}}>
-            <PinGridView pins={validPins} />
         </View>
     )}
     {/* 

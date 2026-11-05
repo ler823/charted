@@ -91,7 +91,6 @@ type Notes = {
 
 type Props = {
   pinid: number;
-  viewMode?: string | string[];
   // When set, the detail is embedded (e.g. in the home sheet): shows a close
   // button instead of Back
   onClose?: () => void;
@@ -101,7 +100,7 @@ type Props = {
 };
 
 /** Full view of a single pin; used by the pin page and the home sheet. */
-export default function PinDetail({ pinid, viewMode, onClose, scrollEnabled = true, onPullDown }: Props) {
+export default function PinDetail({ pinid, onClose, scrollEnabled = true, onPullDown }: Props) {
   const { profile } = useAuth();
   const embedded = !!onClose;
 
@@ -800,7 +799,6 @@ export default function PinDetail({ pinid, viewMode, onClose, scrollEnabled = tr
                   pathname: "/make-pin",
                   params: {
                     pinId: pin?.pin_id,
-                    viewMode: viewMode,
                   },
                 });
               }}
