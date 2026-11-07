@@ -34,7 +34,7 @@ type Pin = {
   location_id: number | null;
   user_id: number | null;
   user_rating: number | null;
-  user_note: string | null;
+  pro_tips: string[];
   name: string | null;
   address: string | null;
   users: {
@@ -82,7 +82,7 @@ type Cluster = {
 
 type Notes = {
   user_id: number;
-  user_note: string | null;
+  pro_tips: string[];
   users: {
     username: string;
   } | null;
@@ -371,7 +371,7 @@ export default function PinDetail({ pinid, onClose, scrollEnabled = true, onPull
 
       const { data, error } = await supabase
         .from("pins")
-        .select("pin_id, user_id, user_note, private, users:user_id( username )")
+        .select("pin_id, user_id, pro_tips, private, users:user_id( username )")
         .in("pin_id", filteredPinIds ?? [])
 
       if (error) {
@@ -412,7 +412,7 @@ export default function PinDetail({ pinid, onClose, scrollEnabled = true, onPull
 
           return {
             user_id: row.user_id,
-            user_note: row.user_note,
+            pro_tips: row.pro_tips ?? [],
             users: user ?? null,
             avatarKey: key,
             avatarUrl: null,
@@ -578,16 +578,14 @@ export default function PinDetail({ pinid, onClose, scrollEnabled = true, onPull
             </ScrollView>
           </View>
 
-          {/* Notes */}
-          <Text style={styles.subtitle}>My Notes</Text>
+          {/* Pro Tips */}
+          <Text style={styles.subtitle}>My Pro Tips</Text>
           <View style={styles.cardFullRow}>
-            <Text style={pin?.user_note ? styles.boxText : styles.emptyText}>
-              {pin?.user_note || "You have no notes yet"}
-            </Text>
+            <ProTipLines tips={pin?.pro_tips} emptyText="You have no pro tips yet" />
           </View>
 
-          {/* Friend Notes */}
-          <Text style={styles.subtitle}>Friends' Notes</Text>
+          {/* Friends' Pro Tips */}
+          <Text style={styles.subtitle}>Friends' Pro Tips</Text>
           {friends?.length === 0 ? (
             <View style={styles.cardFullRow}>
               <Text style={styles.emptyText}>
@@ -597,7 +595,7 @@ export default function PinDetail({ pinid, onClose, scrollEnabled = true, onPull
           ) : notes?.length === 0 ? (
             <View style={styles.cardFullRow}>
               <Text style={styles.emptyText}>
-                Your friends haven't added notes yet
+                Your friends haven't added pro tips yet
               </Text>
             </View>
           ) : null}
@@ -631,9 +629,9 @@ export default function PinDetail({ pinid, onClose, scrollEnabled = true, onPull
                       {item.users?.username ?? "Unknown user"}
                     </Text>
 
-                    <Text style={[styles.boxText, { marginLeft: 15 }]}>
-                      {item.user_note || "No note added"}
-                    </Text>
+                    <View style={{ marginLeft: 15 }}>
+                      <ProTipLines tips={item.pro_tips} emptyText="No pro tips added" />
+                    </View>
                   </View>
                 </Pressable>
               )}
@@ -816,6 +814,21 @@ export default function PinDetail({ pinid, onClose, scrollEnabled = true, onPull
   );
 }
 
+/** A pin's Pro Tips, one per line. */
+function ProTipLines({ tips, emptyText }: { tips?: string[] | null; emptyText: string }) {
+  const shown = (tips ?? []).filter((t) => t.trim());
+  if (shown.length === 0) return <Text style={styles.emptyText}>{emptyText}</Text>;
+  return (
+    <View style={styles.tipLines}>
+      {shown.map((tip, i) => (
+        <Text key={`${i}-${tip}`} style={styles.boxText}>
+          • {tip}
+        </Text>
+      ))}
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -836,6 +849,10 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#243e36",
     fontFamily: Fonts.regular,
+  },
+  tipLines: {
+    flex: 1,
+    gap: 4,
   },
   emptyText: {
     fontSize: 14,

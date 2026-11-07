@@ -380,6 +380,7 @@ export type Database = {
           pin_id: number
           place_id: string | null
           private: boolean | null
+          pro_tips: string[]
           user_id: number
           user_note: string | null
           user_rating: number | null
@@ -394,6 +395,7 @@ export type Database = {
           pin_id?: number
           place_id?: string | null
           private?: boolean | null
+          pro_tips?: string[]
           user_id: number
           user_note?: string | null
           user_rating?: number | null
@@ -408,6 +410,7 @@ export type Database = {
           pin_id?: number
           place_id?: string | null
           private?: boolean | null
+          pro_tips?: string[]
           user_id?: number
           user_note?: string | null
           user_rating?: number | null

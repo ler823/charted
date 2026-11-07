@@ -25,13 +25,13 @@ export type Pin = {
   // Google place category, e.g. "Coffee Shop"
   category?: string | null;
   placeId?: string | null;
-  // Non-empty notes from each pin at this place, with who wrote them
-  notes?: PinNote[];
+  // Every Pro Tip from each pin at this place, one entry per tip, with who wrote it
+  proTips?: ProTip[];
 };
 
-export type PinNote = {
+export type ProTip = {
   userId: number;
-  note: string;
+  tip: string;
 };
 
 // One day's opening period from Google Places; times are "HHMM" strings.

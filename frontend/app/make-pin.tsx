@@ -94,13 +94,16 @@ export default function MakePin() {
   const [address, setAddress] = useState("");
   const NAME_MAX = 50;
   const ADDRESS_MAX = 100;
+  // Keeps each tip short enough to read at a glance on pin cards
+  const PRO_TIP_MAX = 140;
   const [nameError, setNameError] = useState("");
   const [addressError, setAddressError] = useState("");
   const [duplicateAddressError, setDuplicateAddressError] = useState("");
   const [coverPhotoUrl, setCoverPhotoUrl] = useState("");
   const [coverPhotoKey, setCoverPhotoKey] = useState("");
   const [rating, setRating] = useState(0);
-  const [notes, setNotes] = useState("");
+  const [proTips, setProTips] = useState<string[]>([]);
+  const [newTip, setNewTip] = useState("");
   const [tags, setTags] = useState<string[]>([]);
   const [lists, setLists] = useState<string[]>([]);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
@@ -120,7 +123,6 @@ export default function MakePin() {
   const publicDescription = "All of your friends can view this pin";
   const [privacyDescription, setPrivacyDescription] =
     useState(publicDescription);
-  const [notesHeight, setNotesHeight] = useState(100);
   const [coverPhotoChanged, setCoverPhotoChanged] = useState(false);
   const [coverPhotoModalVisible, setCoverPhotoModalVisible] = useState(false);
   const [addPhotoModalVisible, setAddPhotoModalVisible] = useState(false);
@@ -136,7 +138,6 @@ export default function MakePin() {
   const originalName = useRef("");
   const originalAddress = useRef("");
   const originalRating = useRef(0);
-  const originalNotes = useRef("");
   const originalPrivacy = useRef(false);
   const insertedPinId = useRef(0);
   const { userCoords } = useLocation();
@@ -189,6 +190,23 @@ export default function MakePin() {
     }
   };
 
+  const addProTip = () => {
+    const tip = newTip.trim();
+    if (!tip) return;
+    setProTips((prev) => [...prev, tip]);
+    setNewTip("");
+  };
+
+  const removeProTip = (index: number) => {
+    setProTips((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  // Includes a tip that was typed but not added yet, so it isn't lost on save
+  const allProTips = () => {
+    const pending = newTip.trim();
+    return pending ? [...proTips, pending] : proTips;
+  };
+
   const toggleTag = (tag: string) => {
     setSelectedTags((prev) =>
       prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag],
@@ -225,7 +243,6 @@ export default function MakePin() {
       longitude: Math.round(parseFloat(lng!) * 1e5) / 1e5,
       name,
       isPrivate,
-      notes,
       rating,
       userId: profile!.user_id,
     });
@@ -239,6 +256,7 @@ export default function MakePin() {
         "place_id": placeId,
         "hours": hours,
         "category": category ?? null,
+        "pro_tips": allProTips(),
       })
       .eq("pin_id", newPinId!);
     if (pinInfoError) {
@@ -481,8 +499,7 @@ export default function MakePin() {
     originalAddress.current = data.address;
     setRating(data.rating);
     originalRating.current = data.rating;
-    setNotes(data.notes);
-    originalNotes.current = data.notes;
+    setProTips(data.proTips);
     setIsPrivate(data.isPrivate);
     originalPrivacy.current = data.isPrivate;
     setPlaceId(data.placeId);
@@ -512,7 +529,7 @@ export default function MakePin() {
       name,
       address,
       rating,
-      notes,
+      proTips: allProTips(),
       isPrivate,
     });
     if (error) {
@@ -871,22 +888,41 @@ export default function MakePin() {
                 </View>
               </View>
               <View>
-                <Text style={styles.notesHeading}>Notes</Text>
-                <TextInput
-                  style={[styles.input, styles.notesInput]}
-                  placeholder="Enter notes here"
-                  value={notes}
-                  onChangeText={setNotes}
-                  multiline={true}
-                  scrollEnabled={false}
-                  textAlignVertical="top"
-                  onFocus={(event) => {
-                    event.target && scrollRef.current?.scrollToFocusedInput(event.target);
-                  }}
-                  onContentSizeChange={(event) => {
-                    setNotesHeight(event.nativeEvent.contentSize.height);
-                  }}
-                />
+                <Text style={styles.notesHeading}>Pro Tips</Text>
+                <View style={styles.tipInputRow}>
+                  <TextInput
+                    style={[styles.input, styles.tipInput]}
+                    placeholder="Add a pro tip, e.g. Go early"
+                    value={newTip}
+                    onChangeText={setNewTip}
+                    maxLength={PRO_TIP_MAX}
+                    returnKeyType="done"
+                    submitBehavior="submit"
+                    onSubmitEditing={addProTip}
+                    onFocus={(event) => {
+                      event.target && scrollRef.current?.scrollToFocusedInput(event.target);
+                    }}
+                  />
+                  <Pressable onPress={addProTip} disabled={!newTip.trim()} hitSlop={8}>
+                    <MaterialCommunityIcons
+                      name="plus-circle-outline"
+                      size={28}
+                      color={newTip.trim() ? "black" : "#ccc"}
+                    />
+                  </Pressable>
+                </View>
+                {proTips.length > 0 && (
+                  <View style={styles.tipList}>
+                    {proTips.map((tip, i) => (
+                      <View key={`${i}-${tip}`} style={styles.tipRow}>
+                        <Text style={styles.tipText}>{tip}</Text>
+                        <Pressable onPress={() => removeProTip(i)} hitSlop={8}>
+                          <MaterialCommunityIcons name="close" size={18} color="#666" />
+                        </Pressable>
+                      </View>
+                    ))}
+                  </View>
+                )}
               </View>
               {/* Tags */}
               <View style={styles.tagTitle}>
@@ -1268,9 +1304,35 @@ const styles = StyleSheet.create({
     color: "#243e36",
     fontFamily: Fonts.regular,
   },
-  notesInput: {
-    minHeight: 100,
+  tipInputRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  tipInput: {
+    flex: 1,
+    width: undefined,
+  },
+  tipList: {
+    marginTop: 10,
+    gap: 8,
+  },
+  tipRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    borderWidth: 1,
+    borderColor: "#ddd",
+    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
     backgroundColor: Colors.light.accentLight,
+  },
+  tipText: {
+    flex: 1,
+    fontSize: 15,
+    color: "#333",
+    fontFamily: Fonts.regular,
   },
   tagsContainer: {
     borderWidth: 1,

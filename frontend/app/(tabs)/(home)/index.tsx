@@ -410,7 +410,7 @@ export default function Home() {
               hours,
               category,
               place_id,
-              user_note,
+              pro_tips,
               pin_lists (list_id),
               pin_tags (tag_id)
             `)
@@ -464,9 +464,12 @@ export default function Home() {
               hours: displayPin?.hours,
               category: validPins.find((p: any) => p.category)?.category ?? null,
               placeId: displayPin?.place_id ?? validPins.find((p: any) => p.place_id)?.place_id ?? null,
-              notes: validPins
-                .filter((p: any) => p.user_note?.trim())
-                .map((p: any) => ({ userId: p.user_id, note: p.user_note.trim() })),
+              proTips: validPins.flatMap((p: any) =>
+                (p.pro_tips ?? [])
+                  .map((tip: string) => tip.trim())
+                  .filter(Boolean)
+                  .map((tip: string) => ({ userId: p.user_id, tip })),
+              ),
             };
           })
           .filter(Boolean) as Pin[];

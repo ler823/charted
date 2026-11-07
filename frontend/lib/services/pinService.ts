@@ -29,7 +29,6 @@ type CreatePinParams = {
   longitude: number;
   name: string;
   isPrivate: boolean;
-  notes: string;
   rating: number;
   userId: number;
 };
@@ -43,7 +42,8 @@ export async function createPin(
     p_longitude: params.longitude,
     p_pin_name: params.name,
     p_private: params.isPrivate,
-    p_user_note: params.notes,
+    // Pro Tips are saved separately (pins.pro_tips); user_note is no longer used
+    p_user_note: "",
     p_user_rating: params.rating,
     p_user_id: params.userId,
   });
@@ -55,7 +55,7 @@ type UpdatePinParams = {
   name: string;
   address: string;
   rating: number;
-  notes: string;
+  proTips: string[];
   isPrivate: boolean;
 };
 
@@ -69,7 +69,7 @@ export async function updatePin(
       name: params.name,
       address: params.address,
       user_rating: params.rating,
-      user_note: params.notes,
+      pro_tips: params.proTips,
       private: params.isPrivate,
     })
     .eq("pin_id", Number(pinId));
@@ -87,7 +87,7 @@ export type PinInfo = {
   latitude: number;
   longitude: number;
   rating: number;
-  notes: string;
+  proTips: string[];
   isPrivate: boolean;
   placeId: string;
   hours: OpeningHours[] | null;
@@ -104,7 +104,7 @@ export async function getPinInfo(
 ): Promise<{ data: PinInfo | null; error: string | null }> {
   const { data: pinData, error: pinDataError } = await supabase
     .from("pins")
-    .select("name, user_rating, user_note, address, location_id, private, place_id, hours, category")
+    .select("name, user_rating, pro_tips, address, location_id, private, place_id, hours, category")
     .eq("pin_id", Number(pinId));
 
   if (pinDataError) return { data: null, error: pinDataError.message };
@@ -170,7 +170,7 @@ export async function getPinInfo(
       latitude,
       longitude,
       rating: pinData[0].user_rating ?? 0,
-      notes: pinData[0].user_note ?? "",
+      proTips: pinData[0].pro_tips ?? [],
       isPrivate: pinData[0].private ?? false,
       placeId: pinData[0].place_id ?? "",
       hours: pinData[0].hours as OpeningHours[] | null,

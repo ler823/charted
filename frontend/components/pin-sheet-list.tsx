@@ -24,9 +24,9 @@ type Props = {
 };
 
 const MAX_AVATARS = 3;
-const MAX_QUOTES = 3;
-// Longer notes are cut at a word boundary so cards don't get too tall
-const MAX_QUOTE_CHARS = 140;
+const MAX_TIPS = 3;
+// Longer tips are cut at a word boundary so cards don't get too tall
+const MAX_TIP_CHARS = 140;
 
 const AVATAR_COLORS = ["#d47eaa", "#8c4067", "#d54c4c", "#ec9055", "#b19e24", "#3c6844", "#7ed4d1", "#2c716f", "#b87ed4"];
 
@@ -42,7 +42,7 @@ const categoryCache = new Map<string, string | null>();
 
 /**
  * Pin list for the home bottom sheet: name, who saved it, category,
- * distance, opening hours, and quotes from people's notes.
+ * distance, opening hours, and people's Pro Tips (one per line).
  */
 export default function PinSheetList({ pins, userCoords, emptyMessage = "No pins to display yet.", topSpacing = 0, onPinPress }: Props) {
   const { profile } = useAuth();
@@ -189,10 +189,10 @@ function PinSheetCard({
     .join(" • ");
   const hoursLine = openStatus(pin.hours);
 
-  // Friends' notes first, then the current user's
-  const quotes = [...(pin.notes ?? [])]
+  // Friends' tips first, then the current user's
+  const tips = [...(pin.proTips ?? [])]
     .sort((a, b) => Number(a.userId === currentUserId) - Number(b.userId === currentUserId))
-    .slice(0, MAX_QUOTES);
+    .slice(0, MAX_TIPS);
 
   return (
     <Pressable style={({ pressed }) => [styles.card, pressed && styles.cardPressed]} onPress={onPress}>
@@ -212,12 +212,12 @@ function PinSheetCard({
         {!!detailLine && <Text style={styles.meta}>{detailLine}</Text>}
         {!!hoursLine && <Text style={styles.meta}>{hoursLine}</Text>}
 
-        {quotes.length > 0 && (
+        {tips.length > 0 && (
           <View style={styles.quotes}>
-            {quotes.map((q, i) => (
-              <View key={`${q.userId}-${i}`} style={styles.quoteRow}>
-                <Text style={styles.quoteText}>“{shortenQuote(q.note)}”</Text>
-                <Avatar profile={profiles[q.userId]} userId={q.userId} />
+            {tips.map((t, i) => (
+              <View key={`${t.userId}-${i}`} style={styles.quoteRow}>
+                <Text style={styles.quoteText}>“{shortenTip(t.tip)}”</Text>
+                <Avatar profile={profiles[t.userId]} userId={t.userId} />
               </View>
             ))}
           </View>
@@ -246,13 +246,13 @@ function Avatar({ profile, userId, style }: { profile?: Profile; userId: number;
   );
 }
 
-// Cut long notes ourselves (instead of numberOfLines) so the closing quote mark stays
-function shortenQuote(note: string) {
-  const oneLine = note.replace(/\s+/g, " ");
-  if (oneLine.length <= MAX_QUOTE_CHARS) return oneLine;
-  const cut = oneLine.slice(0, MAX_QUOTE_CHARS);
+// Cut long tips ourselves (instead of numberOfLines) so the closing quote mark stays
+function shortenTip(tip: string) {
+  const oneLine = tip.replace(/\s+/g, " ");
+  if (oneLine.length <= MAX_TIP_CHARS) return oneLine;
+  const cut = oneLine.slice(0, MAX_TIP_CHARS);
   const lastSpace = cut.lastIndexOf(" ");
-  return `${(lastSpace > MAX_QUOTE_CHARS * 0.6 ? cut.slice(0, lastSpace) : cut).trimEnd()}…`;
+  return `${(lastSpace > MAX_TIP_CHARS * 0.6 ? cut.slice(0, lastSpace) : cut).trimEnd()}…`;
 }
 
 function coverPinId(pin: Pin): number | undefined {
